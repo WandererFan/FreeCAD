@@ -93,6 +93,7 @@ public:
     virtual ~DrawViewPart();
 
     App::PropertyLinkList     Source;
+    App::PropertyXLink        XSource;
     App::PropertyVector       Direction;  //TODO: Rename to YAxisDirection or whatever this actually is  (ProjectionDirection)
     App::PropertyVector       XDirection;
     App::PropertyBool         Perspective;

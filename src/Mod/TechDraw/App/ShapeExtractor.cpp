@@ -56,18 +56,38 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> l
     std::vector<TopoDS_Shape> sourceShapes;
 
     for (auto& l:links) {
+        Base::Console().Message("SE::getShapes - link is: %s\n", l->getTypeId().getName());
+        if (l->getTypeId().isDerivedFrom(App::Link::getClassTypeId())) {
+            Base::Console().Message("SE::getShapes - found xShape - %s/%s\n", 
+                                    l->getNameInDocument(), l->Label.getValue());
+            App::Link* xLink = dynamic_cast<App::Link*>(l);
+            std::vector<TopoDS_Shape> xShapes = getXShapes(xLink);
+            if (!xShapes.empty()) {
+                Base::Console().Message("SE::getShapes - xShapes: %d\n", xShapes.size());
+                sourceShapes.insert(sourceShapes.end(), xShapes.begin(), xShapes.end());
+                continue;
+            } else {
+                Base::Console().Message("SE::getShapes - no shapes from getXShapes\n");
+            }
+        }
         auto shape = Part::Feature::getShape(l);    //finds shape within DocObj??
         if(!shape.IsNull()) {
+              Base::Console().Message("SE::getShapes - P::F::getshape found shape for: %s/%s\n",
+                                      l->getNameInDocument(), l->Label.getValue());
 //            BRepTools::Write(shape, "DVPgetShape.brep");            //debug
             if (shape.ShapeType() > TopAbs_COMPSOLID)  {              //simple shape
+                Base::Console().Message("SE::getShapes - simple shape\n");
                 sourceShapes.push_back(shape);
             } else {                                                  //complex shape
+                Base::Console().Message("SE::getShapes - complex shape\n");
                 std::vector<TopoDS_Shape> drawable = extractDrawableShapes(shape);
                 if (!drawable.empty()) {
+                    Base::Console().Message("SE::getShapes - drawable: %d\n", drawable.size());
                     sourceShapes.insert(sourceShapes.end(),drawable.begin(),drawable.end());
                 }
             }
         } else {
+            Base::Console().Message("SE::getShapes - P:F:getShape was null\n");
             std::vector<TopoDS_Shape> shapeList = getShapesFromObject(l);
             sourceShapes.insert(sourceShapes.end(),shapeList.begin(),shapeList.end());
         }
@@ -96,9 +116,43 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> l
     return result;
 }
 
+std::vector<TopoDS_Shape> ShapeExtractor::getXShapes(const App::Link* xLink)
+{
+    Base::Console().Message("SE::getXShapes(%X)\n", xLink);
+    std::vector<TopoDS_Shape> xSourceShapes;
+    if (xLink == nullptr) {
+        return xSourceShapes;
+    }
+
+    const std::vector<App::DocumentObject*> objs = xLink->_getElementListValue();
+    Base::Console().Message("SE::getXShapes - objs: %d\n", objs.size());
+    for (auto& l:objs) {
+        if (l->getTypeId().isDerivedFrom(App::LinkGroup::getClassTypeId())) {
+            Base::Console().Message("SE::getXShapes - found a LinkGroup\n");
+        }
+        auto shape = Part::Feature::getShape(l);
+        if(!shape.IsNull()) {
+            if (shape.ShapeType() > TopAbs_COMPSOLID)  {              //simple shape
+                xSourceShapes.push_back(shape);
+            } else {                                                  //complex shape
+                std::vector<TopoDS_Shape> drawable = extractDrawableShapes(shape);
+                if (!drawable.empty()) {
+                    xSourceShapes.insert(xSourceShapes.end(),drawable.begin(),drawable.end());
+                }
+            }
+        } else {
+            Base::Console().Message("SE::getXShapes - no shape from getShape\n");
+//            std::vector<TopoDS_Shape> shapeList = getShapesFromObject(l);
+//            xSourceShapes.insert(xSourceShapes.end(),shapeList.begin(),shapeList.end());
+        }
+    }
+    return xSourceShapes;
+}
+
+
 std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromObject(const App::DocumentObject* docObj)
 {
-//    Base::Console().Message("SE::getShapesFromObject(%s)\n", docObj->getNameInDocument());
+    Base::Console().Message("SE::getShapesFromObject(%s)\n", docObj->getNameInDocument());
     std::vector<TopoDS_Shape> result;
     
     const App::GroupExtension* gex = dynamic_cast<const App::GroupExtension*>(docObj);
@@ -170,7 +224,7 @@ TopoDS_Shape ShapeExtractor::getShapesFused(const std::vector<App::DocumentObjec
 
 std::vector<TopoDS_Shape> ShapeExtractor::extractDrawableShapes(const TopoDS_Shape shapeIn)
 {
-//    Base::Console().Message("SE::extractDrawableShapes()\n");
+    Base::Console().Message("SE::extractDrawableShapes()\n");
     std::vector<TopoDS_Shape> result;
     std::vector<TopoDS_Shape> extShapes;            //extracted Shapes (solids mostly)
     std::vector<TopoDS_Shape> extEdges;             //extracted loose Edges
@@ -219,6 +273,7 @@ std::vector<TopoDS_Shape> ShapeExtractor::extractDrawableShapes(const TopoDS_Sha
     if (!extEdges.empty()) {
         result.insert(std::end(result), std::begin(extEdges), std::end(extEdges));
     }
+    Base::Console().Message("SE::extractDrawableShapes - returns %d shapes\n", result.size());
     return result;
 }
 

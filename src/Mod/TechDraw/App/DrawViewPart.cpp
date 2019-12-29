@@ -139,6 +139,7 @@ DrawViewPart::DrawViewPart(void) :
     //properties that affect Geometry
     ADD_PROPERTY_TYPE(Source ,(0),group,App::Prop_None,"3D Shape to view");
     Source.setScope(App::LinkScope::Global);
+    ADD_PROPERTY_TYPE(XSource ,(0),group,App::Prop_None,"External s3D Shape to view");
     ADD_PROPERTY_TYPE(Direction ,(0.0,-1.0,0.0),
                       group,App::Prop_None,"Projection Plane normal. The direction you are looking from.");
     ADD_PROPERTY_TYPE(XDirection ,(0.0,0.0,0.0),
@@ -177,19 +178,16 @@ DrawViewPart::~DrawViewPart()
 TopoDS_Shape DrawViewPart::getSourceShape(void) const
 {
     TopoDS_Shape result;
-    const std::vector<App::DocumentObject*>& links = Source.getValues();
-    if (links.empty())  {
-        bool isRestoring = getDocument()->testStatus(App::Document::Status::Restoring);
-        if (isRestoring) {
-            Base::Console().Warning("DVP::getSourceShape - No Sources (but document is restoring) - %s\n",
-                                getNameInDocument());
-        } else {
-            Base::Console().Error("Error: DVP::getSourceShape - No Source(s) linked. - %s\n",
-                                  getNameInDocument());
-        }
-    } else {
-        result = ShapeExtractor::getShapes(links);
+    std::vector<App::DocumentObject*> links = Source.getValues();
+    App::DocumentObject* xLinkObj = XSource.getValue();
+    if (xLinkObj != nullptr) {
+        links.push_back(xLinkObj);
     }
+    Base::Console().Message("DVP::getSourceShape -xLinkObj: %X\n", xLinkObj);
+    if (links.empty()) {
+        return result;
+    }
+    result = ShapeExtractor::getShapes(links);
     return result;
 }
 
@@ -203,7 +201,7 @@ TopoDS_Shape DrawViewPart::getSourceShapeFused(void) const
             Base::Console().Warning("DVP::getSourceShape - No Sources (but document is restoring) - %s\n",
                                 getNameInDocument());
         } else {
-            Base::Console().Error("Error: DVP::getSourceShape - No Source(s) linked. - %s\n",
+            Base::Console().Error("Error: DVP::getSourceShape - No Source(s) linked(2). - %s\n",
                                   getNameInDocument());
         }
     } else {
@@ -215,20 +213,22 @@ TopoDS_Shape DrawViewPart::getSourceShapeFused(void) const
 
 App::DocumentObjectExecReturn *DrawViewPart::execute(void)
 {
-//    Base::Console().Message("DVP::execute() - %s\n", Label.getValue());
+    Base::Console().Message("DVP::execute() - %s\n", Label.getValue());
     if (!keepUpdated()) {
         return App::DocumentObject::StdReturn;
     }
 
     App::Document* doc = getDocument();
     bool isRestoring = doc->testStatus(App::Document::Status::Restoring);
-    const std::vector<App::DocumentObject*>& links = Source.getValues();
-    if (links.empty())  {
+    std::vector<App::DocumentObject*> links = Source.getValues();
+    App::DocumentObject* xLinkObj = XSource.getValue();
+    if ( links.empty() && 
+         (xLinkObj = nullptr) ) {
         if (isRestoring) {
             Base::Console().Warning("DVP::execute - No Sources (but document is restoring) - %s\n",
                                 getNameInDocument());
         } else {
-            Base::Console().Error("Error: DVP::execute - No Source(s) linked. - %s\n",
+            Base::Console().Error("Error: DVP::execute - No Source(s) linked(3). - %s\n",
                                   getNameInDocument());
         }
         return App::DocumentObject::StdReturn;

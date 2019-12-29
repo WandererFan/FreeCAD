@@ -36,6 +36,7 @@
 #include <App/DocumentObject.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/FeaturePython.h>
+#include <App/Link.h>
 #include <App/PropertyGeo.h>
 #include <App/GeoFeature.h>
 #include <Base/Console.h>
@@ -301,10 +302,12 @@ void CmdTechDrawView::activated(int iMsg)
     //set projection direction from selected Face
     //use first object with a face selected
     std::vector<App::DocumentObject*> shapes;
+    std::vector<App::Link*> xLinks;
     App::DocumentObject* partObj = nullptr;
     std::string faceName;
-    int resolve = 1;                                //mystery
-    bool single = false;                            //mystery
+    int resolve = 1;                                //mystery.  naming??
+//    int resolve = 2;                                //mystery.  naming??  no change
+    bool single = false;                            //only allow 1 object to be selected
     auto selection = getSelection().getSelectionEx(0,
                                                    App::DocumentObject::getClassTypeId(),
                                                    resolve,
@@ -314,12 +317,22 @@ void CmdTechDrawView::activated(int iMsg)
         if (obj->isDerivedFrom(TechDraw::DrawPage::getClassTypeId()) ) {
             continue;
         }
-        if (obj != nullptr) {                       //can this happen?
+
+        if (obj->isDerivedFrom(App::Link::getClassTypeId()) ) {
+            Base::Console().Message("CMD::View - found an App::Link\n");
+            App::Link* link = dynamic_cast<App::Link*>(obj);
+            xLinks.push_back(link);
+            continue;
+        }
+
+        if (obj != nullptr) {
             shapes.push_back(obj);
         }
+
         if(partObj != nullptr) {
             continue;
         }
+
         for(auto& sub : sel.getSubNames()) {
             if (TechDraw::DrawUtil::getGeomTypeFromName(sub) == "Face") {
                 faceName = sub;
@@ -329,9 +342,10 @@ void CmdTechDrawView::activated(int iMsg)
         }
     }
 
-    if ((shapes.empty())) {
+    if ((shapes.empty()) && 
+        (xLinks.empty()) ) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
-            QObject::tr("No Shapes or Groups in this selection"));
+            QObject::tr("No Shapes, Groups or Links in this selection"));
         return;
     }
 
@@ -347,6 +361,7 @@ void CmdTechDrawView::activated(int iMsg)
         throw Base::TypeError("CmdTechDrawView DVP not found\n");
     }
     dvp->Source.setValues(shapes);
+    dvp->XSource.setValue(xLinks.front());  //how to handle multiples!
     doCommand(Doc,"App.activeDocument().%s.addView(App.activeDocument().%s)",PageName.c_str(),FeatName.c_str());
     if (faceName.size()) {
         std::pair<Base::Vector3d,Base::Vector3d> dirs = DrawGuiUtil::getProjDirFromFace(partObj,faceName);

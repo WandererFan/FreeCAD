@@ -33,6 +33,7 @@
 #include <App/DocumentObject.h>
 #include <App/FeaturePython.h>
 #include <App/GroupExtension.h>
+#include <App/Link.h>
 #include <App/Part.h>
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
@@ -44,6 +45,7 @@ class TechDrawExport ShapeExtractor
 {
 public:
     static TopoDS_Shape getShapes(const std::vector<App::DocumentObject*> links); 
+    static std::vector<TopoDS_Shape> getXShapes(const App::Link* xLink);
     static std::vector<TopoDS_Shape> getShapesFromObject(const App::DocumentObject* docObj);
     static TopoDS_Shape getShapesFused(const std::vector<App::DocumentObject*> links);
     static std::vector<TopoDS_Shape> extractDrawableShapes(const TopoDS_Shape shapeIn);
