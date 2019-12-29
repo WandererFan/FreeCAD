@@ -361,7 +361,9 @@ void CmdTechDrawView::activated(int iMsg)
         throw Base::TypeError("CmdTechDrawView DVP not found\n");
     }
     dvp->Source.setValues(shapes);
-    dvp->XSource.setValue(xLinks.front());  //how to handle multiples!
+    if (!xLinks.empty()) {
+        dvp->XSource.setValue(xLinks.front());  //how to handle multiples!
+    }
     doCommand(Doc,"App.activeDocument().%s.addView(App.activeDocument().%s)",PageName.c_str(),FeatName.c_str());
     if (faceName.size()) {
         std::pair<Base::Vector3d,Base::Vector3d> dirs = DrawGuiUtil::getProjDirFromFace(partObj,faceName);
