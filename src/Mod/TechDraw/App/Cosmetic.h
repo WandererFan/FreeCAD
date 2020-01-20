@@ -266,6 +266,9 @@ protected:
 
     boost::uuids::uuid tag;
 
+    bool prefReadNewElements(void);
+
+
 };
 
 //********** GeomFormat ********************************************************

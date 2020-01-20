@@ -1304,16 +1304,18 @@ void CenterLine::Restore(Base::XMLReader &reader)
     }
     reader.readEndElement("Edges");
 
-    reader.readElement("CLPoints");
-    count = reader.getAttributeAsInteger("CLPointCount");
+    if (prefReadNewElements()) {
+        reader.readElement("CLPoints");
+        count = reader.getAttributeAsInteger("CLPointCount");
 
-    i = 0;
-    for ( ; i < count; i++) {
-        reader.readElement("CLPoint");
-        std::string p = reader.getAttribute("value");
-        m_verts.push_back(p);
+        i = 0;
+        for ( ; i < count; i++) {
+            reader.readElement("CLPoint");
+            std::string p = reader.getAttribute("value");
+            m_verts.push_back(p);
+        }
+        reader.readEndElement("CLPoints");
     }
-    reader.readEndElement("CLPoints");
 
     reader.readElement("Style");
     m_format.m_style = reader.getAttributeAsInteger("value");
@@ -1326,27 +1328,38 @@ void CenterLine::Restore(Base::XMLReader &reader)
     m_format.m_visible = (int)reader.getAttributeAsInteger("value")==0?false:true;
 
 //stored geometry
-    reader.readElement("GeometryType");
-    TechDraw::GeomType gType = (TechDraw::GeomType)reader.getAttributeAsInteger("value");
-    if (gType == TechDraw::GeomType::GENERIC) {
-        TechDraw::Generic* gen = new TechDraw::Generic();
-        gen->Restore(reader);
-        gen->occEdge = GeometryUtils::edgeFromGeneric(gen);
-        m_geometry = (TechDraw::BaseGeom*) gen;
-    } else if (gType == TechDraw::GeomType::CIRCLE) {
-        TechDraw::Circle* circ = new TechDraw::Circle();
-        circ->Restore(reader);
-        circ->occEdge = GeometryUtils::edgeFromCircle(circ);
-        m_geometry = (TechDraw::BaseGeom*) circ;
-    } else if (gType == TechDraw::GeomType::ARCOFCIRCLE) {
-        TechDraw::AOC* aoc = new TechDraw::AOC();
-        aoc->Restore(reader);
-        aoc->occEdge = GeometryUtils::edgeFromCircleArc(aoc);
-        m_geometry = (TechDraw::BaseGeom*) aoc;
-    } else {
-        Base::Console().Warning("CL::Restore - unimplemented geomType: %d\n", gType);
-    } 
+    if (prefReadNewElements()) {
+        reader.readElement("GeometryType");
+        TechDraw::GeomType gType = (TechDraw::GeomType)reader.getAttributeAsInteger("value");
+        if (gType == TechDraw::GeomType::GENERIC) {
+            TechDraw::Generic* gen = new TechDraw::Generic();
+            gen->Restore(reader);
+            gen->occEdge = GeometryUtils::edgeFromGeneric(gen);
+            m_geometry = (TechDraw::BaseGeom*) gen;
+        } else if (gType == TechDraw::GeomType::CIRCLE) {
+            TechDraw::Circle* circ = new TechDraw::Circle();
+            circ->Restore(reader);
+            circ->occEdge = GeometryUtils::edgeFromCircle(circ);
+            m_geometry = (TechDraw::BaseGeom*) circ;
+        } else if (gType == TechDraw::GeomType::ARCOFCIRCLE) {
+            TechDraw::AOC* aoc = new TechDraw::AOC();
+            aoc->Restore(reader);
+            aoc->occEdge = GeometryUtils::edgeFromCircleArc(aoc);
+            m_geometry = (TechDraw::BaseGeom*) aoc;
+        } else {
+            Base::Console().Warning("CL::Restore - unimplemented geomType: %d\n", gType);
+        } 
+    }
 }
+
+bool CenterLine::prefReadNewElements(void)
+{
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
+        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
+    bool result = hGrp->GetBool("readCLNewElements", true);
+    return result;
+}
+
 
 CenterLine* CenterLine::copy(void) const
 {
