@@ -165,6 +165,7 @@ App::DocumentObjectExecReturn *DrawGeomHatch::execute(void)
 }
 
 
+//std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string file, std::string patternName)
 void DrawGeomHatch::makeLineSets(void)
 {
 //    Base::Console().Message("DGH::makeLineSets()\n");
@@ -174,17 +175,34 @@ void DrawGeomHatch::makeLineSets(void)
             (m_saveName != NamePattern.getValue()))  {
             m_saveFile = PatIncluded.getValue();
             m_saveName = NamePattern.getValue();
-            std::vector<PATLineSpec> specs = getDecodedSpecsFromFile();
-            m_lineSets.clear();
-            for (auto& hl: specs) {
-                //hl.dump("hl from file");
-                LineSet ls;
-                ls.setPATLineSpec(hl);
-                m_lineSets.push_back(ls);
-            }
+            m_lineSets = makeLineSets(m_saveFile, m_saveName);
+//            std::vector<PATLineSpec> specs = getDecodedSpecsFromFile();
+//            m_lineSets.clear();
+//            for (auto& hl: specs) {
+//                //hl.dump("hl from file");
+//                LineSet ls;
+//                ls.setPATLineSpec(hl);
+//                m_lineSets.push_back(ls);
+//            }
         }
     }
 }
+
+//static//
+std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string file, std::string patternName)
+{
+//    Base::Console().Message("DGH::makeLineSets(%s, %s)\n", file.c_str(), patternName.c_str());
+    std::vector<LineSet> lineSets;
+    std::vector<PATLineSpec> specs = getDecodedSpecsFromFile(file, patternName);
+    for (auto& hl: specs) {
+        //hl.dump("hl from file");
+        LineSet ls;
+        ls.setPATLineSpec(hl);
+        lineSets.push_back(ls);
+    }
+    return lineSets;
+}
+
 
 DrawViewPart* DrawGeomHatch::getSourceView(void) const
 {
@@ -302,6 +320,68 @@ std::vector<LineSet> DrawGeomHatch::getTrimmedLines(DrawViewPart* source, std::v
     }
     return result;
 }
+
+TopoDS_Shape DrawGeomHatch::getTrimmedLines(TopoDS_Face* face,
+                                                     std::string fileSpec,
+                                                     std::string myPattern
+                                                     double scale)
+{                                                     
+    std::vector<LineSet> result;
+    std::vector<LineSet> lineSets = DrawGeomHatch::makeLineSets(std::string fileSpec, std::string myPattern)
+
+    
+    Bnd_Box bBox;
+    BRepBndLib::Add(face, bBox);
+    bBox.SetGap(0.0);
+
+    for (auto& ls: lineSets) {
+        PATLineSpec hl = ls.getPATLineSpec();
+        std::vector<TopoDS_Edge> candidates = DrawGeomHatch::makeEdgeOverlay(hl, bBox, scale);
+
+        //make Compound for this linespec
+        BRep_Builder builder;
+        TopoDS_Compound Comp;
+        builder.MakeCompound(Comp);
+        for (auto& c: candidates) {
+           builder.Add(Comp, c);
+        }
+
+        //Common(Compound,Face)
+        BRepAlgoAPI_Common mkCommon(face, Comp);
+        if ((!mkCommon.IsDone())  ||
+            (mkCommon.Shape().IsNull()) ) {
+            Base::Console().Log("INFO - DGH::getTrimmedLines - Common creation failed\n");
+            return result;
+        }
+        TopoDS_Shape common = mkCommon.Shape();
+
+//<<<<<<<<HERE
+    return resultEdges;
+}
+
+
+
+//        //save the boundingBox of hatch pattern
+//        Bnd_Box overlayBox;
+//        overlayBox.SetGap(0.0);
+//        BRepBndLib::Add(common, overlayBox);
+//        ls.setBBox(overlayBox);
+
+//        //get resulting edges
+//        std::vector<TopoDS_Edge> resultEdges;
+//        TopTools_IndexedMapOfShape mapOfEdges;
+//        TopExp::MapShapes(common, TopAbs_EDGE, mapOfEdges);
+//        for ( int i = 1 ; i <= mapOfEdges.Extent() ; i++ ) {           //remember, TopExp makes no promises about the order it finds edges
+//            const TopoDS_Edge& edge = TopoDS::Edge(mapOfEdges(i));
+//            if (edge.IsNull()) {
+//                Base::Console().Log("INFO - DGH::getTrimmedLines - edge: %d is NULL\n",i);
+//                continue;
+//            }
+//            resultEdges.push_back(edge);
+//        }
+
+
+
 /* static */
 std::vector<TopoDS_Edge> DrawGeomHatch::makeEdgeOverlay(PATLineSpec hl, Bnd_Box b, double scale)
 {
