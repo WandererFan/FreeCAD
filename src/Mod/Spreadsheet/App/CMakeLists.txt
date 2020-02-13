@@ -42,6 +42,7 @@ set(Spreadsheet_SRCS
     Utils.cpp
     Utils.h
     AppSpreadsheet.cpp
+    AppSpreadsheetPy.cpp
 )
 
 generate_from_xml(SheetPy)

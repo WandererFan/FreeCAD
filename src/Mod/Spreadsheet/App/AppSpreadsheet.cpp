@@ -22,25 +22,29 @@
 #include <Base/PyObjectBase.h>
 #include "Sheet.h"
 
+//namespace Spreadsheet {
+//class Module : public Py::ExtensionModule<Module>
+//{
+//public:
+//    Module() : Py::ExtensionModule<Module>("Spreadsheet")
+//    {
+//        initialize("This module is the Spreadsheet module."); // register with Python
+//    }
+
+//    virtual ~Module() {}
+
+//private:
+//};
+
+//PyObject* initModule()
+//{
+//    return (new Module)->module().ptr();
+//}
+//} // namespace Spreadsheet
+
 namespace Spreadsheet {
-class Module : public Py::ExtensionModule<Module>
-{
-public:
-    Module() : Py::ExtensionModule<Module>("Spreadsheet")
-    {
-        initialize("This module is the Spreadsheet module."); // register with Python
-    }
-
-    virtual ~Module() {}
-
-private:
-};
-
-PyObject* initModule()
-{
-    return (new Module)->module().ptr();
+    extern PyObject* initModule();
 }
-} // namespace Spreadsheet
 
 /* Python entry */
 PyMOD_INIT_FUNC(Spreadsheet)
