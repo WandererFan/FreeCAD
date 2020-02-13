@@ -33,19 +33,25 @@
 #include <CXX/Extensions.hxx>
 #include <CXX/Objects.hxx>
 
+#include <Base/BaseClass.h>
 #include <Base/Console.h>
 #include <Base/Exception.h>
 #include <Base/FileInfo.h>
 #include <App/Application.h>
 #include <Gui/MainWindow.h>
+#include <Gui/MDIViewPy.h>
 #include <Gui/Document.h>
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Language/Translator.h>
+
 #include <Mod/Spreadsheet/App/Sheet.h>
+#include <Mod/Spreadsheet/App/SheetPy.h>
+
 #include "Workbench.h"
 #include "ViewProviderSpreadsheet.h"
 #include "SpreadsheetView.h"
+
 
 // use a different name to CreateCommand()
 void CreateSpreadsheetCommands(void);
@@ -64,6 +70,9 @@ public:
     Module() : Py::ExtensionModule<Module>("SpreadsheetGui")
     {
         add_varargs_method("open",&Module::open
+        );
+        add_varargs_method("getSheet",&Module::getSheet,
+            "sheet = getSheet(view) - returns the spreadsheet that is the subject of a MDIView"
         );
         initialize("This module is the SpreadsheetGui module."); // register with Python
     }
@@ -94,6 +103,29 @@ private:
 
         return Py::None();
     }
+
+    Py::Object getSheet(const Py::Tuple& args)
+    {
+        PyObject* pyView;
+        Gui::MDIView* mdi;
+        if (!PyArg_ParseTuple(args.ptr(), "O",&pyView))
+            throw Py::Exception();
+        Spreadsheet::Sheet* sheet;
+//        if (PyObject_TypeCheck(pyView, &(Gui::MDIViewPy::Type))) {   //MDIViewPy has no Type?
+                                                                       //how to check pyView?
+
+            mdi = static_cast<Gui::MDIViewPy*>(pyView)->getMDIViewPtr();
+            SpreadsheetGui::SheetView * sheetView = 
+                    Base::freecad_dynamic_cast<SpreadsheetGui::SheetView>(mdi);
+            if (sheetView != nullptr) {
+                sheet = sheetView->getSheet();
+                return Py::asObject(new Spreadsheet::SheetPy(sheet));
+            }
+
+//        }
+        return Py::None();
+}
+
 };
 
 PyObject* initModule()
