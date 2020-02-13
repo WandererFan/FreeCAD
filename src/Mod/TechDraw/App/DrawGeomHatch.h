@@ -30,6 +30,7 @@
 
 class TopoDS_Edge;
 class TopoDS_Face;
+class TopoDS_Shape;
 class Bnd_Box;
 
 namespace TechDraw
@@ -76,6 +77,14 @@ public:
     static TopoDS_Edge makeLine(Base::Vector3d s, Base::Vector3d e);
     static std::vector<PATLineSpec> getDecodedSpecsFromFile(std::string fileSpec, std::string myPattern);
     static TopoDS_Face extractFace(DrawViewPart* source, int iface );
+
+    static TopoDS_Shape hatchFace(TopoDS_Face face, std::string patternFile, std::string patternName);
+    static std::vector<TopoDS_Edge> getHatchEdgesForFace(TopoDS_Face face,
+                                                         std::string fileSpec,
+                                                         std::string myPattern,
+                                                         double scale);
+    static std::vector<LineSet> makeLineSets(std::string file, std::string patternName);
+
 
 protected:
     virtual void onDocumentRestored() override;

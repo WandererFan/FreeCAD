@@ -164,8 +164,18 @@ App::DocumentObjectExecReturn *DrawGeomHatch::execute(void)
     return App::DocumentObject::StdReturn;
 }
 
+//static
+//need to return something else.  TopoShape? [TopoShape]?
+TopoDS_Shape DrawGeomHatch::hatchFace(TopoDS_Face face, std::string patternFile, std::string patternName)
+{
+    (void) face;
+    (void) patternFile;
+    (void) patternName;
+    TopoDS_Shape result;
 
-//std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string file, std::string patternName)
+    return result;
+}
+
 void DrawGeomHatch::makeLineSets(void)
 {
 //    Base::Console().Message("DGH::makeLineSets()\n");
@@ -176,17 +186,32 @@ void DrawGeomHatch::makeLineSets(void)
             m_saveFile = PatIncluded.getValue();
             m_saveName = NamePattern.getValue();
             m_lineSets = makeLineSets(m_saveFile, m_saveName);
-//            std::vector<PATLineSpec> specs = getDecodedSpecsFromFile();
-//            m_lineSets.clear();
-//            for (auto& hl: specs) {
-//                //hl.dump("hl from file");
-//                LineSet ls;
-//                ls.setPATLineSpec(hl);
-//                m_lineSets.push_back(ls);
-//            }
         }
     }
 }
+
+//std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string file, std::string patternName)
+//void DrawGeomHatch::makeLineSets(void)
+//{
+////    Base::Console().Message("DGH::makeLineSets()\n");
+//    if ((!PatIncluded.isEmpty())  &&
+//        (!NamePattern.isEmpty())) {
+//        if ((m_saveFile != PatIncluded.getValue()) ||
+//            (m_saveName != NamePattern.getValue()))  {
+//            m_saveFile = PatIncluded.getValue();
+//            m_saveName = NamePattern.getValue();
+//            m_lineSets = makeLineSets(m_saveFile, m_saveName);
+////            std::vector<PATLineSpec> specs = getDecodedSpecsFromFile();
+////            m_lineSets.clear();
+////            for (auto& hl: specs) {
+////                //hl.dump("hl from file");
+////                LineSet ls;
+////                ls.setPATLineSpec(hl);
+////                m_lineSets.push_back(ls);
+////            }
+//        }
+//    }
+//}
 
 //static//
 std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string file, std::string patternName)
@@ -247,7 +272,7 @@ std::vector<LineSet>  DrawGeomHatch::getTrimmedLines(int i)   //get the trimmed 
 }
 
 /* static */
-//! get hatch lines trimmed to face outline
+//! get hatch lines (as TD geometry) trimmed to face outline
 std::vector<LineSet> DrawGeomHatch::getTrimmedLines(DrawViewPart* source, std::vector<LineSet> lineSets, int iface, double scale )
 {
     std::vector<LineSet> result;
@@ -321,19 +346,24 @@ std::vector<LineSet> DrawGeomHatch::getTrimmedLines(DrawViewPart* source, std::v
     return result;
 }
 
-TopoDS_Shape DrawGeomHatch::getTrimmedLines(TopoDS_Face* face,
-                                                     std::string fileSpec,
-                                                     std::string myPattern
-                                                     double scale)
-{                                                     
-    std::vector<LineSet> result;
-    std::vector<LineSet> lineSets = DrawGeomHatch::makeLineSets(std::string fileSpec, std::string myPattern)
+//static
+//get hatch lines (in OCC geometry) trimmed to face outline
+//this is like getTrimmedLines, but doesn't use TechDraw::Geometry
+std::vector<TopoDS_Edge> DrawGeomHatch::getHatchEdgesForFace(TopoDS_Face face,
+                                                      std::string fileSpec,
+                                                      std::string myPattern,
+                                                      double scale)
+{
+    Base::Console().Message("DGH::getHatchEdgesForFace()\n");
+    std::vector<TopoDS_Edge> resultEdges;
+    std::vector<LineSet> lineSets = DrawGeomHatch::makeLineSets(fileSpec, myPattern);
 
-    
+//version 1 assume face is planar
     Bnd_Box bBox;
     BRepBndLib::Add(face, bBox);
     bBox.SetGap(0.0);
 
+    std::vector<TopoDS_Shape> interim;
     for (auto& ls: lineSets) {
         PATLineSpec hl = ls.getPATLineSpec();
         std::vector<TopoDS_Edge> candidates = DrawGeomHatch::makeEdgeOverlay(hl, bBox, scale);
@@ -350,36 +380,23 @@ TopoDS_Shape DrawGeomHatch::getTrimmedLines(TopoDS_Face* face,
         BRepAlgoAPI_Common mkCommon(face, Comp);
         if ((!mkCommon.IsDone())  ||
             (mkCommon.Shape().IsNull()) ) {
-            Base::Console().Log("INFO - DGH::getTrimmedLines - Common creation failed\n");
-            return result;
+            Base::Console().Log("DGH::getTrimmedLines - Common creation failed\n");
+            continue;
         }
         TopoDS_Shape common = mkCommon.Shape();
+        interim.push_back(common);
+    }
 
-//<<<<<<<<HERE
+    for (auto& s: interim) {
+        TopExp_Explorer expl(s, TopAbs_EDGE);
+        for (; expl.More(); expl.Next()) {
+            const TopoDS_Edge& edge = TopoDS::Edge(expl.Current());
+            resultEdges.push_back(edge);
+        }
+    }
+
     return resultEdges;
 }
-
-
-
-//        //save the boundingBox of hatch pattern
-//        Bnd_Box overlayBox;
-//        overlayBox.SetGap(0.0);
-//        BRepBndLib::Add(common, overlayBox);
-//        ls.setBBox(overlayBox);
-
-//        //get resulting edges
-//        std::vector<TopoDS_Edge> resultEdges;
-//        TopTools_IndexedMapOfShape mapOfEdges;
-//        TopExp::MapShapes(common, TopAbs_EDGE, mapOfEdges);
-//        for ( int i = 1 ; i <= mapOfEdges.Extent() ; i++ ) {           //remember, TopExp makes no promises about the order it finds edges
-//            const TopoDS_Edge& edge = TopoDS::Edge(mapOfEdges(i));
-//            if (edge.IsNull()) {
-//                Base::Console().Log("INFO - DGH::getTrimmedLines - edge: %d is NULL\n",i);
-//                continue;
-//            }
-//            resultEdges.push_back(edge);
-//        }
-
 
 
 /* static */
