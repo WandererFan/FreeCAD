@@ -45,8 +45,12 @@
 #include <Gui/BitmapFactory.h>
 #include <Gui/Language/Translator.h>
 
+//******************************************************************************
+//NEW
+//includes added as required
 #include <Mod/Spreadsheet/App/Sheet.h>
 #include <Mod/Spreadsheet/App/SheetPy.h>
+//******************************************************************************
 
 #include "Workbench.h"
 #include "ViewProviderSpreadsheet.h"
@@ -71,9 +75,13 @@ public:
     {
         add_varargs_method("open",&Module::open
         );
+//******************************************************************************        
+        //NEW
+        //we are adding "getSheet" method to the SpreadsheetGui module
         add_varargs_method("getSheet",&Module::getSheet,
             "sheet = getSheet(view) - returns the spreadsheet that is the subject of a MDIView"
         );
+//******************************************************************************
         initialize("This module is the SpreadsheetGui module."); // register with Python
     }
 
@@ -104,27 +112,45 @@ private:
         return Py::None();
     }
 
+//******************************************************************************
+    //NEW
+    //begin getSheet implementation
     Py::Object getSheet(const Py::Tuple& args)
     {
+        //PyArg_ParseTuple is pretty much the first thing to do for any extension
+        //  it extracts the parameters from the input tuple and stuffs them into local variables. 
+        //  it also does some checking that of types
         PyObject* pyView;
-        Gui::MDIView* mdi;
         if (!PyArg_ParseTuple(args.ptr(), "O",&pyView))
             throw Py::Exception();
+ 
+        Gui::MDIView* mdi;
         Spreadsheet::Sheet* sheet;
+
+        //usually we check here if the Py objects we received are the right type
+        // don't know why MDIViewPy doesn't have a type. 
 //        if (PyObject_TypeCheck(pyView, &(Gui::MDIViewPy::Type))) {   //MDIViewPy has no Type?
                                                                        //how to check pyView?
 
+            //the py object has a pointer to the c++ object
             mdi = static_cast<Gui::MDIViewPy*>(pyView)->getMDIViewPtr();
+
+            //the next bit is standard c++ 
             SpreadsheetGui::SheetView * sheetView = 
                     Base::freecad_dynamic_cast<SpreadsheetGui::SheetView>(mdi);
             if (sheetView != nullptr) {
                 sheet = sheetView->getSheet();
+
+                //make a py object from the c++ object
                 return Py::asObject(new Spreadsheet::SheetPy(sheet));
             }
 
 //        }
+        //unsuccessful result
         return Py::None();
-}
+    }
+    //end of getSheet implementation
+//******************************************************************************
 
 };
 

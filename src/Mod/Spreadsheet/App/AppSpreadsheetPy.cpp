@@ -20,6 +20,14 @@
  *                                                                         *
  ***************************************************************************/
 
+//******************************************************************************
+//we split this code from AppSpreadsheet to match the usual approach to adding 
+//an extension (AppModule.cpp that starts up the module and AppModulePy.cpp that 
+//adds c++ extensions. We could have added the new bits to AppSpreadsheet.cpp.
+//The new bits are marked.
+//******************************************************************************
+
+
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <Python.h>
@@ -40,9 +48,17 @@ class Module : public Py::ExtensionModule<Module>
 public:
     Module() : Py::ExtensionModule<Module>("Spreadsheet")
     {
+
+//******************************************************************************
+//NEW
+//this tells Python that our extension includes a function called "sample"
+//sample doesn't do much other than illustrate the method of extending the Py
+//module with c++ functions.
         add_varargs_method("sample",&Module::sample,
             "sample(string) -- prints string to FC console."
         );
+//******************************************************************************
+
 
         initialize("This module is the Spreadsheet module."); // register with Python
     }
@@ -74,22 +90,28 @@ private:
         }
     }
 
+
+//******************************************************************************
+//NEW
+//this is the implementation of "sample"
     Py::Object sample(const Py::Tuple& args)
     {
+        //get the input parameters and stuff them into local variables
         PyObject *inString;
-        const char* printThis;
-
         if (!PyArg_ParseTuple(args.ptr(), "O", &inString)) {
             throw Py::TypeError("expected (string");
         }
-        if (PyUnicode_Check(inString)) {
-            printThis = PyUnicode_AsUTF8(inString);
+
+        const char* printThis;
+        if (PyUnicode_Check(inString)) {              //did we get the right kind of python object as input?
+            printThis = PyUnicode_AsUTF8(inString);   //convert Py internal unicode string to Utf8 c string
             Base::Console().Message("AppSpreadhsheetPy::sample - %s\n", printThis);
         } else {
             Base::Console().Message("AppSpreadhsheetPy::sample - invalid input\n");
         }
         return Py::None();
     }
+//******************************************************************************
 
 
 };
