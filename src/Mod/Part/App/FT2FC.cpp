@@ -107,6 +107,9 @@ PyObject* FT2FC(const Py_UNICODE *PyUString,
    FT_Vector   kern;
    FT_UInt     FTLoadFlags = FT_LOAD_DEFAULT | FT_LOAD_NO_BITMAP;
 
+    int specLen = strlen(FontSpec);
+    Base::Console().Message("FT2FC - fontSpec: %d / %s\n", specLen, FontSpec);
+
    std::stringstream ErrorMsg;
    double PenPos = 0, scalefactor;
    UNICHAR prevchar = 0, currchar = 0;

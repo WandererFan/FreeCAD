@@ -5751,9 +5751,13 @@ class _ShapeString(_DraftObject):
             ff8 = obj.FontFile.encode('utf8')                  # 1947 accents in filepath
                                                                # TODO: change for Py3?? bytes?
                                                                # Part.makeWireString uses FontFile as char* string
+            print("_SS::execute - ff8: {} FontFile: {}".format(ff8, obj.FontFile))
+            print("_SS::execute - len(ff8): {} len(FontFile): {}".format(str(len(ff8)), str(len(obj.FontFile))))
             if sys.version_info.major < 3:
+                print("calling makeWireString py2 protocol")
                 CharList = Part.makeWireString(obj.String,ff8,obj.Size,obj.Tracking)
             else:
+                print("calling makeWireString py3 protocol")
                 CharList = Part.makeWireString(obj.String,obj.FontFile,obj.Size,obj.Tracking)
             if len(CharList) == 0:
                 FreeCAD.Console.PrintWarning(translate("draft","ShapeString: string has no wires")+"\n")

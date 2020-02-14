@@ -2388,6 +2388,7 @@ class ShapeStringTaskPanel:
         try:
             qr,sup,points,fil = self.sourceCmd.getStrings()
             FreeCADGui.addModule("Draft")
+            print("DGui::SSTaskPanel - FFILE: {} len: {}".format(FFile, str(len(FFile))))
             self.sourceCmd.commit(translate("draft","Create ShapeString"),
     ['ss=Draft.makeShapeString(String='+String+',FontFile='+FFile+',Size='+Size+',Tracking='+Tracking+')',
                          'plm=FreeCAD.Placement()',
