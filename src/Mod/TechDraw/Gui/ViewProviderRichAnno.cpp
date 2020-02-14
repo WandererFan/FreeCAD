@@ -94,10 +94,13 @@ bool ViewProviderRichAnno::setEdit(int ModNum)
         if (Gui::Control().activeDialog())  {         //TaskPanel already open!
             return false;
         }
-        // clear the selection (convenience)
-        Gui::Selection().clearSelection();
-        Gui::Control().showDialog(new TaskDlgRichAnno(this));
-        return true;
+        MDIViewPage* mdi = getMDIViewPage();
+        if (mdi != nullptr) {
+            // clear the selection (convenience)
+            Gui::Selection().clearSelection();
+            Gui::Control().showDialog(new TaskDlgRichAnno(this));
+            return true;
+        }
     } else {
         return ViewProviderDrawingView::setEdit(ModNum);
     }

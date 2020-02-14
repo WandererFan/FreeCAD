@@ -86,15 +86,31 @@ TaskLeaderLine::TaskLeaderLine(TechDrawGui::ViewProviderLeader* leadVP) :
         Base::Console().Error("TaskLeaderLine - bad parameters.  Can not proceed.\n");
         return;
     }
-    ui->setupUi(this);
-    
+
     m_lineFeat = m_lineVP->getFeature();
+
+    m_basePage = m_lineFeat->findParentPage();
+    if ( m_basePage == nullptr ) {
+        Base::Console().Error("TaskRichAnno - bad parameters (2).  Can not proceed.\n");
+        return;
+    }
+
+    Gui::Document* activeGui = Gui::Application::Instance->getDocument(m_basePage->getDocument());
+    Gui::ViewProvider* vp = activeGui->getViewProvider(m_basePage);
+    ViewProviderPage* dvp = static_cast<ViewProviderPage*>(vp);
+    dvp->show();
+    m_mdi = dvp->getMDIViewPage();
+
+    m_scene = m_mdi->m_scene;
+    m_view = m_mdi->getQGVPage();
 
     App::DocumentObject* obj = m_lineFeat->LeaderParent.getValue();
     if ( obj->isDerivedFrom(TechDraw::DrawView::getClassTypeId()) )  {
         m_baseFeat = static_cast<TechDraw::DrawView*>(m_lineFeat->LeaderParent.getValue());
+        if (m_baseFeat != nullptr) {
+            m_qgParent = m_view->findQViewForDocObj(m_baseFeat);
+        }
     }
-    m_basePage = m_lineFeat->findParentPage();
 
     //TODO: when/if leaders are allowed to be parented to Page, check for m_baseFeat will be removed
     if ( (m_lineFeat == nullptr) ||
@@ -104,11 +120,9 @@ TaskLeaderLine::TaskLeaderLine(TechDrawGui::ViewProviderLeader* leadVP) :
         return;
     }
 
-    setUiEdit();
+    ui->setupUi(this);
 
-    m_mdi = m_lineVP->getMDIViewPage();
-    m_scene = m_mdi->m_scene;
-    m_view = m_mdi->getQGVPage();
+    setUiEdit();
 
     m_attachPoint = Rez::guiX(Base::Vector3d(m_lineFeat->X.getValue(),
                                             -m_lineFeat->Y.getValue(),
@@ -148,14 +162,20 @@ TaskLeaderLine::TaskLeaderLine(TechDraw::DrawView* baseFeat,
         return;
     }
 
-    ui->setupUi(this);
-
     Gui::Document* activeGui = Gui::Application::Instance->getDocument(m_basePage->getDocument());
     Gui::ViewProvider* vp = activeGui->getViewProvider(m_basePage);
     ViewProviderPage* vpp = static_cast<ViewProviderPage*>(vp);
+    vpp->show();
     m_mdi = vpp->getMDIViewPage();
+
     m_scene = m_mdi->m_scene;
     m_view = m_mdi->getQGVPage();
+
+    if (m_baseFeat != nullptr) {
+        m_qgParent = m_view->findQViewForDocObj(m_baseFeat);
+    }
+
+    ui->setupUi(this);
 
     setUiPrimary();
     

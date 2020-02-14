@@ -25,6 +25,8 @@
 #ifndef TECHDRAWGUI_VIEWPROVIDERRICHANNO_H
 #define TECHDRAWGUI_VIEWPROVIDERRICHANNO_H
 
+#include <QCoreApplication>       //for translations
+
 #include <App/PropertyUnits.h>
 
 #include <Mod/TechDraw/App/DrawRichAnno.h>
@@ -39,6 +41,7 @@ namespace TechDrawGui {
 
 class TechDrawGuiExport ViewProviderRichAnno : public ViewProviderDrawingView
 {
+    Q_DECLARE_TR_FUNCTIONS(TechDrawGui::ViewProviderRichAnno);
     PROPERTY_HEADER(TechDrawGui::ViewProviderRichAnno);
 
 public:

@@ -25,6 +25,8 @@
 #ifndef DRAWINGGUI_VIEWPROVIDERLEADER_H
 #define DRAWINGGUI_VIEWPROVIDERLEADER_H
 
+#include <QCoreApplication>       //for translations
+
 #include <App/PropertyUnits.h>
 
 #include <Mod/TechDraw/App/DrawLeaderLine.h>
@@ -40,6 +42,7 @@ namespace TechDrawGui {
 
 class TechDrawGuiExport ViewProviderLeader : public ViewProviderDrawingView
 {
+    Q_DECLARE_TR_FUNCTIONS(TechDrawGui::ViewProviderLeader);
     PROPERTY_HEADER(TechDrawGui::ViewProviderLeader);
 
 public:

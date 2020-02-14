@@ -252,6 +252,7 @@ MDIViewPage* ViewProviderDrawingView::getMDIViewPage() const
     Gui::ViewProvider* vp = guiDoc->getViewProvider(getViewObject()->findParentPage()); //if not in page.views, !@#$%
     ViewProviderPage* dvp = dynamic_cast<ViewProviderPage*>(vp);
     if (dvp) {
+        dvp->show();
         result = dvp->getMDIViewPage();
     }
     return result;

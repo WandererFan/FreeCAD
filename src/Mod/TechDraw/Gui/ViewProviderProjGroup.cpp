@@ -107,9 +107,6 @@ void ViewProviderProjGroup::setupContextMenu(QMenu* menu, QObject* receiver, con
 bool ViewProviderProjGroup::setEdit(int ModNum)
 {
     Q_UNUSED(ModNum);
-    // When double-clicking on the item for this sketch the
-    // object unsets and sets its edit mode without closing
-    // the task panel
     Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
     TaskDlgProjGroup *projDlg = qobject_cast<TaskDlgProjGroup *>(dlg);
     if (projDlg && projDlg->getViewProvider() != this)

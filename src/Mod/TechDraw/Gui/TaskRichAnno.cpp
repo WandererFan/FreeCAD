@@ -88,9 +88,27 @@ TaskRichAnno::TaskRichAnno(TechDrawGui::ViewProviderRichAnno* annoVP) :
         Base::Console().Error("TaskRichAnno - bad parameters.  Can not proceed.\n");
         return;
     }
-    ui->setupUi(this);
-    
+
     m_annoFeat = m_annoVP->getFeature();
+
+    m_basePage = m_annoFeat->findParentPage();
+    if ( m_basePage == nullptr ) {
+        Base::Console().Error("TaskRichAnno - bad parameters (2).  Can not proceed.\n");
+        return;
+    }
+
+    Gui::Document* activeGui = Gui::Application::Instance->getDocument(m_basePage->getDocument());
+    Gui::ViewProvider* vp = activeGui->getViewProvider(m_basePage);
+    ViewProviderPage* dvp = static_cast<ViewProviderPage*>(vp);
+    dvp->show();
+    m_mdi = dvp->getMDIViewPage();
+
+    m_view = m_mdi->getQGVPage();
+    m_scene = m_mdi->m_scene;
+
+    if (m_baseFeat != nullptr) {
+        m_qgParent = m_view->findQViewForDocObj(m_baseFeat);
+    }
 
     //m_baseFeat can be null 
     App::DocumentObject* obj = m_annoFeat->AnnoParent.getValue();
@@ -99,22 +117,12 @@ TaskRichAnno::TaskRichAnno(TechDrawGui::ViewProviderRichAnno* annoVP) :
             m_baseFeat = static_cast<TechDraw::DrawView*>(m_annoFeat->AnnoParent.getValue());
         }
     }
-    m_basePage = m_annoFeat->findParentPage();
-    if ( m_basePage == nullptr ) {
-        Base::Console().Error("TaskRichAnno - bad parameters (2).  Can not proceed.\n");
-        return;
-    }
 
+    ui->setupUi(this);
+
+    m_title = QObject::tr("Rich text editor");
     setUiEdit();
-//    m_title = QObject::tr("Rich text editor");
 
-    m_mdi = m_annoVP->getMDIViewPage();
-    m_scene = m_mdi->m_scene;
-    m_view = m_mdi->getQGVPage();
-    if (m_baseFeat != nullptr) {
-        m_qgParent = m_view->findQViewForDocObj(m_baseFeat);
-    }
-    
     m_saveContextPolicy = m_mdi->contextMenuPolicy();
 
     m_attachPoint = Rez::guiX(Base::Vector3d(m_annoFeat->X.getValue(),
@@ -145,20 +153,21 @@ TaskRichAnno::TaskRichAnno(TechDraw::DrawView* baseFeat,
         return;
     }
 
-    
-    ui->setupUi(this);
-    m_title = QObject::tr("Rich text creator");
-
     Gui::Document* activeGui = Gui::Application::Instance->getDocument(m_basePage->getDocument());
     Gui::ViewProvider* vp = activeGui->getViewProvider(m_basePage);
-    ViewProviderPage* vpp = static_cast<ViewProviderPage*>(vp);
-    m_mdi = vpp->getMDIViewPage();
+    ViewProviderPage* dvp = static_cast<ViewProviderPage*>(vp);
+    dvp->show();
+    m_mdi = dvp->getMDIViewPage();
+
     m_scene = m_mdi->m_scene;
     m_view = m_mdi->getQGVPage();
+
     if (baseFeat != nullptr) {
         m_qgParent = m_view->findQViewForDocObj(baseFeat);
     }
 
+    ui->setupUi(this);
+    m_title = QObject::tr("Rich text creator");
     m_saveContextPolicy = m_mdi->contextMenuPolicy();
 
     setUiPrimary();
