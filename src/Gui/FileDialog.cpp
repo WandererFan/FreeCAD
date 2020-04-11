@@ -699,12 +699,24 @@ void FileChooser::setFileName( const QString& s )
  * Opens a FileDialog to choose either a file or a directory in dependency of the
  * value of the Mode property.
  */
-void FileChooser::chooseFile()
+
+//windows file choser in system dir hack
+QString FileChooser::getDirectory() const
 {
     QString prechosenDirectory = lineEdit->text();
     if (prechosenDirectory.isEmpty()) {
         prechosenDirectory = FileDialog::getWorkingDirectory();
     }
+    return prechosenDirectory;
+}
+
+void FileChooser::chooseFile()
+{
+    QString prechosenDirectory = getDirectory();
+//    QString prechosenDirectory = lineEdit->text();
+//    if (prechosenDirectory.isEmpty()) {
+//        prechosenDirectory = FileDialog::getWorkingDirectory();
+//    }
 
     QFileDialog::Options dlgOpt;
     if (dontUseNativeDialog()) {
@@ -713,10 +725,13 @@ void FileChooser::chooseFile()
 
     QString fn;
     if ( mode() == File ) {
-        if (acceptMode() == AcceptOpen)
-            fn = QFileDialog::getOpenFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, dlgOpt);
-        else
+        if (acceptMode() == AcceptOpen) {
+            QFileDialog::Options option = QFileDialog::DontUseNativeDialog | dlgOpt;
+            fn = QFileDialog::getOpenFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, option);
+//            fn = QFileDialog::getOpenFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, dlgOpt);
+        } else {
             fn = QFileDialog::getSaveFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, dlgOpt);
+        }
     } else {
         QFileDialog::Options option = QFileDialog::ShowDirsOnly | dlgOpt;
         fn = QFileDialog::getExistingDirectory( this, tr( "Select a directory" ), prechosenDirectory,option );

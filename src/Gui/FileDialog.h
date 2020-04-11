@@ -201,7 +201,7 @@ private Q_SLOTS:
 
 protected:
     void resizeEvent(QResizeEvent*);
-
+    QString getDirectory() const;
 private:
     QLineEdit *lineEdit;
     QCompleter *completer;
