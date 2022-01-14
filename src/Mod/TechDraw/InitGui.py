@@ -41,7 +41,8 @@ class TechDrawWorkbench (Workbench):
         import TechDrawGui
 
         try:
-            import TechDrawTools._CommandMoveView
+            import TechDrawTools.CommandMoveView
+            import TechDrawTools.CommandCopyView
         except ImportError as err:
             FreeCAD.Console.PrintError("Features from TechDrawTools package cannot be loaded. {err}\n".format(err= str(err)))        
 

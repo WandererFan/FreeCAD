@@ -16,7 +16,9 @@ if(BUILD_GUI)
     set(TechDraw_ToolsScripts
         TechDrawTools/__init__.py
         TechDrawTools/CommandMoveView.py
+        TechDrawTools/CommandCopyView.py
         TechDrawTools/TaskMoveView.py
+        TechDrawTools/TaskCopyView.py
         TechDrawTools/TDToolsUtil.py
         TechDrawTools/TDToolsMovers.py
         Gui/TaskMoveView.ui
