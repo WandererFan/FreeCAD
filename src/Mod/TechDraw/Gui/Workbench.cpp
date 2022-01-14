@@ -184,6 +184,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *draw << "TechDraw_ClipGroupAdd";
     *draw << "TechDraw_ClipGroupRemove";
     *draw << "Separator";
+    *draw << "TechDraw_MoveView";
     *draw << dimensions;
     *draw << toolattrib;
     *draw << toolcenter;
@@ -227,6 +228,8 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     *views << "TechDraw_DraftView";
     *views << "TechDraw_ArchView";
     *views << "TechDraw_SpreadsheetView";
+    *views << "TechDraw_MoveView";
+
 
     Gui::ToolBarItem *clips = new Gui::ToolBarItem(root);
     clips->setCommand("TechDraw Clips");
@@ -358,6 +361,8 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     *views << "TechDraw_DetailView";
     *views << "TechDraw_DraftView";
     *views << "TechDraw_SpreadsheetView";
+    *views << "TechDraw_MoveView";
+
 
     Gui::ToolBarItem *clips = new Gui::ToolBarItem(root);
     clips->setCommand("TechDraw Clips");
