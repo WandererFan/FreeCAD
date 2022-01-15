@@ -1,6 +1,5 @@
 # ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022 - Wanderer Fan <wandererfan@gmail.com>             *
+# *   Copyright (c) 2022 Wanderer Fan <wandererfan@gmail.com>               *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -22,7 +21,7 @@
 """Provides the TechDraw CopyView GuiCommand."""
 
 __title__ = "TechDrawTools.CommandCopyView"
-__author__ = "WandeererFan"
+__author__ = "WandererFan"
 __url__ = "http://www.freecadweb.org/index.html"
 __version__ = "00.01"
 __date__ = "2022/01/11"
@@ -48,7 +47,7 @@ class CommandCopyView:
 
     def GetResources(self):
         """Return a dictionary with data that will be used by the button or menu item."""
-        return {'Pixmap': 'actions/techdraw-CopyView.svg',
+        return {'Pixmap': 'actions/TechDraw-CopyView.svg',
                 'Accel': "",
                 'MenuText': QT_TRANSLATE_NOOP("CopyView", "Copy View"),
                 'ToolTip': QT_TRANSLATE_NOOP("CopyView", "Copy a View to a second Page")}

@@ -1,6 +1,5 @@
 # ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022 - Wanderer Fan <wandererfan@gmail.com>             *
+# *   Copyright (c) 2022 Wanderer Fan <wandererfan@gmail.com>               *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -22,7 +21,7 @@
 """Provides the TechDraw MoveView GuiCommand."""
 
 __title__ = "TechDrawTools.CommandMoveView"
-__author__ = "WandeererFan"
+__author__ = "WandererFan"
 __url__ = "http://www.freecadweb.org/index.html"
 __version__ = "00.01"
 __date__ = "2022/01/11"
@@ -48,7 +47,7 @@ class CommandMoveView:
 
     def GetResources(self):
         """Return a dictionary with data that will be used by the button or menu item."""
-        return {'Pixmap': 'actions/techdraw-MoveView.svg',
+        return {'Pixmap': 'actions/TechDraw-MoveView.svg',
                 'Accel': "",
                 'MenuText': QT_TRANSLATE_NOOP("MoveView", "Move View"),
                 'ToolTip': QT_TRANSLATE_NOOP("MoveView", "Move a View to a new Page")}
