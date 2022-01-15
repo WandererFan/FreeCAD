@@ -47,7 +47,7 @@ class CommandCopyView:
 
     def GetResources(self):
         """Return a dictionary with data that will be used by the button or menu item."""
-        return {'Pixmap': 'actions/TechDraw-CopyView.svg',
+        return {'Pixmap': 'actions/TechDraw_CopyView.svg',
                 'Accel': "",
                 'MenuText': QT_TRANSLATE_NOOP("CopyView", "Copy View"),
                 'ToolTip': QT_TRANSLATE_NOOP("CopyView", "Copy a View to a second Page")}

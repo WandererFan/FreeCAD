@@ -47,7 +47,7 @@ class CommandMoveView:
 
     def GetResources(self):
         """Return a dictionary with data that will be used by the button or menu item."""
-        return {'Pixmap': 'actions/TechDraw-MoveView.svg',
+        return {'Pixmap': 'actions/TechDraw_MoveView.svg',
                 'Accel': "",
                 'MenuText': QT_TRANSLATE_NOOP("MoveView", "Move View"),
                 'ToolTip': QT_TRANSLATE_NOOP("MoveView", "Move a View to a new Page")}
