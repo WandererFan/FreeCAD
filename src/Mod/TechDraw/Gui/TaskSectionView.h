@@ -60,17 +60,19 @@ protected Q_SLOTS:
     void onXChanged();
     void onYChanged();
     void onZChanged();
+    void liveUpdateClicked();
+    void updateNowClicked();
 
 protected:
     void changeEvent(QEvent *e);
     void saveSectionState();
     void restoreSectionState();
 
-    bool apply(void);
+    bool apply(bool force = false);
     void applyQuick(std::string dir);
     void applyAligned(void);
 
-    void createSectionView(void);
+    TechDraw::DrawViewSection* createSectionView(void);
     void updateSectionView(void);
 
     void setUiPrimary();
@@ -79,7 +81,7 @@ protected:
     void checkAll(bool b);
     void enableAll(bool b);
 
-    void failNoObject(std::string objName);
+    void failNoObject(void);
     bool isBaseValid(void);
     bool isSectionValid(void);
 
@@ -109,8 +111,6 @@ private:
 
     std::string m_saveBaseName;
     std::string m_savePageName;
-
-    bool m_abort;
 
 };
 

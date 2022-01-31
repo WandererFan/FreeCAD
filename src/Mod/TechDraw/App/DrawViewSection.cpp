@@ -761,9 +761,13 @@ gp_Ax2 DrawViewSection::getSectionCS(void) const
                            gNormal,
                            gXDir);
     }
-    catch (...) {
-        Base::Console().Log("DVS::getSectionCS - %s - failed to create section CS\n", getNameInDocument());
+    catch (Standard_Failure& e1) {
+        //this can be triggered if gNormal and gXDir are parallel or anti-parallel
+        //in this case the warning is not significant as a default CS will be returned.
+        Base::Console().Log("DVS::getSectionCS - failed to create section CS: e %s - %s **\n",
+                                getNameInDocument(), e1.GetMessageString());
     }
+
     return sectionCS;
 }
 

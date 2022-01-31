@@ -908,8 +908,11 @@ gp_Ax2 DrawViewPart::getProjectionCS(const Base::Vector3d pt) const
                           gDir,
                           gXDir);
     }
-    catch (...) {
-        Base::Console().Warning("DVP - %s - failed to create projection CS\n", getNameInDocument());
+    catch (Standard_Failure& e1) {
+        //this can be triggered if gDir and gXDir are parallel or anti-parallel
+        //in this case the warning is not significant as a default CS will be returned.
+        Base::Console().Log("DVP::getProjectionCS - failed to create section CS: %s - %s **\n",
+                                getNameInDocument(), e1.GetMessageString());
     }
     return viewAxis;
 }
