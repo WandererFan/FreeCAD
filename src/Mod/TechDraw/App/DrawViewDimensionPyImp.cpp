@@ -55,14 +55,13 @@ PyObject* DrawViewDimensionPy::getRawValue(PyObject* args)
 PyObject* DrawViewDimensionPy::getText(PyObject* args)
 {
     (void) args;
-//    PyObject* asShape = Py_False;
-//    PyObject* pagePos = Py_False;
-//    if (!PyArg_ParseTuple(args, "|OO", &asShape, &pagePos)) {
-//        return 0;
-//    }
     DrawViewDimension* dvd = getDrawViewDimensionPtr();
-    std::string  textString = dvd->getFormattedDimensionValue();
-//TODO: check multiversion code!
+    std::string  textString;
+    if (dvd->isMultiValueSchema()) {
+        textString = dvd->getFormattedDimensionValue(0); //don't format multis
+     } else {
+        textString= dvd->getFormattedDimensionValue(1);
+     }
     PyObject* pyText = Base::PyAsUnicodeObject(textString);
     return pyText;
 }
