@@ -55,6 +55,7 @@
 #include <Mod/TechDraw/App/DrawUtil.h>
 #include <Mod/TechDraw/App/DrawViewPart.h>
 #include <Mod/TechDraw/App/DrawViewSection.h>
+#include <Mod/TechDraw/App/DrawBrokenView.h>
 #include <Mod/TechDraw/App/DrawHatch.h>
 #include <Mod/TechDraw/App/DrawGeomHatch.h>
 #include <Mod/TechDraw/App/DrawViewDetail.h>
@@ -67,6 +68,7 @@
 #include "Rez.h"
 #include "ZVALUE.h"
 #include "PreferencesGui.h"
+#include "DrawGuiUtil.h"
 #include "QGIFace.h"
 #include "QGIEdge.h"
 #include "QGIVertex.h"
@@ -678,7 +680,91 @@ void QGIViewPart::drawViewPart()
     for (auto& r:drefs) {
         drawHighlight(r, true);
     }
+
+    //draw broken view separator
+    if (viewPart->isDerivedFrom(TechDraw::DrawBrokenView::getClassTypeId())) {
+        drawBrokenSeparator();
+    }
 }
+
+void QGIViewPart::drawBrokenSeparator(void)
+{
+//    Base::Console().Message("QGIVP::drawBrokenSeparator()\n");
+    auto dbv( static_cast<TechDraw::DrawBrokenView*>(getViewObject()) );
+    auto vp = static_cast<ViewProviderViewPart*>(getViewProvider(getViewObject()));
+
+    std::vector<Base::Vector3d> cutPoints = dbv->CutPoints.getValues();
+    if (cutPoints.size() != 2) {
+        return;
+    }
+    Base::Vector3d cutPoint0 = Rez::guiX(dbv->projectPoint(cutPoints[0], true)) * dbv->getScale();  //scale??
+    Base::Vector3d cutPoint1 = Rez::guiX(dbv->projectPoint(cutPoints[1], true)) * dbv->getScale();  //scale??
+    Base::Vector3d midPoint = (cutPoint0 + cutPoint1) / 2.0;
+    double separation = Rez::guiX(dbv->Separation.getValue()) * dbv->getScale();
+    Base::Vector3d perpendicularDir = (cutPoint1 - cutPoint0).Normalize();   //perp to separator
+    Base::Vector3d parallelDir(perpendicularDir.y, -perpendicularDir.x, 0.0); //para to separator
+    Base::Vector3d stdX(1.0, 0.0, 0.0);
+    Base::Vector3d stdY(0.0, 1.0, 0.0);
+//    double angle = parallelDir.GetAngle(stdX) * 180.0 / M_PI;
+    double dotX = std::fabs(parallelDir.Dot(stdX));
+    double dotY = std::fabs(parallelDir.Dot(stdY));
+    bool isVertical = false;
+    if (dotY > dotX) {
+        //separator is more vertical than horizontal
+        isVertical = true;
+    }
+    QPointF qMidPoint(midPoint.x, midPoint.y);
+    QPainterPath path1, path2;
+    double separatorStretch = 1.5;
+    //TODO: these separator paths need to be adjusted for non-ortho directions
+    if (isVertical) {
+        double height = Rez::guiX(dbv->getBoxY()) * separatorStretch;         //already scaled
+        QPointF p0(qMidPoint.x() - (separation / 2.0), (qMidPoint.y() + height / 2.0));
+        QPointF p1(qMidPoint.x(),                      (qMidPoint.y() + height / 4.0));
+        QPointF p2(qMidPoint.x() - (separation / 2.0),  qMidPoint.y());
+        QPointF p3(qMidPoint.x(),                       qMidPoint.y() - height / 4.0);
+        QPointF p4(qMidPoint.x() - (separation / 2.0), (qMidPoint.y() - height / 2.0));
+        path1.moveTo(p0);
+        path1.lineTo(p1);
+        path1.lineTo(p2);
+        path1.lineTo(p3);
+        path1.lineTo(p4);
+        path2 = path1.translated(separation / 2.0, 0.0);
+    } else {
+        double width = Rez::guiX(dbv->getBoxX()) * separatorStretch;
+        QPointF p0(qMidPoint.x() - (width / 2.0), (qMidPoint.y() + separation / 2.0));
+        QPointF p1(qMidPoint.x() - (width / 4.0),  qMidPoint.y());
+        QPointF p2(qMidPoint.x(),                 (qMidPoint.y() + separation / 2.0));
+        QPointF p3(qMidPoint.x() + (width / 4.0),  qMidPoint.y());
+        QPointF p4(qMidPoint.x() + (width / 2.0), (qMidPoint.y() + separation / 2.0));
+        path1.moveTo(p0);
+        path1.lineTo(p1);
+        path1.lineTo(p2);
+        path1.lineTo(p3);
+        path1.lineTo(p4);
+        path2 = path1.translated(0.0, -separation / 2.0);
+    }
+    QGIPrimPath* breakLine1 = new QGIPrimPath();
+    addToGroup(breakLine1);
+    //set the general parameters
+    breakLine1->setPos(0.0, 0.0);
+    breakLine1->setWidth(Rez::guiX(vp->IsoWidth.getValue()));
+    breakLine1->setStyle(Qt::DashLine);
+    breakLine1->setZValue(ZVALUE::SECTIONLINE);
+    breakLine1->setPath(path1);
+//    breakLine1->setRotation(-angle);
+
+    QGIPrimPath* breakLine2 = new QGIPrimPath();
+    addToGroup(breakLine2);
+    //set the general parameters
+    breakLine2->setPos(0.0, 0.0);
+    breakLine2->setWidth(Rez::guiX(vp->IsoWidth.getValue()));
+    breakLine2->setStyle(Qt::DashLine);
+    breakLine2->setZValue(ZVALUE::SECTIONLINE);
+    breakLine2->setPath(path2);
+//    breakLine2->setRotation(-angle);
+}
+
 
 bool QGIViewPart::formatGeomFromCosmetic(std::string cTag, QGIEdge* item)
 {
@@ -843,7 +929,7 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
     }
 
     if (b) {
-        QGISectionLine* sectionLine = new QGISectionLine();
+        QGISectionLine* sectionLine= new QGISectionLine();
         addToGroup(sectionLine);
         sectionLine->setSymbol(const_cast<char*>(viewSection->SectionSymbol.getValue()));
         sectionLine->setSectionStyle(vp->SectionLineStyle.getValue());

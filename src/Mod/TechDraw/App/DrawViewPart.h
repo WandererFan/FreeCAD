@@ -25,6 +25,8 @@
 #ifndef _DrawViewPart_h_
 #define _DrawViewPart_h_
 
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Wire.hxx>
 

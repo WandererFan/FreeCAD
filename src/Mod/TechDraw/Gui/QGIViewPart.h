@@ -69,6 +69,7 @@ public:
     virtual void drawCenterLines(bool b);
     virtual void drawHighlight(TechDraw::DrawViewDetail* viewDetail, bool b);
     virtual void drawMatting(void);
+    virtual void drawBrokenSeparator(void);
     bool showSection;
 
     virtual void draw() override;

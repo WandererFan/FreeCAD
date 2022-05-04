@@ -85,6 +85,7 @@ set(TechDrawGui_UIC_SRCS
     SymbolChooser.ui
     TaskMoveView.ui
     TaskProjection.ui
+    TaskBrokenView.ui
 )
 
 if(BUILD_QT5)
@@ -216,6 +217,9 @@ SET(TechDrawGui_SRCS
     TaskProjection.cpp
     TaskProjection.h
     TaskProjection.ui
+    TaskBrokenView.cpp
+    TaskBrokenView.h
+    TaskBrokenView.ui
 )
 
 SET(TechDrawGuiView_SRCS
@@ -389,7 +393,7 @@ SET(TechDrawGuiTaskDlgs_SRCS
     TaskCustomizeFormat.ui
     TaskMoveView.ui
     TaskProjection.ui
-
+    TaskBrokenView.ui
 )
 SOURCE_GROUP("TaskDialogs" FILES ${TechDrawGuiTaskDlgs_SRCS})
 

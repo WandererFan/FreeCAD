@@ -58,7 +58,7 @@ class DashSet;
 
 class TechDrawExport DrawViewSection : public DrawViewPart
 {
-    PROPERTY_HEADER_WITH_OVERRIDE(Part::DrawViewSection);
+    PROPERTY_HEADER_WITH_OVERRIDE(TechDraw::DrawViewSection);
 
 public:
     DrawViewSection(void);

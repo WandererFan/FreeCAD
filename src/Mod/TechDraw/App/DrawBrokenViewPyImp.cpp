@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2020 WandererFan <wandererfan@gmail.com>                *
+ *   Copyright (c) 2022 WandererFan <wandererfan@gmail.com>                *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,60 +20,40 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _Preferences_h_
-#define _Preferences_h_
+#include "PreCompiled.h"
 
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#include <Base/Console.h>
+#include <Base/Exception.h>
+#include <Base/GeometryPyCXX.h>
+#include <Base/PyObjectBase.h>
+#include <Base/Vector3D.h>
+#include <Base/VectorPy.h>
 
-#include <string>
+#include <Mod/TechDraw/App/DrawBrokenViewPy.h>
+#include <Mod/TechDraw/App/DrawBrokenViewPy.cpp>
 
-class QString;
+#include "DrawUtil.h"
+#include "DrawBrokenView.h"
 
-namespace App
+using namespace TechDraw;
+
+//TODO: errors to PyErrors
+
+// returns a string which represents the object e.g. when printed in python
+std::string DrawBrokenViewPy::representation(void) const
 {
-class Color;
+    return std::string("<DrawBrokenView object>");
 }
 
-namespace TechDraw
+
+//==============================================================================
+PyObject *DrawBrokenViewPy::getCustomAttributes(const char* /*attr*/) const
 {
+    return nullptr;
+}
 
-//getters for parameters used in multiple places.
-class TechDrawExport Preferences {
+int DrawBrokenViewPy::setCustomAttributes(const char* /*attr*/, PyObject* /*obj*/)
+{
+    return 0;
+}
 
-public:
-static std::string labelFont();
-static QString     labelFontQString();
-static double      labelFontSizeMM();
-static double      dimFontSizeMM();
-
-static App::Color  normalColor();
-static App::Color  selectColor();
-static App::Color  preselectColor();
-static App::Color  vertexColor();
-static double      vertexScale();
-
-static bool        useGlobalDecimals();
-static bool        keepPagesUpToDate();
-
-static int         projectionAngle();
-static int         lineGroup();
-
-static int         balloonArrow();
-
-static QString     defaultTemplate();
-static QString     defaultTemplateDir();
-static std::string lineGroupFile();
-
-static const double DefaultFontSizeInMM;
-
-static std::string  formatSpec();
-static int          altDecimals();
-
-static int         mattingStyle();
-
-static double      brokenSeparation();
-
-};
-
-} //end namespace TechDraw
-#endif

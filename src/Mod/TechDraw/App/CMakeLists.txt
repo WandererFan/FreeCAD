@@ -43,6 +43,7 @@ set(TechDrawLIBS
 generate_from_xml(DrawPagePy)
 generate_from_xml(DrawViewPy)
 generate_from_xml(DrawViewPartPy)
+generate_from_xml(DrawBrokenViewPy)
 generate_from_xml(DrawViewSymbolPy)
 generate_from_xml(DrawTemplatePy)
 generate_from_xml(DrawParametricTemplatePy)
@@ -75,6 +76,8 @@ SET(Draw_SRCS
     DrawView.h
     DrawViewPart.cpp
     DrawViewPart.h
+    DrawBrokenView.cpp
+    DrawBrokenView.h
     DrawViewAnnotation.cpp
     DrawViewAnnotation.h
     DrawViewSymbol.cpp
@@ -190,6 +193,8 @@ SET(Python_SRCS
     DrawViewPyImp.cpp
     DrawViewPartPy.xml
     DrawViewPartPyImp.cpp
+    DrawBrokenViewPy.xml
+    DrawBrokenViewPyImp.cpp
     DrawViewSymbolPy.xml
     DrawViewSymbolPyImp.cpp
     DrawTemplatePy.xml

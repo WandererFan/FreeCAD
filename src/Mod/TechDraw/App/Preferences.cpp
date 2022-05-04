@@ -256,3 +256,12 @@ int Preferences::mattingStyle()
     int style = hGrp->GetInt("MattingStyle", 0);
     return style;
 }
+
+double Preferences::brokenSeparation()
+{
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().
+                                         GetGroup("BaseApp")->GetGroup("Preferences")->
+                                         GetGroup("Mod/TechDraw/General");
+    double separation = hGrp->GetFloat("BrokenSeparation", 10.0);
+    return separation;
+}

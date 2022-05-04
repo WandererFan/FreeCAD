@@ -30,6 +30,7 @@
 #include "DrawView.h"
 #include "DrawViewCollection.h"
 #include "DrawViewPart.h"
+#include "DrawBrokenView.h"
 #include "DrawViewSection.h"
 #include "DrawViewAnnotation.h"
 #include "DrawViewDimension.h"
@@ -86,6 +87,7 @@ PyMOD_INIT_FUNC(TechDraw)
     TechDraw::DrawView            ::init();
     TechDraw::DrawViewCollection  ::init();
     TechDraw::DrawViewPart        ::init();
+    TechDraw::DrawBrokenView      ::init();
     TechDraw::DrawViewAnnotation  ::init();
     TechDraw::DrawViewSymbol      ::init();
     TechDraw::DrawViewSpreadsheet ::init();
@@ -135,6 +137,7 @@ PyMOD_INIT_FUNC(TechDraw)
     TechDraw::DrawPagePython      ::init();
     TechDraw::DrawViewPython      ::init();
     TechDraw::DrawViewPartPython  ::init();
+    TechDraw::DrawBrokenViewPython  ::init();
     TechDraw::DrawViewMultiPython ::init();
     TechDraw::DrawTemplatePython  ::init();
     TechDraw::DrawViewSymbolPython::init();

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2020 WandererFan <wandererfan@gmail.com>                *
+ *   Copyright (c) 2022 WandererFan <wandererfan@gmail.com>                *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,60 +20,47 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _Preferences_h_
-#define _Preferences_h_
+#ifndef _DRAWBROKENVIEW_H_
+#define _DRAWBROKENVIEW_H_
 
-#include <Mod/TechDraw/TechDrawGlobal.h>
+#include <TopoDS_Shape.hxx>
 
-#include <string>
+#include "DrawViewPart.h"
 
-class QString;
-
-namespace App
-{
-class Color;
-}
 
 namespace TechDraw
 {
 
-//getters for parameters used in multiple places.
-class TechDrawExport Preferences {
+class TechDrawExport DrawBrokenView : public DrawViewPart
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(TechDraw::DrawBrokenView);
 
 public:
-static std::string labelFont();
-static QString     labelFontQString();
-static double      labelFontSizeMM();
-static double      dimFontSizeMM();
+    DrawBrokenView(void);
+    virtual ~DrawBrokenView();
 
-static App::Color  normalColor();
-static App::Color  selectColor();
-static App::Color  preselectColor();
-static App::Color  vertexColor();
-static double      vertexScale();
+    App::PropertyDistance     Separation;
+    App::PropertyVectorList   CutPoints;
 
-static bool        useGlobalDecimals();
-static bool        keepPagesUpToDate();
+    virtual short mustExecute() const override;
+    virtual App::DocumentObjectExecReturn *execute(void) override;
+    virtual PyObject *getPyObject(void) override;
 
-static int         projectionAngle();
-static int         lineGroup();
+    virtual TopoDS_Shape getSourceShape(void) const override; 
+    TopoDS_Shape breakShape(TopoDS_Shape inputShape,
+                            std::vector<Base::Vector3d> cutPoints,
+                            double desiredSeparation) const;
 
-static int         balloonArrow();
+protected:
+    virtual void onChanged(const App::Property* prop) override;
 
-static QString     defaultTemplate();
-static QString     defaultTemplateDir();
-static std::string lineGroupFile();
 
-static const double DefaultFontSizeInMM;
-
-static std::string  formatSpec();
-static int          altDecimals();
-
-static int         mattingStyle();
-
-static double      brokenSeparation();
+private:
 
 };
 
-} //end namespace TechDraw
-#endif
+typedef App::FeaturePythonT<DrawBrokenView> DrawBrokenViewPython;
+
+} //namespace TechDraw
+
+#endif  // #ifndef _DRAWBROKENVIEW_H_

@@ -74,6 +74,7 @@
 
 #include <Mod/TechDraw/App/DrawPage.h>
 #include <Mod/TechDraw/App/DrawViewPart.h>
+#include <Mod/TechDraw/App/DrawBrokenView.h>
 #include <Mod/TechDraw/App/DrawProjGroupItem.h>
 #include <Mod/TechDraw/App/DrawProjGroup.h>
 #include <Mod/TechDraw/App/DrawViewDimension.h>
@@ -97,6 +98,7 @@
 #include "TaskActiveView.h"
 #include "TaskDetail.h"
 #include "TaskProjection.h"
+#include "TaskBrokenView.h"
 #include "ViewProviderPage.h"
 #include "ViewProviderViewPart.h"
 
@@ -432,6 +434,165 @@ bool CmdTechDrawView::isActive(void)
 }
 
 //===========================================================================
+// TechDraw_BrokenView
+//===========================================================================
+
+DEF_STD_CMD_A(CmdTechDrawBrokenView)
+
+CmdTechDrawBrokenView::CmdTechDrawBrokenView()
+  : Command("TechDraw_BrokenView")
+{
+    sAppModule      = "TechDraw";
+    sGroup          = QT_TR_NOOP("TechDraw");
+    sMenuText       = QT_TR_NOOP("Insert Broken View");
+    sToolTipText    = QT_TR_NOOP("Insert Broken View");
+    sWhatsThis      = "TechDraw_BrokenView";
+    sStatusTip      = sToolTipText;
+    sPixmap         = "actions/TechDraw_BrokenView";
+}
+
+void CmdTechDrawBrokenView::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+//following duplicates the code in DrawViewPart
+    TechDraw::DrawPage* page = DrawGuiUtil::findPage(this);
+    if (!page) {
+        return;
+    }
+    std::string PageName = page->getNameInDocument();
+
+    //set projection direction from selected Face
+    //use first object with a face selected
+    std::vector<App::DocumentObject*> shapes;
+    std::vector<App::DocumentObject*> xShapes;
+    App::DocumentObject* partObj = nullptr;
+    std::string faceName;
+    Gui::ResolveMode resolve = Gui::ResolveMode::OldStyleElement;  //mystery
+    bool single = false;                                           //mystery
+    auto selection = getSelection().getSelectionEx(nullptr,
+                                                   App::DocumentObject::getClassTypeId(),
+                                                   resolve,
+                                                   single);
+    for (auto& sel: selection) {
+        bool is_linked = false;
+        auto obj = sel.getObject();
+        if (obj->isDerivedFrom(TechDraw::DrawPage::getClassTypeId())) {
+            continue;
+        }
+        if (obj->isDerivedFrom(App::LinkElement::getClassTypeId()) ||
+            obj->isDerivedFrom(App::LinkGroup::getClassTypeId())   ||
+            obj->isDerivedFrom(App::Link::getClassTypeId()) ) {
+            is_linked = true;
+        }
+        // If parent of the obj is a link to another document, we possibly need to treat non-link obj as linked, too
+        // 1st, is obj in another document?
+        if (obj->getDocument() != this->getDocument()) {
+            std::set<App::DocumentObject*> parents = obj->getInListEx(true);
+            for (auto& parent : parents) {
+                // Only consider parents in the current document, i.e. possible links in this View's document
+                if (parent->getDocument() != this->getDocument()) {
+                    continue;
+                }
+                // 2nd, do we really have a link to obj?
+                if (parent->isDerivedFrom(App::LinkElement::getClassTypeId()) ||
+                        parent->isDerivedFrom(App::LinkGroup::getClassTypeId()) ||
+                        parent->isDerivedFrom(App::Link::getClassTypeId())) {
+                    // We have a link chain from this document to obj, and obj is in another document -> it's an XLink target
+                    is_linked = true;
+                }
+            }
+        }
+        if (is_linked) {
+            xShapes.push_back(obj);
+            continue;
+        }
+        //not a Link and not null.  assume to be drawable.  Undrawables will be
+        // skipped later.
+        shapes.push_back(obj);
+        if (partObj != nullptr) {
+            continue;
+        }
+        //don't know if this works for an XLink
+        for (auto& sub : sel.getSubNames()) {
+            if (TechDraw::DrawUtil::getGeomTypeFromName(sub) == "Face") {
+                faceName = sub;
+                //
+                partObj = obj;
+                break;
+            }
+        }
+    }
+
+    if (shapes.empty() &&
+        xShapes.empty()) {
+        QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
+            QObject::tr("No Shapes, Groups or Links in this selection"));
+        return;
+    }
+
+    Base::Vector3d projDir;
+
+    Gui::WaitCursor wc;
+    openCommand(QT_TRANSLATE_NOOP("Command", "Create broken view"));
+    std::string FeatName = getUniqueObjectName("BrokenView");
+    doCommand(Doc, "App.activeDocument().addObject('TechDraw::DrawBrokenView','%s')", FeatName.c_str());
+    doCommand(Doc, "App.activeDocument().%s.addView(App.activeDocument().%s)", PageName.c_str(), FeatName.c_str());
+
+    App::DocumentObject* docObj = getDocument()->getObject(FeatName.c_str());
+    TechDraw::DrawBrokenView* dvp = dynamic_cast<TechDraw::DrawBrokenView*>(docObj);
+    if (!dvp) {
+        throw Base::TypeError("CmdTechDrawBrokenView DBV not found\n");
+    }
+    dvp->Source.setValues(shapes);
+    dvp->XSource.setValues(xShapes);
+    std::pair<Base::Vector3d, Base::Vector3d> dirs;
+    if (faceName.size()) {
+        dirs = DrawGuiUtil::getProjDirFromFace(partObj, faceName);
+    }
+    else {
+        dirs = DrawGuiUtil::get3DDirAndRot();
+    }
+
+    getDocument()->setStatus(App::Document::Status::SkipRecompute, true);
+    projDir = dirs.first;
+    doCommand(Doc, "App.activeDocument().%s.Direction = FreeCAD.Vector(%.3f,%.3f,%.3f)",
+              FeatName.c_str(), projDir.x, projDir.y, projDir.z);
+    doCommand(Doc, "App.activeDocument().%s.XDirection = FreeCAD.Vector(%.3f,%.3f,%.3f)",
+                  FeatName.c_str(), dirs.second.x, dirs.second.y, dirs.second.z);
+    getDocument()->setStatus(App::Document::Status::SkipRecompute, true);
+    doCommand(Doc, "App.activeDocument().%s.Direction = FreeCAD.Vector(%.3f,%.3f,%.3f)",
+              FeatName.c_str(), projDir.x, projDir.y, projDir.z);
+    doCommand(Doc, "App.activeDocument().%s.XDirection = FreeCAD.Vector(%.3f,%.3f,%.3f)",
+                  FeatName.c_str(), dirs.second.x, dirs.second.y, dirs.second.z);
+    getDocument()->setStatus(App::Document::Status::SkipRecompute, false);
+//end of duplicated code
+
+    std::vector<Base::Vector3d> cutPoints;
+    //horizontal test
+//    cutPoints.push_back(Base::Vector3d(-100.0, 0.0, 0.0));
+//    cutPoints.push_back(Base::Vector3d(200.0, 0.0, 0.0));
+    //vertical test
+//    cutPoints.push_back(Base::Vector3d(0.0, 0.0, -100.0));
+//    cutPoints.push_back(Base::Vector3d(0.0, 0.0, 200.0));
+    //diagonal test
+//    cutPoints.push_back(Base::Vector3d(-66.0, 0.0, 70.0));
+//    cutPoints.push_back(Base::Vector3d(53.0, 0.0, -57.0));
+    double separation = 100.0;
+//    dvp->CutPoints.setValues(cutPoints);
+    dvp->Separation.setValue(separation);
+    commitCommand();
+
+    Gui::Control().showDialog(new TaskDlgBrokenView(dvp));
+
+    doCommand(Doc, "App.activeDocument().%s.recompute()", FeatName.c_str());
+}
+
+bool CmdTechDrawBrokenView::isActive(void)
+{
+    return DrawGuiUtil::needPage(this);
+}
+
+//===========================================================================
 // TechDraw_ActiveView
 //===========================================================================
 
@@ -501,7 +662,6 @@ void CmdTechDrawSectionView::activated(int iMsg)
     Gui::Control().showDialog(new TaskDlgSectionView(dvp));
 
     updateActive();             //ok here since dialog doesn't call doc.recompute()
-    commitCommand();
 }
 
 bool CmdTechDrawSectionView::isActive(void)
@@ -1504,6 +1664,7 @@ void CreateTechDrawCommands(void)
     rcCmdMgr.addCommand(new CmdTechDrawPageTemplate());
     rcCmdMgr.addCommand(new CmdTechDrawRedrawPage());
     rcCmdMgr.addCommand(new CmdTechDrawView());
+    rcCmdMgr.addCommand(new CmdTechDrawBrokenView());
     rcCmdMgr.addCommand(new CmdTechDrawActiveView());
     rcCmdMgr.addCommand(new CmdTechDrawSectionView());
     rcCmdMgr.addCommand(new CmdTechDrawDetailView());
