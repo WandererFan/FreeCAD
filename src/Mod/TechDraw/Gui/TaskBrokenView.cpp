@@ -210,27 +210,29 @@ void TaskBrokenView::useCurrentClicked()
 void TaskBrokenView::from3dClicked()
 {
     m_pickedPoints.clear();
-    //try to use the ActiveWindow
-    MDIView* active = Gui::getMainWindow()->activeWindow();
-    if (active && active->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
-        m_view = qobject_cast<Gui::View3DInventor*>(active);
-    } else {
-        //use the first MDIView that is a View3DInventor
-        QList<QWidget*> windows = Gui::getMainWindow()->windows();
-        for (auto it : windows) {
-            MDIView* view = qobject_cast<MDIView*>(it);
-            if (view && view->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
-                m_view = qobject_cast<Gui::View3DInventor*>(view);
-                Gui::getMainWindow()->setActiveWindow(m_view);
-            }
+//    //try to use the ActiveWindow
+//    MDIView* active = Gui::getMainWindow()->activeWindow();
+//    if (active && active->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
+//        m_view = qobject_cast<Gui::View3DInventor*>(active);
+//    } else {
+//        //use the first MDIView that is a View3DInventor
+//        QList<QWidget*> windows = Gui::getMainWindow()->windows();
+//        for (auto it : windows) {
+//            MDIView* view = qobject_cast<MDIView*>(it);
+//            if (view && view->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
+//                m_view = qobject_cast<Gui::View3DInventor*>(view);
+//                Gui::getMainWindow()->setActiveWindow(m_view);
+//            }
+//        }
+//    }
+///    m_view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
+//    if (m_view) {
+        Gui::View3DInventorViewer* viewer = getViewer();
+        if (viewer) {
+            viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
+            Base::Console().Message("TBV::from3dClicked - pick 2 points\n");
         }
-    }
-//    m_view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
-    if (m_view) {
-        Gui::View3DInventorViewer* viewer = m_view->getViewer();
-        viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
-        Base::Console().Message("TBV::from3dClicked - pick 2 points\n");
-    }
+//    }
 }
 
 void TaskBrokenView::addPickedPoint(Base::Vector3d p)
@@ -246,9 +248,9 @@ void TaskBrokenView::addPickedPoint(Base::Vector3d p)
         ui->sbPoint2Y->setValue(m_pickedPoints[1].y);
         ui->sbPoint2Z->setValue(m_pickedPoints[1].z);
         //finished, time to clean up
-        Gui::View3DInventorViewer* viewer = m_view->getViewer();
+        Gui::View3DInventorViewer* viewer = getViewer();
         viewer->removeEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
-        m_view = nullptr;
+//        m_view = nullptr;
         apply();
     }
 }
@@ -274,6 +276,30 @@ void TaskBrokenView::pickCallback(void* userData, SoEventCallback* cbNode)
     }
 }
 
+Gui::View3DInventorViewer* TaskBrokenView::getViewer()
+{
+    Gui::View3DInventor* view = nullptr;
+    Gui::View3DInventorViewer* viewer = nullptr;
+    //try to use the ActiveWindow
+    MDIView* active = Gui::getMainWindow()->activeWindow();
+    if (active && active->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
+        view = qobject_cast<Gui::View3DInventor*>(active);
+    } else {
+        //use the first MDIView that is a View3DInventor
+        QList<QWidget*> windows = Gui::getMainWindow()->windows();
+        for (auto it : windows) {
+            MDIView* mdiView = qobject_cast<MDIView*>(it);
+            if (mdiView && mdiView->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
+                view = qobject_cast<Gui::View3DInventor*>(mdiView);
+            }
+        }
+    }
+    if (view) {
+        viewer = view->getViewer();
+        Gui::getMainWindow()->setActiveWindow(view);
+    }
+    return viewer;
+}
 
 //******************************************************************************
 bool TaskBrokenView::apply(bool forceUpdate)

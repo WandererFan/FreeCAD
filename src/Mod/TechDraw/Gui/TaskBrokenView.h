@@ -23,6 +23,8 @@
 #ifndef _TASKBROKENVIEW_H
 #define _TASKBROKENVIEW_H
 
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
 #include <Gui/TaskView/TaskDialog.h>
 #include <Gui/TaskView/TaskView.h>
 //#include <Inventor/nodes/SoEventCallback.h>
@@ -34,6 +36,7 @@ class SoEventCallback;
 
 namespace Gui {
     class View3DInventor;
+    class View3DInventorViewer;
 }
 
 namespace App {
@@ -48,7 +51,7 @@ namespace TechDraw {
 namespace TechDrawGui
 {
 
-class TaskBrokenView : public QWidget
+class TechDrawGuiExport TaskBrokenView : public QWidget
 {
     Q_OBJECT
 
@@ -64,6 +67,7 @@ public:
     virtual void addPickedPoint(Base::Vector3d p);
     static void pickCallback(void * ud, SoEventCallback * n);
 
+    Gui::View3DInventorViewer* getViewer();
 
 protected Q_SLOTS:
     void onPoint1Changed();
@@ -95,7 +99,7 @@ private:
 
     int m_applyDeferred;
     std::vector<Base::Vector3d> m_pickedPoints;
-    Gui::View3DInventor* m_view;
+//    Gui::View3DInventor* m_view;
 };
 
 class TaskDlgBrokenView : public Gui::TaskView::TaskDialog
