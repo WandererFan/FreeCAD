@@ -33,6 +33,7 @@
 class Ui_TaskBrokenView;
 class SoPickedPoint;
 class SoEventCallback;
+class SoCoordinate3;
 
 namespace Gui {
     class View3DInventor;
@@ -68,6 +69,7 @@ public:
     static void pickCallback(void * ud, SoEventCallback * n);
 
     Gui::View3DInventorViewer* getViewer();
+    void setupDragger(void);
 
 protected Q_SLOTS:
     void onPoint1Changed();
@@ -100,6 +102,7 @@ private:
     int m_applyDeferred;
     std::vector<Base::Vector3d> m_pickedPoints;
 //    Gui::View3DInventor* m_view;
+    SoCoordinate3* m_linePoints;
 };
 
 class TaskDlgBrokenView : public Gui::TaskView::TaskDialog

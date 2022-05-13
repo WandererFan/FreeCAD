@@ -32,6 +32,12 @@
 
 # include <Inventor/SoPickedPoint.h>
 # include <Inventor/events/SoMouseButtonEvent.h>
+#include <Inventor/nodes/SoNode.h>
+#include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/nodes/SoBaseColor.h>
+#include <Inventor/nodes/SoDrawStyle.h>
+#include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoLineSet.h>
 
 #include <Base/Console.h>
 #include <Base/Tools.h>
@@ -233,6 +239,7 @@ void TaskBrokenView::from3dClicked()
             Base::Console().Message("TBV::from3dClicked - pick 2 points\n");
         }
 //    }
+    setupDragger();
 }
 
 void TaskBrokenView::addPickedPoint(Base::Vector3d p)
@@ -243,10 +250,18 @@ void TaskBrokenView::addPickedPoint(Base::Vector3d p)
         ui->sbPoint1X->setValue(m_pickedPoints[0].x);
         ui->sbPoint1Y->setValue(m_pickedPoints[0].y);
         ui->sbPoint1Z->setValue(m_pickedPoints[0].z);
+        SbVec3f start(m_pickedPoints[0].x,
+                      m_pickedPoints[0].y,
+                      m_pickedPoints[0].z);
+        m_linePoints->point.set1Value(0, start);
     } else if (m_pickedPoints.size() > 1) {
         ui->sbPoint2X->setValue(m_pickedPoints[1].x);
         ui->sbPoint2Y->setValue(m_pickedPoints[1].y);
         ui->sbPoint2Z->setValue(m_pickedPoints[1].z);
+        SbVec3f end(m_pickedPoints[1].x,
+                      m_pickedPoints[1].y,
+                      m_pickedPoints[1].z);
+        m_linePoints->point.set1Value(1, end);
         //finished, time to clean up
         Gui::View3DInventorViewer* viewer = getViewer();
         viewer->removeEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
@@ -258,20 +273,20 @@ void TaskBrokenView::addPickedPoint(Base::Vector3d p)
 void TaskBrokenView::pickCallback(void* userData, SoEventCallback* cbNode)
 {
     const SoMouseButtonEvent * mbe = static_cast<const SoMouseButtonEvent*>(cbNode->getEvent());
-//    Gui::View3DInventorViewer* view  = reinterpret_cast<Gui::View3DInventorViewer*>(cbNode->getUserData());
-
+    TaskBrokenView* dlg = reinterpret_cast<TaskBrokenView*>(userData);
     // Mark all incoming mouse button events as handled, especially, to deactivate the selection node
     cbNode->getAction()->setHandled();
     if (mbe->getButton() == SoMouseButtonEvent::BUTTON1) {
         if (mbe->getState() == SoButtonEvent::DOWN) {
-            const SoPickedPoint * point = cbNode->getPickedPoint();
-            if (point) {
-                SbVec3f pnt = point->getPoint();
-                TaskBrokenView* dlg = reinterpret_cast<TaskBrokenView*>(userData);
-                Base::Vector3d pointToAdd(pnt[0], pnt[1], pnt[2]);
+//            const SoPickedPoint * point = cbNode->getPickedPoint();
+            SbVec2s screenPos = mbe->getPosition();
+            SbVec3f point = dlg->getViewer()->getPointOnFocalPlane(screenPos);
+//            if (point) {
+//                SbVec3f pnt = point->getPoint();
+                Base::Vector3d pointToAdd(point[0], point[1], point[2]);
                 dlg->addPickedPoint(pointToAdd);
                 cbNode->setHandled();
-            }
+//            }
         }
     }
 }
@@ -299,6 +314,30 @@ Gui::View3DInventorViewer* TaskBrokenView::getViewer()
         Gui::getMainWindow()->setActiveWindow(view);
     }
     return viewer;
+}
+
+void TaskBrokenView::setupDragger(void)
+{
+    SoNode* scene = getViewer()->getSceneGraph();
+    SoSeparator* sepScene = static_cast<SoSeparator*>(scene);
+
+    SoSeparator* dragger = new SoSeparator();
+    SoBaseColor* color = new SoBaseColor();
+    SoDrawStyle* style = new SoDrawStyle();
+    style->lineWidth = 2.0f;
+//    SoCoordinate3* linePoints = new SoCoordinate3();
+    m_linePoints = new SoCoordinate3();
+//    SbVec3f start(0.0, 0.0, 0.0);
+//    SbVec3f end(100.0, 100.0, 100.0);
+//    m_linePoints->point.set1Value(0, start);
+//    m_linePoints->point.set1Value(1, end);
+    SoLineSet* line = new SoLineSet();
+    line->numVertices.setValue(2);
+    dragger->addChild(color);
+    dragger->addChild(style);
+    dragger->addChild(m_linePoints);
+    dragger->addChild(line);
+    sepScene->addChild(dragger);
 }
 
 //******************************************************************************
