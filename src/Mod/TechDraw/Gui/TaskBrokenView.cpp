@@ -30,8 +30,11 @@
 #include <QStatusBar>
 #include <QMessageBox>
 
-# include <Inventor/SoPickedPoint.h>
-# include <Inventor/events/SoMouseButtonEvent.h>
+#include <Inventor/SoPickedPoint.h>
+#include <Inventor/events/SoEvent.h>
+#include <Inventor/events/SoLocation2Event.h>
+#include <Inventor/events/SoMouseButtonEvent.h>
+#include <Inventor/events/SoMotion3Event.h>
 #include <Inventor/nodes/SoNode.h>
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoBaseColor.h>
@@ -74,12 +77,17 @@ using namespace Gui;
 using namespace TechDraw;
 using namespace TechDrawGui;
 
+#define IDLE 0
+#define DRAGGING 1
+#define FINISHED 2
+
 //ctor for create 
 TaskBrokenView::TaskBrokenView(TechDraw::DrawBrokenView* brokenView) :
     ui(new Ui_TaskBrokenView),
     m_brokenFeat(brokenView),
     m_editFlag(false),
-    m_applyDeferred(0)
+    m_applyDeferred(0),
+    m_draggerStatus(IDLE)
 {
     m_pickedPoints.clear();
     ui->setupUi(this);
@@ -103,7 +111,8 @@ TaskBrokenView::TaskBrokenView(TechDraw::DrawBrokenView* brokenView, bool editFl
     ui(new Ui_TaskBrokenView),
     m_brokenFeat(brokenView),
     m_editFlag(true),
-    m_applyDeferred(0)
+    m_applyDeferred(0),
+    m_draggerStatus(IDLE)
 {
     m_pickedPoints.clear();
     ui->setupUi(this);
@@ -216,79 +225,83 @@ void TaskBrokenView::useCurrentClicked()
 void TaskBrokenView::from3dClicked()
 {
     m_pickedPoints.clear();
-//    //try to use the ActiveWindow
-//    MDIView* active = Gui::getMainWindow()->activeWindow();
-//    if (active && active->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
-//        m_view = qobject_cast<Gui::View3DInventor*>(active);
-//    } else {
-//        //use the first MDIView that is a View3DInventor
-//        QList<QWidget*> windows = Gui::getMainWindow()->windows();
-//        for (auto it : windows) {
-//            MDIView* view = qobject_cast<MDIView*>(it);
-//            if (view && view->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
-//                m_view = qobject_cast<Gui::View3DInventor*>(view);
-//                Gui::getMainWindow()->setActiveWindow(m_view);
-//            }
-//        }
-//    }
-///    m_view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
-//    if (m_view) {
-        Gui::View3DInventorViewer* viewer = getViewer();
-        if (viewer) {
-            viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
-            Base::Console().Message("TBV::from3dClicked - pick 2 points\n");
-        }
-//    }
-    setupDragger();
+    Gui::View3DInventorViewer* viewer = getViewer();
+    if (viewer) {
+        Base::Console().Message("TBV::from3dClicked - pick 2 points\n");
+        viewer->addEventCallback(SoEvent::getClassTypeId(), pickCallback, this);
+        setupDragger();
+    }
 }
 
-void TaskBrokenView::addPickedPoint(Base::Vector3d p)
+void TaskBrokenView::addPickedPoint(Base::Vector3d p, bool isButton)
 {
     Base::Console().Message("TBV::addPickedPoint(%s)\n", DrawUtil::formatVector(p).c_str());
-    m_pickedPoints.push_back(p);
-    if (m_pickedPoints.size() == 1) {
-        ui->sbPoint1X->setValue(m_pickedPoints[0].x);
-        ui->sbPoint1Y->setValue(m_pickedPoints[0].y);
-        ui->sbPoint1Z->setValue(m_pickedPoints[0].z);
-        SbVec3f start(m_pickedPoints[0].x,
-                      m_pickedPoints[0].y,
-                      m_pickedPoints[0].z);
+    if ((m_draggerStatus == IDLE) && isButton) {
+        Base::Console().Message("TBV::addPickedPoint - first point\n");
+        m_draggerStatus = DRAGGING;
+        ui->sbPoint1X->setValue(p.x);
+        ui->sbPoint1Y->setValue(p.y);
+        ui->sbPoint1Z->setValue(p.z);
+        SbVec3f start(p.x, p.y, p.z);
         m_linePoints->point.set1Value(0, start);
-    } else if (m_pickedPoints.size() > 1) {
-        ui->sbPoint2X->setValue(m_pickedPoints[1].x);
-        ui->sbPoint2Y->setValue(m_pickedPoints[1].y);
-        ui->sbPoint2Z->setValue(m_pickedPoints[1].z);
-        SbVec3f end(m_pickedPoints[1].x,
-                      m_pickedPoints[1].y,
-                      m_pickedPoints[1].z);
+        m_point1 = p;
+    } else if ((m_draggerStatus == DRAGGING) && isButton) {
+        m_draggerStatus = FINISHED;
+        Base::Console().Message("TBV::addPickedPoint - second point\n");
+        ui->sbPoint2X->setValue(p.x);
+        ui->sbPoint2Y->setValue(p.y);
+        ui->sbPoint2Z->setValue(p.z);
+        SbVec3f end(p.x, p.y, p.z);
         m_linePoints->point.set1Value(1, end);
+        m_point2 = p;
+    } else if (m_draggerStatus == DRAGGING) {           // not a button, must be DRAGGING
+        Base::Console().Message("TBV::addPickedPoint - dragging\n");
+        m_draggerStatus = DRAGGING;
+        m_line->numVertices.setValue(2);
+        SbVec3f end(p.x, p.y, p.z);
+        m_linePoints->point.set1Value(1, end);
+    } else {
+        Base::Console().Message("TBV::addPickedPoint - unexpected\n");
+    }
+
+    if (m_draggerStatus == FINISHED) {
         //finished, time to clean up
+        Base::Console().Message("TBV::addPickedPoint - finished\n");
+        m_draggerStatus = IDLE;
+        m_line->numVertices.setValue(0);
         Gui::View3DInventorViewer* viewer = getViewer();
-        viewer->removeEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback, this);
-//        m_view = nullptr;
+        viewer->removeEventCallback(SoEvent::getClassTypeId(), pickCallback, this);
+//        m_sepScene->removeChild(m_dragger);
         apply();
     }
 }
 
-void TaskBrokenView::pickCallback(void* userData, SoEventCallback* cbNode)
+void TaskBrokenView::pickCallback(void* userData, SoEventCallback* cbEvent)
 {
-    const SoMouseButtonEvent * mbe = static_cast<const SoMouseButtonEvent*>(cbNode->getEvent());
     TaskBrokenView* dlg = reinterpret_cast<TaskBrokenView*>(userData);
-    // Mark all incoming mouse button events as handled, especially, to deactivate the selection node
-    cbNode->getAction()->setHandled();
-    if (mbe->getButton() == SoMouseButtonEvent::BUTTON1) {
-        if (mbe->getState() == SoButtonEvent::DOWN) {
-//            const SoPickedPoint * point = cbNode->getPickedPoint();
-            SbVec2s screenPos = mbe->getPosition();
-            SbVec3f point = dlg->getViewer()->getPointOnFocalPlane(screenPos);
-//            if (point) {
-//                SbVec3f pnt = point->getPoint();
+    const SoEvent* event = cbEvent->getEvent();
+    if (event->isOfType(SoLocation2Event::getClassTypeId())) {
+        Base::Console().Message("TBV::pickCallBack - motion event\n");
+        const SoLocation2Event* eMotion = static_cast<const SoLocation2Event*>(event);
+        SbVec2s screenPos = eMotion->getPosition();
+        SbVec3f point = dlg->getViewer()->getPointOnFocalPlane(screenPos);
+        Base::Vector3d pointToAdd(point[0], point[1], point[2]);
+        dlg->addPickedPoint(pointToAdd, false);
+    } else if (event->isOfType(SoMouseButtonEvent::getClassTypeId())) {
+        Base::Console().Message("TBV::pickCallBack - mouseButton event\n");
+        const SoMouseButtonEvent * eMouse = static_cast<const SoMouseButtonEvent*>(event);
+        // Mark all incoming mouse button events as handled, especially, to deactivate the selection node
+        cbEvent->getAction()->setHandled();
+        if (eMouse->getButton() == SoMouseButtonEvent::BUTTON1) {
+            if (eMouse->getState() == SoButtonEvent::DOWN) {
+                SbVec2s screenPos = eMouse->getPosition();
+                SbVec3f point = dlg->getViewer()->getPointOnFocalPlane(screenPos);
                 Base::Vector3d pointToAdd(point[0], point[1], point[2]);
-                dlg->addPickedPoint(pointToAdd);
-                cbNode->setHandled();
-//            }
+                dlg->addPickedPoint(pointToAdd, true);
+            }
         }
     }
+    cbEvent->setHandled();
 }
 
 Gui::View3DInventorViewer* TaskBrokenView::getViewer()
@@ -319,25 +332,22 @@ Gui::View3DInventorViewer* TaskBrokenView::getViewer()
 void TaskBrokenView::setupDragger(void)
 {
     SoNode* scene = getViewer()->getSceneGraph();
-    SoSeparator* sepScene = static_cast<SoSeparator*>(scene);
+    m_sepScene = static_cast<SoSeparator*>(scene);
 
-    SoSeparator* dragger = new SoSeparator();
+    m_dragger = new SoSeparator();
     SoBaseColor* color = new SoBaseColor();
     SoDrawStyle* style = new SoDrawStyle();
     style->lineWidth = 2.0f;
-//    SoCoordinate3* linePoints = new SoCoordinate3();
     m_linePoints = new SoCoordinate3();
-//    SbVec3f start(0.0, 0.0, 0.0);
-//    SbVec3f end(100.0, 100.0, 100.0);
-//    m_linePoints->point.set1Value(0, start);
-//    m_linePoints->point.set1Value(1, end);
-    SoLineSet* line = new SoLineSet();
-    line->numVertices.setValue(2);
-    dragger->addChild(color);
-    dragger->addChild(style);
-    dragger->addChild(m_linePoints);
-    dragger->addChild(line);
-    sepScene->addChild(dragger);
+    m_line = new SoLineSet();
+    m_line->numVertices.setValue(0);
+    m_dragger->addChild(color);
+    m_dragger->addChild(style);
+    m_dragger->addChild(m_linePoints);
+    m_dragger->addChild(m_line);
+    m_sepScene->addChild(m_dragger);
+
+    m_draggerStatus = IDLE;
 }
 
 //******************************************************************************
@@ -348,8 +358,8 @@ bool TaskBrokenView::apply(bool forceUpdate)
 //        //nothing to do
 //        m_applyDeferred++;
 //        QString msgLiteral = QString::fromUtf8(QT_TRANSLATE_NOOP("TaskPojGroup", " updates pending"));
-//        QString msgNumber = QString::number(m_applyDeferred);
-//        ui->lPendingUpdates->setText(msgNumber + msgLiteral);
+//        QString msgNueMouser = QString::nueMouser(m_applyDeferred);
+//        ui->lPendingUpdates->setText(msgNueMouser + msgLiteral);
 //        return false;
 //    }
 

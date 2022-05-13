@@ -27,13 +27,14 @@
 
 #include <Gui/TaskView/TaskDialog.h>
 #include <Gui/TaskView/TaskView.h>
-//#include <Inventor/nodes/SoEventCallback.h>
 
 
 class Ui_TaskBrokenView;
 class SoPickedPoint;
 class SoEventCallback;
 class SoCoordinate3;
+class SoSeparator;
+class SoLineSet;
 
 namespace Gui {
     class View3DInventor;
@@ -65,11 +66,13 @@ public:
     virtual bool accept();
     virtual bool reject();
 
-    virtual void addPickedPoint(Base::Vector3d p);
+    virtual void addPickedPoint(Base::Vector3d p, bool isButton = true);
     static void pickCallback(void * ud, SoEventCallback * n);
 
     Gui::View3DInventorViewer* getViewer();
     void setupDragger(void);
+    void setDraggerStatus(int s) {m_draggerStatus = s;}
+    int getDraggerStatus(void) {return m_draggerStatus;}
 
 protected Q_SLOTS:
     void onPoint1Changed();
@@ -101,8 +104,15 @@ private:
 
     int m_applyDeferred;
     std::vector<Base::Vector3d> m_pickedPoints;
+    Base::Vector3d m_point1;
+    Base::Vector3d m_point2;
 //    Gui::View3DInventor* m_view;
     SoCoordinate3* m_linePoints;
+    int m_draggerStatus;
+    SoSeparator* m_dragger;
+    SoSeparator* m_sepScene;
+    SoLineSet* m_line;
+
 };
 
 class TaskDlgBrokenView : public Gui::TaskView::TaskDialog
