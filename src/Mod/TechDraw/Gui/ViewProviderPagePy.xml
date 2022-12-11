@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+    <PythonExport
+        Father="ViewProviderDocumentObjectPy"
+        Name="ViewProviderPagePy"
+        Twin="ViewProviderPage"
+        TwinPointer="ViewProviderPage"
+        Include="Mod/TechDraw/Gui/ViewProviderPage.h"
+        Namespace="TechDrawGui"
+        FatherInclude="Gui/ViewProviderDocumentObjectPy.h"
+        FatherNamespace="Gui">
+        <Documentation>
+            <Author Licence="LGPL" Name="WandererFan" EMail="wandererfan@gmail.com" />
+            <UserDocu>This is the ViewProviderPage base class</UserDocu>
+        </Documentation>
+        <Methode Name="getDrawPage">
+            <Documentation>
+                <UserDocu>DrawPagePy = getDrawPage()</UserDocu>
+            </Documentation>
+        </Methode>
+    <Attribute Name="PageWidth" ReadOnly="true">
+      <Documentation>
+        <UserDocu>The width of this page in mm.</UserDocu>
+      </Documentation>
+      <Parameter Name="PageWidth" Type="Object" />
+    </Attribute>
+    <Attribute Name="PageHeight" ReadOnly="true">
+      <Documentation>
+        <UserDocu>The height of this page in mm.</UserDocu>
+      </Documentation>
+      <Parameter Name="PageWidth" Type="Object" />
+    </Attribute>
+  </PythonExport>
+</GenerateModel>
+

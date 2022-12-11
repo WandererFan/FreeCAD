@@ -30,6 +30,7 @@
 
 class QTemporaryFile;
 class QLabel;
+class QGraphicsSceneMouseEvent;
 
 namespace App
 {
@@ -94,6 +95,12 @@ public:
     QGIView* addViewLeader(TechDraw::DrawLeaderLine* leaderFeat);
     QGIView* addRichAnno(TechDraw::DrawRichAnno* richFeat);
     QGIView* addWeldSymbol(TechDraw::DrawWeldSymbol* weldFeat);
+
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 
     void addChildrenToPage();
     void fixOrphans(bool force = false);

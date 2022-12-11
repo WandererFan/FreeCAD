@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport 
+    Father="PyObjectBase" 
+    Name="TraceWaypointPy" 
+    TwinPointer="TraceWaypoint" 
+    Twin="TraceWaypoint" 
+    Include="Mod/TechDraw/App/Diagram/TraceWaypoint.h" 
+    Namespace="TechDraw" 
+    FatherInclude="Base/PyObjectBase.h" 
+    FatherNamespace="Base"
+    Constructor="true">
+    <Documentation>
+      <Author Licence="LGPL" Name="Wanderer Fan" EMail="wandererfan@gmail.com" />
+      <UserDocu>Exposes TraceWaypoint to Python</UserDocu>
+    </Documentation>
+    <Attribute Name="Location" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Location - Base::Vector3d</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Location" Type="Object" /> 
+    </Attribute>
+    <Attribute Name="Flags" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Flags - int</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Flags" Type="Object" /> 
+    </Attribute>
+    <CustomAttributes />
+  </PythonExport>
+</GenerateModel>
+

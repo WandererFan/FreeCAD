@@ -64,6 +64,12 @@
 #include "ViewProviderViewPart.h"
 #include "ViewProviderViewSection.h"
 #include "ViewProviderWeld.h"
+#include "ViewProviderPageExtension.h"
+#include "ViewProviderDrawingViewExtension.h"
+#include "ViewProviderTemplateExtension.h"
+
+#include "ViewProviderDiagram.h"
+
 #include "Workbench.h"
 
 
@@ -166,6 +172,8 @@ PyMOD_INIT_FUNC(TechDrawGui)
     TechDrawGui::ViewProviderTemplateExtension::init();
 
     TechDrawGui::ViewProviderCosmeticExtension::init();
+
+    TechDrawGui::ViewProviderDiagram::init();
 
     // register preferences pages
     new Gui::PrefPageProducer<TechDrawGui::DlgPrefsTechDrawGeneralImp>("TechDraw");   //General

@@ -140,6 +140,8 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
 
+protected:
+
     QColor getBackgroundColor();
 
     double getDevicePixelRatio() const;

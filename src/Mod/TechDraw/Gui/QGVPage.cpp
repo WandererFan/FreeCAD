@@ -423,29 +423,33 @@ void QGVPage::pseudoContextEvent()
 void QGVPage::wheelEvent(QWheelEvent* event)
 {
     m_navStyle->handleWheelEvent(event);
-    event->accept();
+    //event->accept();
 }
 
 void QGVPage::keyPressEvent(QKeyEvent* event)
 {
+    Base::Console().Message("QGVP::keyPressEvent()\n");
     m_navStyle->handleKeyPressEvent(event);
-    if (!event->isAccepted()) {
-        QGraphicsView::keyPressEvent(event);
-    }
+    QGraphicsView::keyPressEvent(event);
+//    if (!event->isAccepted()) {
+//        QGraphicsView::keyPressEvent(event);
+//    }
 }
 
 void QGVPage::keyReleaseEvent(QKeyEvent* event)
 {
     m_navStyle->handleKeyReleaseEvent(event);
-    if (!event->isAccepted()) {
-        QGraphicsView::keyReleaseEvent(event);
-    }
+    QGraphicsView::keyReleaseEvent(event);
+//    if (!event->isAccepted()) {
+//        QGraphicsView::keyReleaseEvent(event);
+//    }
 }
 
 void QGVPage::focusOutEvent(QFocusEvent* event)
 {
     Q_UNUSED(event);
     m_navStyle->handleFocusOutEvent(event);
+    QGraphicsView::focusOutEvent(event);
 }
 
 void QGVPage::kbPanScroll(int xMove, int yMove)

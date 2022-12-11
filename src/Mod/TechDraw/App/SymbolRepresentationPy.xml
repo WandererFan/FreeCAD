@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport 
+    Father="PyObjectBase" 
+    Name="SymbolRepresentationPy" 
+    TwinPointer="SymbolRepresentation" 
+    Twin="SymbolRepresentation" 
+    Include="Mod/TechDraw/App/Diagram/SymbolRepresentation.h" 
+    Namespace="TechDraw" 
+    FatherInclude="Base/PyObjectBase.h" 
+    FatherNamespace="Base"
+    Constructor="true">
+    <Documentation>
+      <Author Licence="LGPL" Name="Wanderer Fan" EMail="wandererfan@gmail.com" />
+      <UserDocu>Exposes SymbolRepresentation to Python</UserDocu>
+    </Documentation>
+    <Attribute Name="FileReference" ReadOnly="false">
+        <Documentation>
+            <UserDocu>FileReference - std::string</UserDocu>
+        </Documentation> 
+        <Parameter Name="FileReference" Type="String" />
+    </Attribute>
+    <Attribute Name="Flags" ReadOnly="false"> 
+        <Documentation>
+            <UserDocu>Flags - int</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Flags" Type="Object" /> 
+    </Attribute>
+    <CustomAttributes />
+  </PythonExport>
+</GenerateModel>
+

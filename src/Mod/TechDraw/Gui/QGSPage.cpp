@@ -26,6 +26,8 @@
 
 #include <QDomDocument>
 #include <QFile>
+#include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
 #include <QPainter>
 #include <QSvgGenerator>
 #include <QTemporaryFile>
@@ -95,6 +97,7 @@
 using namespace Gui;
 using namespace TechDraw;
 using namespace TechDrawGui;
+using DU = DrawUtil;
 
 QGSPage::QGSPage(ViewProviderPage* vpPage, QWidget* parent)
     : QGraphicsScene(parent), pageTemplate(nullptr), m_vpPage(nullptr)
@@ -105,6 +108,54 @@ QGSPage::QGSPage(ViewProviderPage* vpPage, QWidget* parent)
     //    setItemIndexMethod(QGraphicsScene::NoIndex);    //sometimes faster
 }
 
+// *** QGraphicsScene override routines ***
+
+void QGSPage::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    QGraphicsItem* qgi = itemAt(event->scenePos(), QTransform());
+    QString data0 = QString::fromUtf8("no data");
+    if (qgi) {
+        qgi = qgi->topLevelItem();
+        if (!qgi->data(0).isNull()) {
+            data0 = qgi->data(0).toString();
+        }
+    }
+
+//    Base::Console().Message("QGSP::mousePressEvent(%s) - item: %s - %s\n",
+//                            DU::formatVector(event->scenePos()).c_str(), qgi ? "found item" : "no item", qPrintable(data0));
+//    Base::Console().Message("QGSP::mousePressEvent - qgi->type(): %d\n", qgi ? (qgi->type() - QGraphicsItem::UserType) : -1);
+
+    QGraphicsScene::mousePressEvent(event);
+}
+
+void QGSPage::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+//    Base::Console().Message("QGSP::mouseMoveEvent()\n");
+    QGraphicsScene::mouseMoveEvent(event);
+}
+
+void QGSPage::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+//    Base::Console().Message("QGSP::mouseReleaseEvent()\n");
+    QGraphicsScene::mouseReleaseEvent(event);
+}
+
+void QGSPage::keyPressEvent(QKeyEvent *event)
+{
+//    Base::Console().Message("QGSP::keyPressEvent()\n");
+    if (event->key() == Qt::Key_Escape) {
+    }
+    QGraphicsScene::keyPressEvent(event);
+}
+
+void QGSPage::keyReleaseEvent(QKeyEvent *event)
+{
+//    Base::Console().Message("QGSP::keyReleaseEvent()\n");
+    QGraphicsScene::keyReleaseEvent(event);
+}
+
+
+// *** QGIView related routines ***
 void QGSPage::addChildrenToPage()
 {
     //    Base::Console().Message("QGSP::addChildrenToPage()\n");

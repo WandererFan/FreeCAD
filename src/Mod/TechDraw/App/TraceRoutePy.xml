@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport 
+    Father="PyObjectBase" 
+    Name="TraceRoutePy" 
+    TwinPointer="TraceRoute" 
+    Twin="TraceRoute" 
+    Include="Mod/TechDraw/App/Diagram/TraceRoute.h" 
+    Namespace="TechDraw" 
+    FatherInclude="Base/PyObjectBase.h" 
+    FatherNamespace="Base"
+    Constructor="true">
+    <Documentation>
+      <Author Licence="LGPL" Name="Wanderer Fan" EMail="wandererfan@gmail.com" />
+      <UserDocu>Exposes TraceRoute to Python</UserDocu>
+    </Documentation>
+    <Attribute Name="Waypoints" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Waypoints - TraceWaypointList </UserDocu> 
+        </Documentation> 
+        <Parameter Name="Waypoints" Type="List" />
+    </Attribute>
+    <Attribute Name="Flags" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Flags - int</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Flags" Type="Object" /> 
+    </Attribute>    <CustomAttributes />
+  </PythonExport>
+</GenerateModel>
+

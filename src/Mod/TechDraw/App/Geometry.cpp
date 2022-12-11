@@ -225,20 +225,20 @@ std::string BaseGeom::getTagAsString() const
 
 void BaseGeom::Save(Base::Writer &writer) const
 {
-    writer.Stream() << writer.ind() << "<GeomType value=\"" << geomType << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<ExtractType value=\"" << extractType << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<EdgeClass value=\"" << classOfEdge << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<GeomType value=\"" << geomType << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<ExtractType value=\"" << extractType << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<EdgeClass value=\"" << classOfEdge << "\"/>" << std::endl;
     const char v = hlrVisible?'1':'0';
-    writer.Stream() << writer.ind() << "<HLRVisible value=\"" <<  v << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<HLRVisible value=\"" <<  v << "\"/>" << std::endl;
     const char r = reversed?'1':'0';
-    writer.Stream() << writer.ind() << "<Reversed value=\"" << r << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<Ref3D value=\"" << ref3D << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Reversed value=\"" << r << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<Ref3D value=\"" << ref3D << "\"/>" << std::endl;
     const char c = cosmetic?'1':'0';
-    writer.Stream() << writer.ind() << "<Cosmetic value=\"" << c << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<Source value=\"" << m_source << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<SourceIndex value=\"" << m_sourceIndex << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<CosmeticTag value=\"" <<  cosmeticTag << "\"/>" << endl;
-//    writer.Stream() << writer.ind() << "<Tag value=\"" <<  getTagAsString() << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Cosmetic value=\"" << c << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<Source value=\"" << m_source << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<SourceIndex value=\"" << m_sourceIndex << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<CosmeticTag value=\"" <<  cosmeticTag << "\"/>" << std::endl;
+//    writer.Stream() << writer.ind() << "<Tag value=\"" <<  getTagAsString() << "\"/>" << std::endl;
 }
 
 void BaseGeom::Restore(Base::XMLReader &reader)
@@ -826,9 +826,9 @@ void Circle::Save(Base::Writer &writer) const
                 << "X=\"" <<  center.x <<
                 "\" Y=\"" <<  center.y <<
                 "\" Z=\"" <<  center.z <<
-                 "\"/>" << endl;
+                 "\"/>" << std::endl;
 
-    writer.Stream() << writer.ind() << "<Radius value=\"" << radius << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Radius value=\"" << radius << "\"/>" << std::endl;
 }
 
 void Circle::Restore(Base::XMLReader &reader)
@@ -1000,23 +1000,23 @@ void AOC::Save(Base::Writer &writer) const
                 << "X=\"" <<  startPnt.x <<
                 "\" Y=\"" <<  startPnt.y <<
                 "\" Z=\"" <<  startPnt.z <<
-                 "\"/>" << endl;
+                 "\"/>" << std::endl;
     writer.Stream() << writer.ind() << "<End "
                 << "X=\"" <<  endPnt.x <<
                 "\" Y=\"" <<  endPnt.y <<
                 "\" Z=\"" <<  endPnt.z <<
-                 "\"/>" << endl;
+                 "\"/>" << std::endl;
     writer.Stream() << writer.ind() << "<Middle "
                 << "X=\"" <<  midPnt.x <<
                 "\" Y=\"" <<  midPnt.y <<
                 "\" Z=\"" <<  midPnt.z <<
-                 "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<StartAngle value=\"" << startAngle << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<EndAngle value=\"" << endAngle << "\"/>" << endl;
+                 "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<StartAngle value=\"" << startAngle << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<EndAngle value=\"" << endAngle << "\"/>" << std::endl;
     const char c = cw?'1':'0';
-    writer.Stream() << writer.ind() << "<Clockwise value=\"" <<  c << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Clockwise value=\"" <<  c << "\"/>" << std::endl;
     const char la = largeArc?'1':'0';
-    writer.Stream() << writer.ind() << "<Large value=\"" <<  la << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Large value=\"" <<  la << "\"/>" << std::endl;
 }
 
 void AOC::Restore(Base::XMLReader &reader)
@@ -1098,17 +1098,17 @@ void Generic::Save(Base::Writer &writer) const
 {
     BaseGeom::Save(writer);
     writer.Stream() << writer.ind()
-                        << "<Points PointsCount =\"" << points.size() << "\">" << endl;
+                        << "<Points PointsCount =\"" << points.size() << "\">" << std::endl;
     writer.incInd();
     for (auto& p: points) {
         writer.Stream() << writer.ind() << "<Point "
                     << "X=\"" <<  p.x <<
                     "\" Y=\"" <<  p.y <<
                     "\" Z=\"" <<  p.z <<
-                     "\"/>" << endl;
+                     "\"/>" << std::endl;
     }
     writer.decInd();
-    writer.Stream() << writer.ind() << "</Points>" << endl ;
+    writer.Stream() << writer.ind() << "</Points>" << std::endl ;
 
 }
 
@@ -1397,24 +1397,24 @@ void Vertex::Save(Base::Writer &writer) const
                 << "X=\"" <<  pnt.x <<
                 "\" Y=\"" <<  pnt.y <<
                 "\" Z=\"" <<  pnt.z <<
-                 "\"/>" << endl;
+                 "\"/>" << std::endl;
 
-    writer.Stream() << writer.ind() << "<Extract value=\"" <<  extractType << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Extract value=\"" <<  extractType << "\"/>" << std::endl;
     const char v = hlrVisible?'1':'0';
-    writer.Stream() << writer.ind() << "<HLRVisible value=\"" <<  v << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<Ref3D value=\"" <<  ref3D << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<HLRVisible value=\"" <<  v << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<Ref3D value=\"" <<  ref3D << "\"/>" << std::endl;
     const char c = isCenter?'1':'0';
-    writer.Stream() << writer.ind() << "<IsCenter value=\"" <<  c << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<IsCenter value=\"" <<  c << "\"/>" << std::endl;
     const char c2 = cosmetic?'1':'0';
-    writer.Stream() << writer.ind() << "<Cosmetic value=\"" <<  c2 << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<CosmeticLink value=\"" <<  cosmeticLink << "\"/>" << endl;
-    writer.Stream() << writer.ind() << "<CosmeticTag value=\"" <<  cosmeticTag << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<Cosmetic value=\"" <<  c2 << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<CosmeticLink value=\"" <<  cosmeticLink << "\"/>" << std::endl;
+    writer.Stream() << writer.ind() << "<CosmeticTag value=\"" <<  cosmeticTag << "\"/>" << std::endl;
 
     //do we need to save this?  always recreated by program.
 //    const char r = reference?'1':'0';
-//    writer.Stream() << writer.ind() << "<Reference value=\"" <<  r << "\"/>" << endl;
+//    writer.Stream() << writer.ind() << "<Reference value=\"" <<  r << "\"/>" << std::endl;
 
-    writer.Stream() << writer.ind() << "<VertexTag value=\"" <<  getTagAsString() << "\"/>" << endl;
+    writer.Stream() << writer.ind() << "<VertexTag value=\"" <<  getTagAsString() << "\"/>" << std::endl;
 }
 
 void Vertex::Restore(Base::XMLReader &reader)

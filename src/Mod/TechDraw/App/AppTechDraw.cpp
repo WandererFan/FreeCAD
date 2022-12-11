@@ -60,7 +60,15 @@
 #include "PropertyCosmeticEdgeList.h"
 #include "PropertyCosmeticVertexList.h"
 #include "PropertyGeomFormatList.h"
-
+#include "DiagramPy.h"
+#include "DiagramSymbolPy.h"
+#include "DiagramTracePy.h"
+#include "SymbolRepresentationPy.h"
+#include "SymbolPortPy.h"
+#include "TraceRoutePy.h"
+#include "TraceWaypointPy.h"
+#include "Diagram/PropertyDiagramSymbolList.h"
+#include "Diagram/PropertyDiagramTraceList.h"
 
 
 namespace TechDraw {
@@ -79,8 +87,28 @@ PyMOD_INIT_FUNC(TechDraw)
         PyErr_SetString(PyExc_ImportError, e.what());
         PyMOD_Return(nullptr);
     }
-    PyObject* mod = TechDraw::initModule();
+    PyObject* TechDrawModule = TechDraw::initModule();
     Base::Console().Log("Loading TechDraw module... done\n");
+
+    //rename the types properly to pickle and unpickle them
+    TechDraw::DiagramPy         ::Type.tp_name = "TechDraw.Diagram";
+    TechDraw::DiagramSymbolPy   ::Type.tp_name = "TechDraw.DiagramSymbol";
+    TechDraw::DiagramTracePy    ::Type.tp_name = "TechDraw.DiagramTrace";
+    TechDraw::SymbolRepresentationPy    ::Type.tp_name = "TechDraw.SymbolRepresentation";
+    TechDraw::SymbolPortPy      ::Type.tp_name = "TechDraw.SymbolPort";
+    TechDraw::TraceRoutePy      ::Type.tp_name = "TechDraw.TraceRoute";
+    TechDraw::TraceWaypointPy   ::Type.tp_name = "TechDraw.TraceWaypoint";
+
+
+        // Add Types to module
+    Base::Interpreter().addType(&TechDraw::DiagramPy          ::Type,TechDrawModule,"Diagram");
+    Base::Interpreter().addType(&TechDraw::DiagramSymbolPy    ::Type,TechDrawModule,"DiagramSymbol");
+    Base::Interpreter().addType(&TechDraw::DiagramTracePy     ::Type,TechDrawModule,"DiagramTrace");
+    Base::Interpreter().addType(&TechDraw::SymbolRepresentationPy::Type,TechDrawModule,"SymbolRepresentation");
+    Base::Interpreter().addType(&TechDraw::SymbolPortPy       ::Type,TechDrawModule,"SymbolPort");
+    Base::Interpreter().addType(&TechDraw::TraceRoutePy       ::Type,TechDrawModule,"TraceRoute");
+    Base::Interpreter().addType(&TechDraw::TraceWaypointPy    ::Type,TechDrawModule,"TraceWaypoint");
+
 
     TechDraw::DrawPage            ::init();
     TechDraw::DrawView            ::init();
@@ -130,6 +158,16 @@ PyMOD_INIT_FUNC(TechDraw)
 
     TechDraw::FeatureProjection::init();
 
+    TechDraw::Diagram               ::init();
+    TechDraw::DiagramSymbol         ::init();
+    TechDraw::DiagramTrace          ::init();
+    TechDraw::SymbolRepresentation  ::init();
+    TechDraw::SymbolPort            ::init();
+    TechDraw::TraceRoute            ::init();
+    TechDraw::TraceWaypoint         ::init();
+    TechDraw::PropertyDiagramSymbolList::init();
+    TechDraw::PropertyDiagramTraceList::init();
+
    // are these python init calls required?  some modules don't have them
    // Python Types
     TechDraw::DrawPagePython      ::init();
@@ -145,5 +183,7 @@ PyMOD_INIT_FUNC(TechDraw)
     TechDraw::DrawTileWeldPython  ::init();
     TechDraw::DrawWeldSymbolPython::init();
 
-    PyMOD_Return(mod);
+    TechDraw::DiagramPython       ::init();
+
+    PyMOD_Return(TechDrawModule);
 }

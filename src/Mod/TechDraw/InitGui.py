@@ -53,6 +53,15 @@ class TechDrawWorkbench(Workbench):
                 )
             )
 
+        try:
+            import TechDrawDiagram
+        except ImportError as err:
+            FreeCAD.Console.PrintError(
+                "Features from TechDrawDiagram package cannot be loaded. {err}\n".format(
+                    err=str(err)
+                )
+            )
+
     def GetClassName(self):
         return "TechDrawGui::Workbench"
 

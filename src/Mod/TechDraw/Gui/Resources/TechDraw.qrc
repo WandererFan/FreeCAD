@@ -54,6 +54,14 @@
         <file>icons/actions/TechDraw_WeldSymbol.svg</file>
         <file>icons/actions/TechDraw_SurfaceFinishSymbols.svg</file>
         <file>icons/actions/TechDraw_ComplexSection.svg</file>
+        <file>icons/actions/TechDraw_Diagram.svg</file>
+        <file>icons/actions/TechDraw_DiagramNew.svg</file>
+        <file>icons/actions/TechDraw_DiagramSymbol.svg</file>
+        <file>icons/actions/TechDraw_DiagramSymbolAdd.svg</file>
+        <file>icons/actions/TechDraw_DiagramSymbolRemove.svg</file>
+        <file>icons/actions/TechDraw_DiagramTrace.svg</file>
+        <file>icons/actions/TechDraw_DiagramTraceAdd.svg</file>
+        <file>icons/actions/TechDraw_DiagramTraceRemove.svg</file>
         <file>icons/arrow-ccw.svg</file>
         <file>icons/arrow-cw.svg</file>
         <file>icons/arrow-down.svg</file>

@@ -111,6 +111,7 @@ void QGIViewPart::tidy()
 
 void QGIViewPart::setViewPartFeature(TechDraw::DrawViewPart* obj)
 {
+    Base::Console().Message("QGIVP::setViewPartFeature(%s)\n", obj->getNameInDocument());
     if (!obj)
         return;
 

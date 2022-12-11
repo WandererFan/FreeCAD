@@ -29,10 +29,35 @@ set(TechDraw_ToolsScripts
     TechDrawTools/TDToolsMovers.py
 )
 
+set(TechDraw_DiagramScripts
+    TechDrawDiagram/__init__.py
+    TechDrawDiagram/CommandAddDiagram.py
+    TechDrawDiagram/CommandAddSymbol.py
+    TechDrawDiagram/CommandRemoveSymbol.py
+    TechDrawDiagram/TaskAddSymbol.py
+    TechDrawDiagram/TaskRemoveSymbol.py
+    TechDrawDiagram/CommandAddTrace.py
+    TechDrawDiagram/CommandRemoveTrace.py
+    TechDrawDiagram/TaskAddTrace.py
+    TechDrawDiagram/TaskRemoveTrace.py
+    TechDrawDiagram/TDDiagramUtil.py
+    TechDrawDiagram/TDDiagramWorkers.py
+    TechDrawDiagram/TDDiagramTypeManager.py
+    TechDrawDiagram/Rez.py
+    TechDrawDiagram/TDDiagramPainters/SvgPainter.py
+    TechDrawDiagram/TDDiagramPainters/TracePencil.py
+    TechDrawDiagram/TDDiagramPainters/PathPainter.py
+
+)
+
 set(TechDraw_ToolsGui
     Gui/TaskMoveView.ui
     Gui/TaskHoleShaftFit.ui
     Gui/DlgPageChooser.ui
+)
+set(TechDraw_DiagramGui
+    Gui/DiagramSymbolAdd.ui
+    Gui/DiagramTraceAdd.ui
 )
 
 SET(TechDraw_PATFile
@@ -43,15 +68,55 @@ SET(TechDraw_LineGroupFile
     LineGroup/LineGroup.csv
 )
 
-add_custom_target(TechDraw_Data ALL
-SOURCES ${TechDraw_Scripts} ${TechDraw_PATFile} ${TechDraw_LineGroupFile} ${TechDraw_ToolsScripts} ${TechDraw_ToolsGui}
+add_custom_target(TechDrawScripts ALL SOURCES
+    ${TechDraw_Scripts}
+    ${TechDraw_tests}
 )
 
-fc_target_copy_resource(TechDraw_Data
+add_custom_target(TechDraw_Data ALL
+SOURCES ${TechDraw_PATFile} ${TechDraw_LineGroupFile}
+)
+
+add_custom_target(TechDraw_Tools ALL
+SOURCES ${TechDraw_ToolsScripts} ${TechDraw_ToolsGui}
+)
+
+add_custom_target(TechDraw_Diagram ALL
+SOURCES ${TechDraw_DiagramScripts} ${TechDraw_DiagramGui}
+)
+
+fc_target_copy_resource(TechDrawScripts
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}/Mod/TechDraw
     ${TechDraw_Scripts}
+    ${TechDraw_tests}
 )
+
+if(BUILD_GUI)
+fc_target_copy_resource(TechDraw_Tools
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}/Mod/TechDraw
+    ${TechDraw_ToolsScripts}
+)
+
+fc_target_copy_resource(TechDraw_Tools
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}/Mod/TechDraw/TechDrawTools
+    ${TechDraw_ToolsGui}
+)
+
+fc_target_copy_resource(TechDraw_Diagram
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}/Mod/TechDraw
+    ${TechDraw_DiagramScripts}
+)
+
+fc_target_copy_resource(TechDraw_Diagram
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}/Mod/TechDraw/TechDrawDiagram
+    ${TechDraw_DiagramGui}
+)
+endif(BUILD_GUI)
 
 fc_target_copy_resource(TechDraw_Data
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -115,19 +180,6 @@ INSTALL(
         PATTERN "*.svg*"
 )
 
-if(BUILD_GUI)
-fc_target_copy_resource(TechDraw_Data
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}/Mod/TechDraw
-    ${TechDraw_ToolsScripts}
-)
-
-fc_target_copy_resource(TechDraw_Data
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_BINARY_DIR}/Mod/TechDraw/TechDrawTools
-    ${TechDraw_ToolsGui}
-)
-
 INSTALL(
     FILES
         ${TechDraw_ToolsScripts}
@@ -141,7 +193,20 @@ INSTALL(
     DESTINATION
         Mod/TechDraw/TechDrawTools/Gui
 )
-endif(BUILD_GUI)
+
+INSTALL(
+    FILES
+        ${TechDraw_DiagramScripts}
+    DESTINATION
+        Mod/TechDraw/TechDrawDiagram
+)
+
+INSTALL(
+    FILES
+        ${TechDraw_DiagramGui}
+    DESTINATION
+        Mod/TechDraw/TechDrawDiagram/Gui
+)
 
 #unit test files
 SET(TDTest_SRCS

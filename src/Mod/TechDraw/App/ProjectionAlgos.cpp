@@ -123,9 +123,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : H_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(H)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     if (!HO.IsNull() && (type & WithHidden)) {
         H0_style.insert({"stroke", "rgb(0, 0, 0)"});
@@ -140,9 +140,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : H0_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(HO)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     if (!VO.IsNull()) {
         V0_style.insert({"stroke", "rgb(0, 0, 0)"});
@@ -156,9 +156,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : V0_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(VO)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     if (!V.IsNull()) {
         V_style.insert({"stroke", "rgb(0, 0, 0)"});
@@ -172,9 +172,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : V_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(V)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     if (!V1.IsNull() && (type & WithSmooth)) {
         V1_style.insert({"stroke", "rgb(0, 0, 0)"});
@@ -188,9 +188,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : V1_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(V1)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     if (!H1.IsNull() && (type & WithSmooth) && (type & WithHidden)) {
         H1_style.insert({"stroke", "rgb(0, 0, 0)"});
@@ -205,9 +205,9 @@ string ProjectionAlgos::getSVG(ExtractionType type,
         for (const auto& attribute : H1_style)
             result << "   " << attribute.first << "=\""
                    << attribute.second << "\"\n";
-        result << "  >" << endl
+        result << "  >" << std::endl
                << output.exportEdges(H1)
-               << "</g>" << endl;
+               << "</g>" << std::endl;
     }
     return result.str();
 }

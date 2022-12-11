@@ -108,7 +108,7 @@ public:
 
     void unsetEdit(int ModNum) override;
     MDIViewPage* getMDIViewPage() const;
-    bool showMDIViewPage();
+    virtual bool showMDIViewPage();
     void removeMDIView();
 
     Gui::MDIView* getMDIView() const override;
@@ -127,7 +127,7 @@ public:
 
     ViewProviderPageExtension* getVPPExtension() const;
 
-    const char* whoAmI() const;
+    virtual const char* whoAmI() const;
 
 protected:
     bool setEdit(int ModNum) override;

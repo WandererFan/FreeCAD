@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport
+    Father="DrawPagePy"
+    Name="DiagramPy"
+    Twin="Diagram"
+    TwinPointer="Diagram"
+    Include="Mod/TechDraw/App/Diagram/Diagram.h"
+    Namespace="TechDraw"
+    FatherInclude="Mod/TechDraw/App/DrawPagePy.h"
+    FatherNamespace="TechDraw">
+    <Documentation>
+      <Author Licence="LGPL" Name="WandererFan" EMail="wandererfan@gmail.com" />
+      <UserDocu>Feature for creating and manipulating Diagrams on Pages</UserDocu>
+    </Documentation>
+    <Methode Name="addSymbol">
+      <Documentation>
+        <UserDocu>addSymbol(DiagramSymbol) - Add a Symbol to this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="copySymbol">
+      <Documentation>
+        <UserDocu>newsymbolId = copySymbol(symbolId) - Add a copy of a Symbol already in this Diagram to this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="removeSymbol">
+      <Documentation>
+        <UserDocu>removeSymbol(DiagramSymbol) - Remove a Symbol from this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="getSymbol">
+      <Documentation>
+        <UserDocu>getSymbol(symbolId) - get a Symbol from this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="addTrace">
+      <Documentation>
+        <UserDocu>addTrace(DiagramTrace) - Add a Trace to this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="removeTrace">
+      <Documentation>
+        <UserDocu>removeTrace(DiagramTrace) - Remove a Trace from this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+        <Methode Name="getTrace">
+      <Documentation>
+        <UserDocu>getTrace(traceId) - get a Trace from this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <CustomAttributes />
+  </PythonExport>
+</GenerateModel>

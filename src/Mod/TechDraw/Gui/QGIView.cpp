@@ -380,6 +380,7 @@ TechDraw::DrawView * QGIView::getViewObject() const
 
 void QGIView::setViewFeature(TechDraw::DrawView *obj)
 {
+    Base::Console().Message("QGIV::setViewFeature(%s)\n", obj->getNameInDocument());
     if (!obj)
         return;
 
@@ -525,7 +526,7 @@ void QGIView::drawBorder()
 void QGIView::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QStyleOptionGraphicsItem myOption(*option);
-    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_Selected;    //this is what turns off Qt default selected highlight
 
 //    painter->setPen(Qt::red);
 //    painter->drawRect(boundingRect());          //good for debugging

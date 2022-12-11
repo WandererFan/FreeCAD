@@ -48,6 +48,12 @@ set(TechDrawGui_LIBS
 
 qt_add_resources(TechDrawGui_SRCS Resources/TechDraw.qrc)
 
+# The XML files
+set(TechDrawGui_XML_SRCS
+    ViewProviderPagePy.xml
+)
+generate_from_xml(ViewProviderPagePy)
+
 set(TechDrawGui_UIC_SRCS
     DlgStringListEditor.ui
     DlgPageChooser.ui
@@ -408,6 +414,8 @@ SET(TechDrawGuiViewProvider_SRCS
     ViewProviderWeld.h
     ViewProviderCosmeticExtension.cpp
     ViewProviderCosmeticExtension.h
+    ViewProviderDiagram.cpp
+    ViewProviderDiagram.h
 )
 
 SET(TechDrawGuiTaskDlgs_SRCS
@@ -439,12 +447,18 @@ SET(TechDrawGuiTaskDlgs_SRCS
     TaskDimRepair.ui
 )
 
+SET(Python_SRCS
+    ViewProviderPagePy.xml
+    ViewProviderPagePyImp.cpp
+)
+
 SOURCE_GROUP("MRTE" FILES ${MRTE_SRCS})
 SOURCE_GROUP("Mod" FILES ${TechDrawGui_SRCS})
 SOURCE_GROUP("View" FILES ${TechDrawGuiView_SRCS})
 SOURCE_GROUP("Nav" FILES ${TechDrawGuiNav_SRCS})
 SOURCE_GROUP("ViewProvider" FILES ${TechDrawGuiViewProvider_SRCS})
 SOURCE_GROUP("TaskDialogs" FILES ${TechDrawGuiTaskDlgs_SRCS})
+SOURCE_GROUP("Python" FILES ${Python_SRCS})
 
 SET(TechDrawGuiIcon_SVG
     Resources/icons/preferences-techdraw.svg
@@ -464,12 +478,12 @@ if(FREECAD_USE_PCH)
     add_definitions(-D_PreComp_)
     GET_MSVC_PRECOMPILED_SOURCE("PreCompiled.cpp" PCH_SRCS ${TechDrawGui_SRCS} ${TechDrawGuiView_SRCS}
                                                            ${TechDrawGuiNav_SRCS}
-                                                           ${TechDrawGuiViewProvider_SRCS} ${MRTE_SRCS})
+                                                           ${TechDrawGuiViewProvider_SRCS} ${MRTE_SRCS} ${Python_SRCS})
     ADD_MSVC_PRECOMPILED_HEADER(TechDrawGui PreCompiled.h PreCompiled.cpp PCH_SRCS)
 endif(FREECAD_USE_PCH)
 
 add_library(TechDrawGui SHARED ${TechDrawGui_SRCS} ${TechDrawGuiView_SRCS} ${TechDrawGuiViewProvider_SRCS}
-                               ${TechDrawGuiNav_SRCS} ${TechDrawGuiIcon_SVG} ${TechDrawGuiFonts} ${MRTE_SRCS})
+                               ${TechDrawGuiNav_SRCS} ${TechDrawGuiIcon_SVG} ${TechDrawGuiFonts} ${MRTE_SRCS} ${Python_SRCS} )
 target_link_libraries(TechDrawGui ${TechDrawGui_LIBS})
 
 fc_copy_sources(TechDrawGui "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/TechDraw/" ${TechDrawGuiIcon_SVG})

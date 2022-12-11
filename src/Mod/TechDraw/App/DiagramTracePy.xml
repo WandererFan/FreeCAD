@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport 
+    Father="PyObjectBase" 
+    Name="DiagramTracePy" 
+    TwinPointer="DiagramTrace" 
+    Twin="DiagramTrace" 
+    Include="Mod/TechDraw/App/Diagram/DiagramTrace.h" 
+    Namespace="TechDraw" 
+    FatherInclude="Base/PyObjectBase.h" 
+    FatherNamespace="Base"
+    Constructor="true">
+    <Documentation>
+      <Author Licence="LGPL" Name="Wanderer Fan" EMail="wandererfan@gmail.com" />
+      <UserDocu>Exposes DiagramTrace to Python</UserDocu>
+    </Documentation>
+    <Attribute Name="ParentDiagram" ReadOnly="false">
+        <Documentation>
+            <UserDocu>ParentDiagram - Symbol's owner</UserDocu>
+        </Documentation>
+        <Parameter Name="ParentDiagram" Type="Object" />
+    </Attribute>
+    <Attribute Name="TraceId" ReadOnly="true">
+        <Documentation> 
+            <UserDocu>TraceId - TraceId</UserDocu>
+        </Documentation> 
+        <Parameter Name="TraceId" Type="Object" />
+    </Attribute>
+    <Attribute Name="FromSymbol" ReadOnly="false">
+        <Documentation> 
+            <UserDocu>FromSymbol - SymbolId</UserDocu>
+        </Documentation> 
+        <Parameter Name="FromSymbol" Type="Object" />
+    </Attribute>
+    <Attribute Name="ToSymbol" ReadOnly="false">
+        <Documentation> 
+            <UserDocu>ToSymbol - SymbolId</UserDocu>
+        </Documentation> 
+        <Parameter Name="ToSymbol" Type="Object" />
+    </Attribute>
+        <Attribute Name="FromPort" ReadOnly="false">
+        <Documentation>
+            <UserDocu>FromPort - PortId</UserDocu>
+        </Documentation>
+        <Parameter Name="FromPort" Type="String" />
+    </Attribute>
+    <Attribute Name="ToPort" ReadOnly="false">
+        <Documentation>
+            <UserDocu>ToPort - PortId</UserDocu>
+        </Documentation>
+        <Parameter Name="ToPort" Type="String" />
+    </Attribute>
+    <Attribute Name="Route" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Route - TraceRoute</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Route" Type="Object" /> 
+    </Attribute>
+    <Attribute Name="Flags" ReadOnly="false"> 
+        <Documentation> 
+            <UserDocu>Flags - int</UserDocu> 
+        </Documentation> 
+        <Parameter Name="Flags" Type="Object" /> 
+    </Attribute>
+    <CustomAttributes />
+  </PythonExport>
+</GenerateModel>

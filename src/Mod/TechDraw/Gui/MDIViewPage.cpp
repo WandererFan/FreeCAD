@@ -943,6 +943,7 @@ void MDIViewPage::sceneSelectionManager()
 //triggered by m_scene signal
 void MDIViewPage::sceneSelectionChanged()
 {
+//    Base::Console().Message("MDIVP::sceneSelectionChanged()");
     sceneSelectionManager();
 
     if (isSelectionBlocked) {
@@ -970,149 +971,157 @@ void MDIViewPage::setTreeToSceneSelect()
     Gui::Selection().clearSelection();
     QList<QGraphicsItem*> sceneSel = m_qgSceneSelected;
     for (QList<QGraphicsItem*>::iterator it = sceneSel.begin(); it != sceneSel.end(); ++it) {
-        QGIView* itemView = dynamic_cast<QGIView*>(*it);
-        if (!itemView) {
-            QGIEdge* edge = dynamic_cast<QGIEdge*>(*it);
-            if (edge) {
-                QGraphicsItem* parent = edge->parentItem();
-                if (!parent) {
-                    continue;
-                }
-
-                QGIView* viewItem = dynamic_cast<QGIView*>(parent);
-                if (!viewItem) {
-                    continue;
-                }
-
-                TechDraw::DrawView* viewObj = viewItem->getViewObject();
-
-                std::stringstream ss;
-                ss << "Edge" << edge->getProjIndex();
-                //bool accepted =
-                static_cast<void>(Gui::Selection().addSelection(viewObj->getDocument()->getName(),
-                                                                viewObj->getNameInDocument(),
-                                                                ss.str().c_str()));
-                showStatusMsg(viewObj->getDocument()->getName(), viewObj->getNameInDocument(),
-                              ss.str().c_str());
-                continue;
-            }
-
-            QGIVertex* vert = dynamic_cast<QGIVertex*>(*it);
-            if (vert) {
-                QGraphicsItem* parent = vert->parentItem();
-                if (!parent) {
-                    continue;
-                }
-
-                QGIView* viewItem = dynamic_cast<QGIView*>(parent);
-                if (!viewItem) {
-                    continue;
-                }
-
-                TechDraw::DrawView* viewObj = viewItem->getViewObject();
-
-                std::stringstream ss;
-                ss << "Vertex" << vert->getProjIndex();
-                //bool accepted =
-                static_cast<void>(Gui::Selection().addSelection(viewObj->getDocument()->getName(),
-                                                                viewObj->getNameInDocument(),
-                                                                ss.str().c_str()));
-                showStatusMsg(viewObj->getDocument()->getName(), viewObj->getNameInDocument(),
-                              ss.str().c_str());
-                continue;
-            }
-
-            QGIFace* face = dynamic_cast<QGIFace*>(*it);
-            if (face) {
-                QGraphicsItem* parent = face->parentItem();
-                if (!parent) {
-                    continue;
-                }
-
-                QGIView* viewItem = dynamic_cast<QGIView*>(parent);
-                if (!viewItem) {
-                    continue;
-                }
-
-                TechDraw::DrawView* viewObj = viewItem->getViewObject();
-
-                std::stringstream ss;
-                ss << "Face" << face->getProjIndex();
-                //bool accepted =
-                static_cast<void>(Gui::Selection().addSelection(viewObj->getDocument()->getName(),
-                                                                viewObj->getNameInDocument(),
-                                                                ss.str().c_str()));
-                showStatusMsg(viewObj->getDocument()->getName(), viewObj->getNameInDocument(),
-                              ss.str().c_str());
-                continue;
-            }
-
-            QGIDatumLabel* dimLabel = dynamic_cast<QGIDatumLabel*>(*it);
-            if (dimLabel) {
-                QGraphicsItem* dimParent = dimLabel->QGraphicsItem::parentItem();
-                if (!dimParent) {
-                    continue;
-                }
-
-                QGIView* dimItem = dynamic_cast<QGIView*>(dimParent);
-
-                if (!dimItem) {
-                    continue;
-                }
-
-                TechDraw::DrawView* dimObj = dimItem->getViewObject();
-                if (!dimObj) {
-                    continue;
-                }
-                const char* name = dimObj->getNameInDocument();
-                if (!name) {//can happen during undo/redo if Dim is selected???
-                    //Base::Console().Log("INFO - MDIVP::sceneSelectionChanged - dimObj name is null!\n");
-                    continue;
-                }
-
-                //bool accepted =
-                static_cast<void>(Gui::Selection().addSelection(dimObj->getDocument()->getName(),
-                                                                dimObj->getNameInDocument()));
-            }
-
-            QGMText* mText = dynamic_cast<QGMText*>(*it);
-            if (mText) {
-                QGraphicsItem* textParent = mText->QGraphicsItem::parentItem();
-                if (!textParent) {
-                    continue;
-                }
-
-                QGIView* parent = dynamic_cast<QGIView*>(textParent);
-
-                if (!parent) {
-                    continue;
-                }
-
-                TechDraw::DrawView* parentFeat = parent->getViewObject();
-                if (!parentFeat) {
-                    continue;
-                }
-                const char* name = parentFeat->getNameInDocument();
-                if (!name) {//can happen during undo/redo if Dim is selected???
-                    continue;
-                }
-
-                //bool accepted =
-                static_cast<void>(Gui::Selection().addSelection(
-                    parentFeat->getDocument()->getName(), parentFeat->getNameInDocument()));
-            }
-        }
-        else {
-
-            TechDraw::DrawView* viewObj = itemView->getViewObject();
+        QGIView *itemView = dynamic_cast<QGIView *>(*it);
+        if (itemView) {
+            // it is a QGIView!
+            TechDraw::DrawView *viewObj = itemView->getViewObject();
             if (viewObj && !viewObj->isRemoving()) {
                 std::string doc_name = viewObj->getDocument()->getName();
                 std::string obj_name = viewObj->getNameInDocument();
 
                 Gui::Selection().addSelection(doc_name.c_str(), obj_name.c_str());
-                showStatusMsg(doc_name.c_str(), obj_name.c_str(), "");
+                showStatusMsg(doc_name.c_str(),
+                              obj_name.c_str(),
+                              "");
             }
+            //next selected item
+            continue;
         }
+
+        QGIEdge *edge = dynamic_cast<QGIEdge *>(*it);
+        if(edge) {
+            QGraphicsItem*parent = edge->parentItem();
+            if(!parent)
+                continue;
+
+            QGIView *viewItem = dynamic_cast<QGIView *>(parent);
+            if(!viewItem)
+                continue;
+
+            TechDraw::DrawView *viewObj = viewItem->getViewObject();
+
+            std::stringstream ss;
+            ss << "Edge" << edge->getProjIndex();
+            //bool accepted =
+            static_cast<void> (Gui::Selection().addSelection(viewObj->getDocument()->getName(),
+                                                             viewObj->getNameInDocument(),
+                                                             ss.str().c_str()));
+            showStatusMsg(viewObj->getDocument()->getName(),
+                          viewObj->getNameInDocument(),
+                          ss.str().c_str());
+            continue;
+        }
+
+        QGIVertex *vert = dynamic_cast<QGIVertex *>(*it);
+        if(vert) {
+            QGraphicsItem*parent = vert->parentItem();
+            if(!parent)
+                continue;
+
+            QGIView *viewItem = dynamic_cast<QGIView *>(parent);
+            if(!viewItem)
+                continue;
+
+            TechDraw::DrawView *viewObj = viewItem->getViewObject();
+
+            std::stringstream ss;
+            ss << "Vertex" << vert->getProjIndex();
+            //bool accepted =
+            static_cast<void> (Gui::Selection().addSelection(viewObj->getDocument()->getName(),
+                                                             viewObj->getNameInDocument(),
+                                                             ss.str().c_str()));
+            showStatusMsg(viewObj->getDocument()->getName(),
+                          viewObj->getNameInDocument(),
+                          ss.str().c_str());
+            continue;
+        }
+
+        QGIFace *face = dynamic_cast<QGIFace *>(*it);
+        if(face) {
+            QGraphicsItem*parent = face->parentItem();
+            if(!parent)
+                continue;
+
+            QGIView *viewItem = dynamic_cast<QGIView *>(parent);
+            if(!viewItem)
+                continue;
+
+            TechDraw::DrawView *viewObj = viewItem->getViewObject();
+
+            std::stringstream ss;
+            ss << "Face" << face->getProjIndex();
+            //bool accepted =
+            static_cast<void> (Gui::Selection().addSelection(viewObj->getDocument()->getName(),
+                                                             viewObj->getNameInDocument(),
+                                                             ss.str().c_str()));
+            showStatusMsg(viewObj->getDocument()->getName(),
+                          viewObj->getNameInDocument(),
+                          ss.str().c_str());
+            //next item
+            continue;
+        }
+
+        QGIDatumLabel *dimLabel = dynamic_cast<QGIDatumLabel*>(*it);
+        if(dimLabel) {
+            QGraphicsItem*dimParent = dimLabel->QGraphicsItem::parentItem();
+            if(!dimParent)
+                continue;
+
+            QGIView *dimItem = dynamic_cast<QGIView *>(dimParent);
+
+            if(!dimItem)
+                continue;
+
+            TechDraw::DrawView *dimObj = dimItem->getViewObject();
+            if (!dimObj) {
+                continue;
+            }
+            const char* name = dimObj->getNameInDocument();
+            if (!name) {                                   //can happen during undo/redo if Dim is selected???
+                //Base::Console().Log("INFO - MDIVP::sceneSelectionChanged - dimObj name is null!\n");
+                continue;
+            }
+            //bool accepted =
+            static_cast<void> (Gui::Selection().addSelection(dimObj->getDocument()->getName(), dimObj->getNameInDocument()));
+
+            //next item
+            continue;
+        }
+
+        QGMText *mText = dynamic_cast<QGMText*>(*it);
+        if(mText) {
+            QGraphicsItem* textParent = mText->QGraphicsItem::parentItem();
+            if(!textParent) {
+                continue;
+            }
+
+            QGIView *parent = dynamic_cast<QGIView *>(textParent);
+
+            if(!parent) {
+                continue;
+            }
+
+            TechDraw::DrawView *parentFeat = parent->getViewObject();
+            if (!parentFeat) {
+                continue;
+            }
+            const char* name = parentFeat->getNameInDocument();
+            if (!name) {                                   //can happen during undo/redo if Dim is selected???
+                continue;
+            }
+
+            //bool accepted =
+            static_cast<void> (Gui::Selection().addSelection(parentFeat->getDocument()->getName(), parentFeat->getNameInDocument()));
+
+            //next item
+            continue;
+        }
+
+        //add new objects here
+//        Base::Console().Message("MDIVP::setTreeToSceneSelect - unknown QGI selected - type: %d\n", (*it)->type() - QGraphicsItem::UserType);
+//        Base::Console().Message("MDIVP::setTreeToSceneSelect - unknown QGI selected - data0: %s data1: %s\n",
+//                                qPrintable(((*it)->data(0)).toString()), qPrintable(((*it)->data(1)).toString()));
+
     }
 
     blockSceneSelection(false);

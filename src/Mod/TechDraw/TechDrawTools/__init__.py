@@ -29,6 +29,11 @@ __date__    = "2022-01-11"
 #  \ingroup TechDraw
 #  \brief TechDrawTools Package for TechDraw workbench
 
+#Command => Icons & Menus
+#Task => Dialogs
+#Movers => application code
+#Util => this and that
+
 from .TDToolsMovers import *
 from .TDToolsUtil import *
 from .CommandShareView import CommandShareView

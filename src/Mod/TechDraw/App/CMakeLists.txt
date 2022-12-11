@@ -72,6 +72,14 @@ generate_from_xml(DrawTilePy)
 generate_from_xml(DrawTileWeldPy)
 generate_from_xml(DrawWeldSymbolPy)
 generate_from_xml(CosmeticExtensionPy)
+generate_from_xml(DiagramPy)
+generate_from_xml(DiagramSymbolPy)
+generate_from_xml(DiagramTracePy)
+generate_from_xml(SymbolPortPy)
+generate_from_xml(SymbolRepresentationPy)
+generate_from_xml(TraceRoutePy)
+generate_from_xml(TraceWaypointPy)
+
 
 SET(Draw_SRCS
     DrawPage.cpp
@@ -146,7 +154,25 @@ SET(Draw_SRCS
     DrawWeldSymbol.h
     FeatureProjection.cpp
     FeatureProjection.h
-    )
+    Diagram/Diagram.cpp
+    Diagram/Diagram.h
+    Diagram/DiagramSymbol.cpp
+    Diagram/DiagramSymbol.h
+    Diagram/DiagramTrace.cpp
+    Diagram/DiagramTrace.h
+    Diagram/PropertyDiagramSymbolList.cpp
+    Diagram/PropertyDiagramSymbolList.h
+    Diagram/PropertyDiagramTraceList.cpp
+    Diagram/PropertyDiagramTraceList.h
+    Diagram/SymbolPort.cpp
+    Diagram/SymbolPort.h
+    Diagram/SymbolRepresentation.cpp
+    Diagram/SymbolRepresentation.h
+    Diagram/TraceRoute.cpp
+    Diagram/TraceRoute.h
+    Diagram/TraceWaypoint.cpp
+    Diagram/TraceWaypoint.h
+)
 
 SET(TechDraw_SRCS
     AppTechDraw.cpp
@@ -249,7 +275,21 @@ SET(Python_SRCS
     DrawWeldSymbolPyImp.cpp
     CosmeticExtensionPy.xml
     CosmeticExtensionPyImp.cpp
-    )
+    DiagramPy.xml
+    DiagramPyImp.cpp
+    DiagramSymbolPy.xml
+    DiagramSymbolPyImp.cpp
+    DiagramTracePy.xml
+    DiagramTracePyImp.cpp
+    SymbolPortPy.xml
+    SymbolPortPyImp.cpp
+    SymbolRepresentationPy.xml
+    SymbolRepresentationPyImp.cpp
+    TraceRoutePy.xml
+    TraceRoutePyImp.cpp
+    TraceWaypointPy.xml
+    TraceWaypointPyImp.cpp
+)
 
 SOURCE_GROUP("Mod" FILES ${TechDraw_SRCS})
 SOURCE_GROUP("Features" FILES ${Draw_SRCS})

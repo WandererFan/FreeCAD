@@ -203,6 +203,12 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *draw << "TechDraw_MoveView";
     *draw << "TechDraw_ShareView";
     *draw << "Separator";
+    *draw << "TechDraw_AddDiagram";
+    *draw << "TechDraw_AddSymbol";
+    *draw << "TechDraw_RemoveSymbol";
+    *draw << "TechDraw_AddTrace";
+    *draw << "TechDraw_RemoveTrace";
+    *draw << "Separator";
     *draw << stacking;
     *draw << dimensions;
     *draw << toolattrib;
@@ -263,6 +269,14 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     *clips << "TechDraw_ClipGroup";
     *clips << "TechDraw_ClipGroupAdd";
     *clips << "TechDraw_ClipGroupRemove";
+
+    Gui::ToolBarItem *diagram = new Gui::ToolBarItem(root);
+    diagram->setCommand("TechDraw Diagrams");
+    *diagram << "TechDraw_AddDiagram";
+    *diagram << "TechDraw_AddSymbol";
+    *diagram << "TechDraw_RemoveSymbol";
+    *diagram << "TechDraw_AddTrace";
+    *diagram << "TechDraw_RemoveTrace";
 
     Gui::ToolBarItem* stacking = new Gui::ToolBarItem(root);
     stacking->setCommand("TechDraw Stacking");
@@ -407,6 +421,13 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     *views << "TechDraw_ShareView";
     *views << "TechDraw_ProjectShape";
 
+    Gui::ToolBarItem *diagram = new Gui::ToolBarItem(root);
+    diagram->setCommand("TechDraw Diagrams");
+    *diagram << "TechDraw_AddDiagram";
+    *diagram << "TechDraw_AddSymbol";
+    *diagram << "TechDraw_RemoveSymbol";
+    *diagram << "TechDraw_AddTrace";
+    *diagram << "TechDraw_RemoveTrace";
 
     Gui::ToolBarItem* clips = new Gui::ToolBarItem(root);
     clips->setCommand("TechDraw Clips");
