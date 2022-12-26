@@ -581,6 +581,61 @@ QGraphicsObject* PythonWrapper::toQGraphicsObject(PyObject* pyPtr)
     return nullptr;
 }
 
+
+
+QGraphicsItem* PythonWrapper::toQGraphicsItem(const Py::Object& pyobject)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    PyTypeObject* type = getPyTypeObjectForTypeName<QGraphicsItem>();
+    if (type) {
+        if (Shiboken::Object::checkType(pyobject.ptr())) {
+            auto sbkobject = reinterpret_cast<SbkObject*>(pyobject.ptr());
+            void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
+            return static_cast<QGraphicsItem*>(cppobject);
+        }
+    }
+#else
+    // Access shiboken2/PySide2 via Python
+    //
+    void* ptr = qt_getCppPointer(pyObject, "shiboken2", "getCppPointer");
+    return static_cast<QGraphicsItem*>(ptr);
+#endif
+
+#ifdef HAVE_PYQT // Unwrapping using sip/PyQt
+    void* ptr = qt_getCppPointer(pyobject, "sip", "unwrapinstance");
+    return static_cast<QGraphicsItem*>(ptr);
+#endif
+
+    return nullptr;
+}
+
+QGraphicsObject* PythonWrapper::toQGraphicsObject(const Py::Object& pyobject)
+{
+#if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
+    PyTypeObject* type = getPyTypeObjectForTypeName<QGraphicsObject>();
+    if (type) {
+        if (Shiboken::Object::checkType(pyobject.ptr())) {
+            auto sbkobject = reinterpret_cast<SbkObject*>(pyobject.ptr());
+            void* cppobject = Shiboken::Object::cppPointer(sbkobject, type);
+            return reinterpret_cast<QGraphicsObject*>(cppobject);
+        }
+    }
+#else
+    // Access shiboken2/PySide2 via Python
+    //
+    void* ptr = qt_getCppPointer(pyObject, "shiboken2", "getCppPointer");
+    return reinterpret_cast<QGraphicsObject*>(ptr);
+#endif
+
+#ifdef HAVE_PYQT // Unwrapping using sip/PyQt
+    void* ptr = qt_getCppPointer(pyobject, "sip", "unwrapinstance");
+    return static_cast<QGraphicsObject*>(ptr);
+#endif
+
+    return nullptr;
+}
+
+
 Py::Object PythonWrapper::fromQIcon(const QIcon* icon)
 {
 #if defined (HAVE_SHIBOKEN) && defined(HAVE_PYSIDE)
