@@ -178,6 +178,28 @@ void CosmeticVertex::moveRelative(Base::Vector3d movement)
     permaPoint += movement;
 }
 
+Base::Vector3d CosmeticVertex::scaled(double factor)
+{
+    return permaPoint * factor;
+}
+
+// rotate this CV around the origin
+Base::Vector3d CosmeticVertex::rotated(double angleDeg)
+{
+//    Base::Vector3d work = permaPoint - axisPoint;
+    Base::Vector3d work = permaPoint;
+    double angleRad = angleDeg * M_PI / 180.0;
+    work.RotateZ(angleRad);
+//    work = work + axisPoint;
+    return work;
+}
+
+Base::Vector3d CosmeticVertex::scaledRotated(double factor, double angleDeg)
+{
+    Base::Vector3d work = rotated(angleDeg);
+    return work * factor;
+}
+
 std::string CosmeticVertex::toString() const
 {
     std::stringstream ss;
@@ -251,11 +273,6 @@ void CosmeticVertex::Restore(Base::XMLReader &reader)
     boost::uuids::string_generator gen;
     boost::uuids::uuid u1 = gen(temp);
     tag = u1;
-}
-
-Base::Vector3d CosmeticVertex::scaled(double factor)
-{
-    return permaPoint * factor;
 }
 
 boost::uuids::uuid CosmeticVertex::getTag() const
@@ -338,7 +355,6 @@ CosmeticEdge::CosmeticEdge(CosmeticEdge* ce)
 {
 //    Base::Console().Message("CE::CE(ce)\n");
     TechDraw::BaseGeomPtr newGeom = ce->m_geometry->copy();
-    //these endpoints are already YInverted
     permaStart = ce->permaStart;
     permaEnd   = ce->permaEnd;
     permaRadius = ce->permaRadius;
@@ -348,12 +364,10 @@ CosmeticEdge::CosmeticEdge(CosmeticEdge* ce)
 }
 
 CosmeticEdge::CosmeticEdge(Base::Vector3d pt1, Base::Vector3d pt2) :
-//                             🠓 returns TopoDS_Edge
     CosmeticEdge::CosmeticEdge(TopoDS_EdgeFromVectors(pt1, pt2))
 {
 }
 
-//                                                       🠓 returns TechDraw::BaseGeomPtr
 CosmeticEdge::CosmeticEdge(TopoDS_Edge e) : CosmeticEdge(TechDraw::BaseGeom::baseFactory(e))
 {
 }
@@ -416,6 +430,46 @@ TechDraw::BaseGeomPtr CosmeticEdge::scaledGeometry(double scale)
     return newGeom;
 }
 
+// returns a BaseGeom like this but scaled and rotated about origin
+TechDraw::BaseGeomPtr CosmeticEdge::scaledRotated(double scale, double angleDeg)
+{
+    Base::Console().Message("CE::scaledRotated(%.3f, %.3f)\n", scale, angleDeg);
+    TopoDS_Edge e = m_geometry->getOCCEdge();
+    gp_Ax2 stdCS;       //OXYZ
+//    double angleRad = angleDeg * M_PI / 180.0;
+    TopoDS_Shape rotated = TechDraw::rotateShape(e, stdCS, angleDeg);
+    TopoDS_Shape scaled = TechDraw::scaleShape(rotated, scale);
+    TopoDS_Edge newEdge = TopoDS::Edge(scaled);
+    TechDraw::BaseGeomPtr newGeom = TechDraw::BaseGeom::baseFactory(newEdge);
+    newGeom->setClassOfEdge(ecHARD);
+    newGeom->setHlrVisible(true);
+    newGeom->setCosmetic(true);
+    newGeom->source(COSMETICEDGE);
+    newGeom->setCosmeticTag(getTagAsString());
+    Base::Console().Message("CE::scaledRotated: newGeom %s\n", newGeom->dump().c_str());
+    return newGeom;
+}
+
+// returns a BaseGeom like this but inverted with respect to Y axis
+TechDraw::BaseGeomPtr CosmeticEdge::scaledRotatedInverted(double scale, double angleDeg)
+{
+    Base::Console().Message("CE::scaledRotatedInverted()\n");
+    TopoDS_Edge e = m_geometry->getOCCEdge();
+    gp_Ax2 stdCS;       //OXYZ
+//    double angleRad = angleDeg * M_PI / 180.0;
+    TopoDS_Shape rotated = TechDraw::rotateShape(e, stdCS, angleDeg);
+    TopoDS_Shape scaled = TechDraw::scaleShape(rotated, scale);
+    TopoDS_Shape inverted = GeometryObject::invertGeometry(scaled);
+    TopoDS_Edge newEdge = TopoDS::Edge(inverted);
+    TechDraw::BaseGeomPtr newGeom = TechDraw::BaseGeom::baseFactory(newEdge);
+    newGeom->setClassOfEdge(ecHARD);
+    newGeom->setHlrVisible(true);
+    newGeom->setCosmetic(true);
+    newGeom->source(COSMETICEDGE);
+    newGeom->setCosmeticTag(getTagAsString());
+    Base::Console().Message("CE::inverted: newGeom: %s\n", newGeom->dump().c_str());
+    return newGeom;
+}
 std::string CosmeticEdge::toString() const
 {
     std::stringstream ss;

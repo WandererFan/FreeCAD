@@ -80,6 +80,8 @@ public:
     std::string toString() const;
     void dump(const char* title) override;
     Base::Vector3d scaled(double factor);
+    Base::Vector3d rotated(double angleDeg);
+    Base::Vector3d scaledRotated(double factor, double angleDeg);
 
     static bool restoreCosmetic();
 
@@ -135,6 +137,8 @@ public:
     void initialize();
     TopoDS_Edge TopoDS_EdgeFromVectors(Base::Vector3d pt1, Base::Vector3d pt2);
     TechDraw::BaseGeomPtr scaledGeometry(double scale);
+    TechDraw::BaseGeomPtr scaledRotated(double scale, double angleDeg);
+    TechDraw::BaseGeomPtr scaledRotatedInverted(double scale, double angleDeg);
 
     std::string toString() const override;
     void dump(const char* title);
