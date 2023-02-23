@@ -105,6 +105,17 @@ Py::Object DiagramTracePy::getTraceId() const
     return Py::asObject(PyLong_FromLong((long) id));
 }
 
+Py::String DiagramTracePy::getName() const
+{
+    return Py::String(getDiagramTracePtr()->getName());
+}
+
+void DiagramTracePy::setName(Py::String arg)
+{
+    std::string name = static_cast<std::string>(arg);
+    getDiagramTracePtr()->setName(std::string(name));
+}
+
 Py::Object DiagramTracePy::getFromSymbol() const
 {
     int id = getDiagramTracePtr()->getFromSymbol();

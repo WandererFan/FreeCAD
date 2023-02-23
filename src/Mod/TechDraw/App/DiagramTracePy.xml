@@ -26,6 +26,12 @@
         </Documentation> 
         <Parameter Name="TraceId" Type="Object" />
     </Attribute>
+    <Attribute Name="Name" ReadOnly="false">
+        <Documentation>
+            <UserDocu>Name - String</UserDocu>
+        </Documentation>
+        <Parameter Name="Name" Type="String" />
+    </Attribute>
     <Attribute Name="FromSymbol" ReadOnly="false">
         <Documentation> 
             <UserDocu>FromSymbol - SymbolId</UserDocu>
@@ -38,7 +44,7 @@
         </Documentation> 
         <Parameter Name="ToSymbol" Type="Object" />
     </Attribute>
-        <Attribute Name="FromPort" ReadOnly="false">
+    <Attribute Name="FromPort" ReadOnly="false">
         <Documentation>
             <UserDocu>FromPort - PortId</UserDocu>
         </Documentation>

@@ -59,6 +59,9 @@ public:
     TraceId getTraceId() const { return m_traceId; }
     void setTraceId(TraceId id) { m_traceId = id; }
 
+    std::string getName() const { return m_name; }
+    void setName(std::string name) { m_name = name; }
+
     SymbolId getFromSymbol() const { return m_fromSymbol; }
     void setFromSymbol(SymbolId fromSymbol) { m_fromSymbol = fromSymbol; }
 
@@ -95,6 +98,7 @@ private:
     TechDraw::Diagram* m_parentDiagram;
 
     TraceId m_traceId;
+    std::string m_name;
     SymbolId m_fromSymbol;
     std::string m_fromPort;
     SymbolId m_toSymbol;
