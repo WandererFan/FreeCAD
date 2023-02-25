@@ -94,9 +94,20 @@ SymbolId Diagram::copySymbol(SymbolId id)
     return copyId;
 }
 
-int Diagram::removeSymbol(TechDraw::DiagramSymbol* symbol)
+int Diagram::removeSymbol(TechDraw::DiagramSymbol* toDelete)
 {
-    return 0;
+    SymbolId id = toDelete->getSymbolId();
+    auto oldList = Symbols.getValues();
+    std::vector<DiagramSymbol*> newList;
+    for (auto& symbol : oldList) {
+        if (symbol->getSymbolId() == id) {
+            continue;
+        }
+        newList.push_back(symbol);
+    }
+    //we should release toDelete now? not really our object.
+    Symbols.setValues(newList);
+    return id;
 }
 
 DiagramSymbol* Diagram::getSymbol(SymbolId id)
@@ -121,9 +132,20 @@ int Diagram::addTrace(TechDraw::DiagramTrace* trace)
     return id;
 }
 
-int Diagram::removeTrace(TechDraw::DiagramTrace* trace)
+int Diagram::removeTrace(TechDraw::DiagramTrace* toDelete)
 {
-    return 0;
+    TraceId id = toDelete->getTraceId();
+    auto oldList = Traces.getValues();
+    std::vector<DiagramTrace*> newList;
+    for (auto& trace : oldList) {
+        if (trace->getTraceId() == id) {
+            continue;
+        }
+        newList.push_back(trace);
+    }
+    //we should release toDelete now? not really our object.
+    Traces.setValues(newList);
+    return id;
 }
 
 DiagramTrace* Diagram::getTrace(TraceId id)

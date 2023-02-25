@@ -27,11 +27,20 @@ __version__ = "00.01"
 __date__ = "2022/12/31"
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
+from PySide import QtCore
+import PySide.QtGui as QtGui
+from PySide.QtCore import QObject, Signal, Slot
 
 import FreeCAD as App
 import FreeCADGui as Gui
 
+import TechDraw as TD
+import TechDrawGui as TDG
+
 import TechDrawDiagram
+from TechDrawDiagram import TDDiagramWorkers
+from TechDrawDiagram import TDDiagramUtil
+from TechDrawDiagram import TDDiagramTypeManager
 
 class CommandRemoveTrace:
     """Remove a Trace from the current Diagram."""
@@ -51,6 +60,26 @@ class CommandRemoveTrace:
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
         print("TechDraw CommandRemoveTrace Activated()")
+        diagram = TDDiagramUtil.findDiagram()
+        if not diagram:
+            return
+
+        # find selected pathpainters in scene and delete them or display a selection task
+        tracePainterType = TDDiagramTypeManager.getTypeByName("PathPainter")
+        sceneItems = TDG.getSceneForPage(diagram).selectedItems()
+        # there's a pythonic way to do this :(
+        pathsInScene = list()
+        for item in sceneItems:
+            if item.type() == tracePainterType:
+                pathsInScene.append(item)
+
+        if not pathsInScene:
+            self.ui = TechDrawDiagram.TaskRemoveTrace(diagram)
+            Gui.Control.showDialog(self.ui)
+            return
+
+        for item in pathsInScene:
+            TDDiagramWorkers.removeTrace(diagram, item.Id, item)
 
 
     def IsActive(self):

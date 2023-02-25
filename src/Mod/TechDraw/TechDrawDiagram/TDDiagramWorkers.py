@@ -73,8 +73,8 @@ def symbolRubberStamp(diagram, symbolId):
 
 
 # add a symbol to the diagram
-def symbolAdd(diagram, symbolFile):
-    # print("TDDiagramWorkers.symbolAdd()")
+def addSymbol(diagram, symbolFile):
+    # print("TDDiagramWorkers.addSymbol()")
     location = App.Vector(Rez.guiX(diagram.PageWidth) / 2, -Rez.guiX(diagram.PageHeight) / 2, 0.0)
 
     # add symbol to diagram
@@ -92,6 +92,7 @@ def symbolAdd(diagram, symbolFile):
 def repaintDiagram(diagram):
     # print("workers.repaintDiagram()")
     scene = TDG.getSceneForPage(diagram)
+    #TODO: we should hide and remove all the old painters here
     if not scene:
         print("Error: no scene for diagram")
         return
@@ -201,8 +202,8 @@ def makeTraceRoute(diagram, points):
 
 
 # place a copy of a trace (already in diagram) on the diagram
-def tracePlace(diagram, traceId):
-    # print("TDDiagramWorkers.tracePlace()")
+def placeTrace(diagram, traceId):
+    # print("TDDiagramWorkers.placeTrace()")
     # get trace from diagram
     trace = diagram.getTrace(traceId)
 
@@ -221,8 +222,8 @@ def tracePlace(diagram, traceId):
 
 
 # add a trace to the diagram
-def traceAdd(diagram, route, name=None):
-    # print("TDDiagramWorkers.traceAdd()")
+def addTrace(diagram, route, name=None):
+    # print("TDDiagramWorkers.addTrace()")
     newTrace = TD.DiagramTrace()
     # newTrace.FromSymbol =
     # newTrace.FromPort =
@@ -233,12 +234,42 @@ def traceAdd(diagram, route, name=None):
     traceId = diagram.addTrace(newTrace)
     return traceId
 
+def getPainter(diagram, targetType, targetId):
+    print("TDDiagramWorkers.getPainter()")
+    sceneItems = TDG.getSceneForPage(diagram).items()
+    for item in sceneItems:
+        itemId = item.data(1)
+        if item.type() == targetType and itemId == targetId:
+            return item
+
+    return None
+
+# remove a trace from the diagram
+def removeTrace(diagram, idToDelete, painterToDelete=None):
+    print("TDDiagramWorkers.removeTrace()")
+    trace = diagram.getTrace(idToDelete)
+    traceId = diagram.removeTrace(trace)
+    # remove painter for trace
+    painter = painterToDelete  # ??
+    if not painter:
+        # caller didn't know the painter
+        painter = getPainter(diagram,
+                             TDDiagramTypeManager.getTypeByName("PathPainter"),
+                             traceId)
+        if not painter:
+            return None # throw something?
+
+    scene = TDG.getSceneForPage(diagram)
+    painter.setSelected(False)
+    scene.removeItem(painter)
+    return traceId
+
 
 # redraw a trace after points have been changed
-def redrawTrace(diagram, traceId):
+def redrawTrace(diagram, idToRedraw):
     # print("TDDiagramWorkers.redrawTrace({0})".format(traceId))
     # get the new points
-    trace = diagram.getTrace(traceId)
+    trace = diagram.getTrace(idToRedraw)
     points = list()
     for waypoint in trace.Route.Waypoints:
         newPoint = QtCore.QPointF(waypoint.Location.x, waypoint.Location.y)

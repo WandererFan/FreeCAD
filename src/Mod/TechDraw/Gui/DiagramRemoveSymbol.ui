@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DiagramSymbolAdd</class>
- <widget class="QWidget" name="DiagramSymbolAdd">
+ <class>DiagramRemoveSymbol</class>
+ <widget class="QWidget" name="DiagramRemoveSymbol">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Add Symbol to Diagram</string>
+   <string>Remove Symbol From Diagram</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
@@ -29,25 +29,11 @@
         <widget class="QListWidget" name="lwSymbols"/>
        </item>
        <item>
-        <widget class="QPushButton" name="pbPlace">
+        <widget class="QPushButton" name="pbRemove">
          <property name="text">
-          <string>Place a copy of selected symbol</string>
+          <string>Remove Selected Symbol</string>
          </property>
         </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Add from file</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Gui::FileChooser" name="fcFile" native="true"/>
        </item>
       </layout>
      </item>
@@ -55,13 +41,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>Gui::FileChooser</class>
-   <extends>QWidget</extends>
-   <header>Gui/FileDialog.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DiagramTraceAdd</class>
- <widget class="QWidget" name="DiagramTraceAdd">
+ <class>DiagramAddTrace</class>
+ <widget class="QWidget" name="DiagramAddTrace">
   <property name="geometry">
    <rect>
     <x>0</x>

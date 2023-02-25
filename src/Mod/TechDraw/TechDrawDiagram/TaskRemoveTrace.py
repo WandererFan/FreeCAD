@@ -42,40 +42,56 @@ from TechDrawDiagram import TDDiagramUtil
 import os
 
 class TaskRemoveTrace:
-    def __init__(self):
-        import os
+    def __init__(self, diagram):
+        self.diagram = diagram
+
         self._uiPath = App.getHomePath()
-        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/TaskRemoveTrace.ui")
+        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramRemoveTrace.ui")
         self.form = Gui.PySideUic.loadUi(self._uiPath)
+        self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_RemoveTrace", "Remove Trace From Diagram"))
 
-        self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_RemoveTrace", "Remove Trace to Diagram"))
+        # shouldn't need these lists, but i can not make item.data(x) work :(
+        self.idList = list()
+        self.nameList = list()
+        self.fillTraceList()
 
-#        self.form.pbView.clicked.connect(self.pickView)
-#        self.viewName = ""
-
-        self.dialogOpen = False;
-
-
-    def accept(self):
-#        print ("Accept")
-#        fromPage = App.ActiveDocument.getObject(self.fromPageName)
-        return True
-
-
-    def reject(self):
-#        print ("Reject")
-        return True
-
-
-    def pickView(self):
-#        print("pickView")
-#        if (self.dialogOpen) :
-#            return
+        self.form.pbRemove.clicked.connect(self.slotRemoveTrace)
 
         self.dialogOpen = False
 
 
-    def setValues(self, viewName, fromPageName, toPageName):
-        self.form.leView.setText(viewName)
-        self.form.leFromPage.setText(fromPageName)
+    def accept(self):
+        print ("Accept")
+        return True
+
+
+    def reject(self):
+        print ("Reject")
+        return True
+
+
+    def slotRemoveTrace(self):
+        print("TaskRemoveTrace.slotRemoveTrace(")
+        if not self.form.lwTraces.selectedItems():
+            return
+
+        selItem = self.form.lwTraces.currentItem()
+        selectedIndex = self.form.lwTraces.currentRow()
+
+        traceId = self.idList[selectedIndex]
+        traceName = self.nameList[selectedIndex]
+        TDDiagramWorkers.removeTrace(self.diagram, traceId)
+
+
+    def fillTraceList(self):
+        print("TaskRemoveTrace.fillTraceList()")
+        self.form.lwTraces.clear()
+        self.idList.clear()
+        self.nameList.clear()
+        for trace in self.diagram.Traces:
+            item = QtGui.QListWidgetItem()
+            self.form.lwTraces.addItem(item)
+            item.setText("{0} - {1}".format(trace.TraceId, trace.Name))
+            self.idList.append(trace.TraceId)
+            self.nameList.append(trace.Name)
 

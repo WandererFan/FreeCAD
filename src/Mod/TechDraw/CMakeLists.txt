@@ -56,8 +56,10 @@ set(TechDraw_ToolsGui
     Gui/DlgPageChooser.ui
 )
 set(TechDraw_DiagramGui
-    Gui/DiagramSymbolAdd.ui
-    Gui/DiagramTraceAdd.ui
+    Gui/DiagramAddSymbol.ui
+    Gui/DiagramRemoveSymbol.ui
+    Gui/DiagramAddTrace.ui
+    Gui/DiagramRemoveTrace.ui
 )
 
 SET(TechDraw_PATFile

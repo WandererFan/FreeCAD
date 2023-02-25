@@ -45,7 +45,7 @@ class TaskAddSymbol:
     def __init__(self, diagram):
         self.diagram = diagram
         self._uiPath = App.getHomePath()
-        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramSymbolAdd.ui")
+        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramAddSymbol.ui")
         self.form = Gui.PySideUic.loadUi(self._uiPath)
         self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_AddSymbol", "Add Symbol to Diagram"))
 
@@ -81,7 +81,7 @@ class TaskAddSymbol:
 
     def pickFromFile(self, fileName):
         print("TaskAddSymbol.pickFromFile()")
-        TDDiagramWorkers.symbolAdd(self.diagram, fileName)
+        TDDiagramWorkers.addSymbol(self.diagram, fileName)
         self.fillSymbolList()
 
     def fillSymbolList(self):

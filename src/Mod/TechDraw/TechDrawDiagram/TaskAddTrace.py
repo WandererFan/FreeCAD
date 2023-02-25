@@ -48,7 +48,7 @@ class TaskAddTrace:
         self.diagram = diagram
         self.controller = TDDiagramWorkers.TracePencilController(diagram)
         self._uiPath = App.getHomePath()
-        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramTraceAdd.ui")
+        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramAddTrace.ui")
         self.form = Gui.PySideUic.loadUi(self._uiPath)
         self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_AddTrace", "Add Trace to Diagram"))
 
@@ -157,7 +157,7 @@ class TaskAddTrace:
     def drawingFinished(self):
         print("TaskAddTrace.drawingFinished()")
         route = TDDiagramWorkers.makeTraceRoute(self.diagram, self.controller.getPoints())
-        traceId = TDDiagramWorkers.traceAdd(self.diagram, route)
+        traceId = TDDiagramWorkers.addTrace(self.diagram, route)
         trace = self.diagram.getTrace(traceId)
         trace.FromSymbol = self.fromSymbol.SymbolId
         trace.FromPort = self.fromPort.Name
@@ -165,7 +165,7 @@ class TaskAddTrace:
         trace.ToPort = self.toPort.Name
         #how to shut down controller?
         self.controller.goAway()
-        TDDiagramWorkers.tracePlace(self.diagram, traceId)
+        TDDiagramWorkers.placeTrace(self.diagram, traceId)
 
     @Slot()
     def slotFinishedSignalFromController(self):

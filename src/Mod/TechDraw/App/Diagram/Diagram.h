@@ -56,10 +56,10 @@ public:
     // child object ACID
     virtual SymbolId addSymbol(TechDraw::DiagramSymbol* symbol);
     virtual SymbolId copySymbol(SymbolId id);
-    virtual int removeSymbol(TechDraw::DiagramSymbol* symbol);
+    virtual int removeSymbol(TechDraw::DiagramSymbol* toDelete);
     virtual DiagramSymbol* getSymbol(SymbolId id);
     virtual TraceId addTrace(TechDraw::DiagramTrace* trace);
-    virtual int removeTrace(TechDraw::DiagramTrace* trace);
+    virtual int removeTrace(TechDraw::DiagramTrace* toDelete);
     virtual DiagramTrace* getTrace(TraceId id);
 
     virtual int addMetaEntry(std::string key, std::string data);
