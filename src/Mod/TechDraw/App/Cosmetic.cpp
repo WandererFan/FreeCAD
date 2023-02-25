@@ -408,8 +408,10 @@ void CosmeticEdge::initialize()
 TopoDS_Edge CosmeticEdge::TopoDS_EdgeFromVectors(Base::Vector3d pt1, Base::Vector3d pt2)
 {
     // Base::Console().Message("CE::CE(p1, p2)\n");
-    Base::Vector3d p1 = DrawUtil::invertY(pt1);
-    Base::Vector3d p2 = DrawUtil::invertY(pt2);
+//    Base::Vector3d p1 = DrawUtil::invertY(pt1);
+//    Base::Vector3d p2 = DrawUtil::invertY(pt2);
+    Base::Vector3d p1 = pt1;
+    Base::Vector3d p2 = pt2;
     gp_Pnt gp1(p1.x, p1.y, p1.z);
     gp_Pnt gp2(p2.x, p2.y, p2.z);
     TopoDS_Edge e = BRepBuilderAPI_MakeEdge(gp1, gp2);
@@ -419,7 +421,8 @@ TopoDS_Edge CosmeticEdge::TopoDS_EdgeFromVectors(Base::Vector3d pt1, Base::Vecto
 TechDraw::BaseGeomPtr CosmeticEdge::scaledGeometry(double scale)
 {
     TopoDS_Edge e = m_geometry->getOCCEdge();
-    TopoDS_Shape s = TechDraw::scaleShape(e, scale);
+//    TopoDS_Shape s = TechDraw::scaleShape(e, scale);
+    TopoDS_Shape s = TechDraw::scaleShape(e, 1.0);
     TopoDS_Edge newEdge = TopoDS::Edge(s);
     TechDraw::BaseGeomPtr newGeom = TechDraw::BaseGeom::baseFactory(newEdge);
     newGeom->setClassOfEdge(ecHARD);
@@ -714,8 +717,10 @@ void CenterLine::initialize()
 TechDraw::BaseGeomPtr CenterLine::BaseGeomPtrFromVectors(Base::Vector3d pt1, Base::Vector3d pt2)
 {
     // Base::Console().Message("CE::CE(p1, p2)\n");
-    Base::Vector3d p1 = DrawUtil::invertY(pt1);
-    Base::Vector3d p2 = DrawUtil::invertY(pt2);
+//    Base::Vector3d p1 = DrawUtil::invertY(pt1);
+//    Base::Vector3d p2 = DrawUtil::invertY(pt2);
+    Base::Vector3d p1 = pt1;
+    Base::Vector3d p2 = pt2;
     gp_Pnt gp1(p1.x, p1.y, p1.z);
     gp_Pnt gp2(p2.x, p2.y, p2.z);
     TopoDS_Edge e = BRepBuilderAPI_MakeEdge(gp1, gp2);
@@ -782,7 +787,8 @@ CenterLine* CenterLine::CenterLineBuilder(DrawViewPart* partFeat,
 TechDraw::BaseGeomPtr CenterLine::scaledGeometry(TechDraw::DrawViewPart* partFeat)
 {
 //    Base::Console().Message("CL::scaledGeometry() - m_type: %d\n", m_type);
-    double scale = partFeat->getScale();
+//    double scale = partFeat->getScale();
+    double scale = 1.0;
     std::pair<Base::Vector3d, Base::Vector3d> ends;
     try {
         if (m_faces.empty() &&
@@ -904,6 +910,7 @@ std::pair<Base::Vector3d, Base::Vector3d> CenterLine::calcEndPointsNoRef(
                                                       double rotate)
 {
 //    Base::Console().Message("CL::calcEndPointsNoRef()\n");
+    double localScale(1.0);
     Base::Vector3d p1 = start;
     Base::Vector3d p2 = end;
     Base::Vector3d mid = (p1 + p2) / 2.0;
@@ -922,19 +929,23 @@ std::pair<Base::Vector3d, Base::Vector3d> CenterLine::calcEndPointsNoRef(
 
     //shift
     if (!DrawUtil::fpCompare(hShift, 0.0)) {
-        double hss = hShift * scale;
+//        double hss = hShift * scale;
+        double hss = hShift * localScale;
         p1.x = p1.x + hss;
         p2.x = p2.x + hss;
     }
     if (!DrawUtil::fpCompare(vShift, 0.0)) {
-        double vss = vShift * scale;
+//        double vss = vShift * scale;
+        double vss = vShift * localScale;
         p1.y = p1.y + vss;
         p2.y = p2.y + vss;
     }
 
     std::pair<Base::Vector3d, Base::Vector3d> result;
-    result.first = p1 / scale;
-    result.second = p2 / scale;
+//    result.first = p1 / scale;
+//    result.second = p2 / scale;
+    result.first = p1;
+    result.second = p2;
     return result;
 }
 
@@ -954,7 +965,8 @@ std::pair<Base::Vector3d, Base::Vector3d> CenterLine::calcEndPoints(DrawViewPart
     Bnd_Box faceBox;
     faceBox.SetGap(0.0);
 
-    double scale = partFeat->getScale();
+//    double scale = partFeat->getScale();
+    double scale = 1.0;
 
     for (auto& fn: faceNames) {
         if (TechDraw::DrawUtil::getGeomTypeFromName(fn) != "Face") {
@@ -1050,7 +1062,8 @@ std::pair<Base::Vector3d, Base::Vector3d> CenterLine::calcEndPoints2Lines(DrawVi
         return result;
     }
 
-    double scale = partFeat->getScale();
+//    double scale = partFeat->getScale();
+    double scale = 1.0;
     const std::vector<TechDraw::BaseGeomPtr> dbEdges = partFeat->getEdgeGeometry();
 
     std::vector<TechDraw::BaseGeomPtr> edges;
@@ -1146,7 +1159,8 @@ std::pair<Base::Vector3d, Base::Vector3d> CenterLine::calcEndPoints2Points(DrawV
         return std::pair<Base::Vector3d, Base::Vector3d>();
     }
 
-    double scale = partFeat->getScale();
+//    double scale = partFeat->getScale();
+    double scale = 1.0;
 
     std::vector<TechDraw::VertexPtr> points;
     for (auto& vn: vertNames) {

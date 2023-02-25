@@ -178,63 +178,63 @@ void GeometryObject::projectShape(const TopoDS_Shape& inShape, const gp_Ax2& vie
         if (!hlrToShape.VCompound().IsNull()) {
             visHard = hlrToShape.VCompound();
             BRepLib::BuildCurves3d(visHard);
-            visHard = invertGeometry(visHard);
+//            visHard = invertGeometry(visHard);
             //            BRepTools::Write(visHard, "GOvisHard.brep");            //debug
         }
 
         if (!hlrToShape.Rg1LineVCompound().IsNull()) {
             visSmooth = hlrToShape.Rg1LineVCompound();
             BRepLib::BuildCurves3d(visSmooth);
-            visSmooth = invertGeometry(visSmooth);
+//            visSmooth = invertGeometry(visSmooth);
         }
 
         if (!hlrToShape.RgNLineVCompound().IsNull()) {
             visSeam = hlrToShape.RgNLineVCompound();
             BRepLib::BuildCurves3d(visSeam);
-            visSeam = invertGeometry(visSeam);
+//            visSeam = invertGeometry(visSeam);
         }
 
         if (!hlrToShape.OutLineVCompound().IsNull()) {
             //            BRepTools::Write(hlrToShape.OutLineVCompound(), "GOOutLineVCompound.brep");            //debug
             visOutline = hlrToShape.OutLineVCompound();
             BRepLib::BuildCurves3d(visOutline);
-            visOutline = invertGeometry(visOutline);
+//            visOutline = invertGeometry(visOutline);
         }
 
         if (!hlrToShape.IsoLineVCompound().IsNull()) {
             visIso = hlrToShape.IsoLineVCompound();
             BRepLib::BuildCurves3d(visIso);
-            visIso = invertGeometry(visIso);
+//            visIso = invertGeometry(visIso);
         }
 
         if (!hlrToShape.HCompound().IsNull()) {
             hidHard = hlrToShape.HCompound();
             BRepLib::BuildCurves3d(hidHard);
-            hidHard = invertGeometry(hidHard);
+//            hidHard = invertGeometry(hidHard);
         }
 
         if (!hlrToShape.Rg1LineHCompound().IsNull()) {
             hidSmooth = hlrToShape.Rg1LineHCompound();
             BRepLib::BuildCurves3d(hidSmooth);
-            hidSmooth = invertGeometry(hidSmooth);
+//            hidSmooth = invertGeometry(hidSmooth);
         }
 
         if (!hlrToShape.RgNLineHCompound().IsNull()) {
             hidSeam = hlrToShape.RgNLineHCompound();
             BRepLib::BuildCurves3d(hidSeam);
-            hidSeam = invertGeometry(hidSeam);
+//            hidSeam = invertGeometry(hidSeam);
         }
 
         if (!hlrToShape.OutLineHCompound().IsNull()) {
             hidOutline = hlrToShape.OutLineHCompound();
             BRepLib::BuildCurves3d(hidOutline);
-            hidOutline = invertGeometry(hidOutline);
+//            hidOutline = invertGeometry(hidOutline);
         }
 
         if (!hlrToShape.IsoLineHCompound().IsNull()) {
             hidIso = hlrToShape.IsoLineHCompound();
             BRepLib::BuildCurves3d(hidIso);
-            hidIso = invertGeometry(hidIso);
+//            hidIso = invertGeometry(hidIso);
         }
     }
     catch (const Standard_Failure&) {
@@ -366,37 +366,37 @@ void GeometryObject::projectShapeWithPolygonAlgo(const TopoDS_Shape& input, cons
 
         visHard = polyhlrToShape.VCompound();
         BRepLib::BuildCurves3d(visHard);
-        visHard = invertGeometry(visHard);
+//        visHard = invertGeometry(visHard);
         //        BRepTools::Write(visHard, "GOvisHardi.brep");            //debug
 
         visSmooth = polyhlrToShape.Rg1LineVCompound();
         BRepLib::BuildCurves3d(visSmooth);
-        visSmooth = invertGeometry(visSmooth);
+//        visSmooth = invertGeometry(visSmooth);
 
         visSeam = polyhlrToShape.RgNLineVCompound();
         BRepLib::BuildCurves3d(visSeam);
-        visSeam = invertGeometry(visSeam);
+//        visSeam = invertGeometry(visSeam);
 
         visOutline = polyhlrToShape.OutLineVCompound();
         BRepLib::BuildCurves3d(visOutline);
-        visOutline = invertGeometry(visOutline);
+//        visOutline = invertGeometry(visOutline);
 
         hidHard = polyhlrToShape.HCompound();
         BRepLib::BuildCurves3d(hidHard);
-        hidHard = invertGeometry(hidHard);
+//        hidHard = invertGeometry(hidHard);
         //        BRepTools::Write(hidHard, "GOhidHardi.brep");            //debug
 
         hidSmooth = polyhlrToShape.Rg1LineHCompound();
         BRepLib::BuildCurves3d(hidSmooth);
-        hidSmooth = invertGeometry(hidSmooth);
+//        hidSmooth = invertGeometry(hidSmooth);
 
         hidSeam = polyhlrToShape.RgNLineHCompound();
         BRepLib::BuildCurves3d(hidSeam);
-        hidSeam = invertGeometry(hidSeam);
+//        hidSeam = invertGeometry(hidSeam);
 
         hidOutline = polyhlrToShape.OutLineHCompound();
         BRepLib::BuildCurves3d(hidOutline);
-        hidOutline = invertGeometry(hidOutline);
+//        hidOutline = invertGeometry(hidOutline);
     }
     catch (const Standard_Failure& e) {
         Base::Console().Error(
@@ -434,7 +434,7 @@ TopoDS_Shape GeometryObject::projectSimpleShape(const TopoDS_Shape& shape, const
     HLRBRep_HLRToShape hlrToShape(brep_hlr);
     TopoDS_Shape hardEdges = hlrToShape.VCompound();
     BRepLib::BuildCurves3d(hardEdges);
-    hardEdges = invertGeometry(hardEdges);
+//    hardEdges = invertGeometry(hardEdges);
 
     return hardEdges;
 }
@@ -468,7 +468,7 @@ TopoDS_Shape GeometryObject::projectFace(const TopoDS_Shape& face, const gp_Ax2&
     HLRBRep_HLRToShape hlrToShape(brep_hlr);
     TopoDS_Shape hardEdges = hlrToShape.VCompound();
     BRepLib::BuildCurves3d(hardEdges);
-    hardEdges = invertGeometry(hardEdges);
+//    hardEdges = invertGeometry(hardEdges);
 
     return hardEdges;
 }

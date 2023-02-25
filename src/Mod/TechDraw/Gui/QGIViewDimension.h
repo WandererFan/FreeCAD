@@ -275,6 +275,8 @@ protected:
     void arrowPositionsToFeature(const Base::Vector2d positions[]) const;
     void makeMarkC(double xPos, double yPos, QColor color = Qt::red) const;
 
+    void positionLabelFromFeature();
+
 private:
     static inline Base::Vector2d fromQtApp(const Base::Vector3d &vec3) { return {vec3.x, -vec3.y}; }
     static inline Base::BoundBox2d fromQtGui(const QRectF &rect)

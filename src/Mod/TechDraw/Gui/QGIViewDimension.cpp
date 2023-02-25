@@ -65,6 +65,7 @@
 
 using namespace TechDraw;
 using namespace TechDrawGui;
+using DU = DrawUtil;
 
 enum SnapMode
 {
@@ -564,11 +565,17 @@ void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
     setViewFeature(static_cast<TechDraw::DrawView*>(obj));
     dvDimension = obj;
 
-    // Set the QGIGroup Properties based on the DrawView
-    float x = Rez::guiX(obj->X.getValue());
-    float y = Rez::guiX(-obj->Y.getValue());
+//    // Set the QGIGroup Properties based on the DrawView
+//    float x = Rez::guiX(obj->X.getValue());
+//    float y = Rez::guiX(-obj->Y.getValue());
 
-    datumLabel->setPosFromCenter(x, y);
+//    Base::Vector3d origin = Rez::guiX(DU::invertY(obj->getOriginPoint()));
+//    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
+
+////    datumLabel->setPosFromCenter(x, y);
+//    datumLabel->setPosFromCenter(absolute.x, absolute.y);
+
+    positionLabelFromFeature();
 
     setNormalColorAll();
     setPrettyNormal();
@@ -576,6 +583,25 @@ void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
     updateDim();
     draw();
 }
+
+// set the dataLabel's position based on the X,Y offset and origin values from the
+// Dimension feature
+void QGIViewDimension::positionLabelFromFeature()
+{
+    auto dim(dynamic_cast<TechDraw::DrawViewDimension*>(getViewObject()));
+    if (!dim) {
+        return;
+    }
+
+    float x = Rez::guiX(dim->X.getValue());
+    float y = Rez::guiX(-dim->Y.getValue());
+
+    Base::Vector3d origin = Rez::guiX(DU::invertY(dim->getOriginPoint()));
+    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
+
+    datumLabel->setPosFromCenter(absolute.x, absolute.y);
+}
+
 
 void QGIViewDimension::setNormalColorAll()
 {
@@ -620,10 +646,22 @@ void QGIViewDimension::updateView(bool update)
         return;
     }
 
+//    // Set the QGIGroup Properties based on the DrawView
+//    float x = Rez::guiX(obj->X.getValue());
+//    float y = Rez::guiX(-obj->Y.getValue());
+
+//    Base::Vector3d origin = Rez::guiX(DU::invertY(obj->getOriginPoint()));
+//    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
+
+////    datumLabel->setPosFromCenter(x, y);
+//    datumLabel->setPosFromCenter(absolute.x, absolute.y);
+    positionLabelFromFeature();
+
     if (update || dim->X.isTouched() || dim->Y.isTouched()) {
-        float x = Rez::guiX(dim->X.getValue());
-        float y = Rez::guiX(dim->Y.getValue());
-        datumLabel->setPosFromCenter(x, -y);
+        positionLabelFromFeature();
+//        float x = Rez::guiX(dim->X.getValue());
+//        float y = Rez::guiX(-dim->Y.getValue());
+//        datumLabel->setPosFromCenter(x, y);
         updateDim();
     }
     else if (vp->Fontsize.isTouched() || vp->Font.isTouched()) {
@@ -688,11 +726,15 @@ void QGIViewDimension::datumLabelDragFinished()
     }
 
     double x = Rez::appX(datumLabel->X()), y = Rez::appX(datumLabel->Y());
+    Base::Vector3d labelCenter(x, -y, 0.0);
+    Base::Vector3d origin = dim->getOriginPoint();
+    Base::Vector3d displace = labelCenter - origin;
+
     Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Drag Dimension"));
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.X = %f",
-                            dim->getNameInDocument(), x);
+                            dim->getNameInDocument(), displace.x);
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.Y = %f",
-                            dim->getNameInDocument(), -y);
+                            dim->getNameInDocument(), displace.y);
     Gui::Command::commitCommand();
 }
 
@@ -2087,6 +2129,7 @@ void QGIViewDimension::drawDistance(TechDraw::DrawViewDimension* dimension,
         fromQtGui(mapRectFromItem(datumLabel, datumLabel->boundingRect())));
 
     pointPair linePoints = dimension->getLinearPoints();
+    linePoints.invertY();
     const char* dimensionType = dimension->Type.getValueAsString();
 
     double lineAngle;
@@ -2123,6 +2166,7 @@ void QGIViewDimension::drawRadius(TechDraw::DrawViewDimension* dimension,
     Base::BoundBox2d labelRectangle(
         fromQtGui(mapRectFromItem(datumLabel, datumLabel->boundingRect())));
     arcPoints curvePoints = dimension->getArcPoints();
+    curvePoints.invertY();
 
     double endAngle;
     double startRotation;
@@ -2156,6 +2200,7 @@ void QGIViewDimension::drawDiameter(TechDraw::DrawViewDimension* dimension,
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
 
     arcPoints curvePoints = dimension->getArcPoints();
+    curvePoints.invertY();
 
     Base::Vector2d curveCenter(fromQtApp(curvePoints.center));
     double curveRadius = curvePoints.radius;
@@ -2324,6 +2369,7 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
     double labelAngle = 0.0;
 
     anglePoints anglePoints = dimension->getAnglePoints();
+    anglePoints.invertY();
 
     Base::Vector2d angleVertex = fromQtApp(anglePoints.vertex());
     Base::Vector2d startPoint = fromQtApp(anglePoints.first());

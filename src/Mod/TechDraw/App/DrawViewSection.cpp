@@ -461,37 +461,42 @@ TopoDS_Shape DrawViewSection::prepareShape(const TopoDS_Shape& rawShape, double 
 {
     //    Base::Console().Message("DVS::prepareShape - %s - rawShape.IsNull: %d shapeSize: %.3f\n",
     //                            getNameInDocument(), rawShape.IsNull(), shapeSize);
-    (void)shapeSize;//shapeSize is not used in this base class, but is interesting for
-                    //derived classes
-    // build display geometry as in DVP, with minor mods
-    TopoDS_Shape preparedShape;
-    try {
-        Base::Vector3d origin(0.0, 0.0, 0.0);
-        m_projectionCS = getProjectionCS(origin);
-        gp_Pnt inputCenter;
-        inputCenter = TechDraw::findCentroid(rawShape, m_projectionCS);
-        Base::Vector3d centroid(inputCenter.X(), inputCenter.Y(), inputCenter.Z());
+//    (void)shapeSize;//shapeSize is not used in this base class, but is interesting for
+//                    //derived classes
+//    // build display geometry as in DVP, with minor mods
+//    TopoDS_Shape preparedShape;
+//    try {
+//        Base::Vector3d origin(0.0, 0.0, 0.0);
+//        m_projectionCS = getProjectionCS(origin);
+//        gp_Pnt inputCenter;
+//        inputCenter = TechDraw::findCentroid(rawShape, getProjectionCS());
+//        Base::Vector3d centroid(inputCenter.X(), inputCenter.Y(), inputCenter.Z());
+//        Base::Vector3d centroid(DU::toVector3d(findCentroid(rawShape, getProjectionCS())));
 
-        preparedShape = TechDraw::moveShape(rawShape, centroid * -1.0);
-        m_cutShape = preparedShape;
-        m_saveCentroid = centroid;
+//        preparedShape = TechDraw::moveShape(rawShape, centroid * -1.0);
+//        m_cutShape = preparedShape;
+//        m_cutShape = rawShape;
+//        m_saveCentroid = centroid;
 
-        preparedShape = TechDraw::scaleShape(preparedShape, getScale());
+//        preparedShape = TechDraw::scaleShape(preparedShape, getScale());
 
-        if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
-            preparedShape =
-                TechDraw::rotateShape(preparedShape, m_projectionCS, Rotation.getValue());
-        }
-        if (debugSection()) {
-            BRepTools::Write(m_cutShape, "DVSCutShape.brep");//debug
-            //            DrawUtil::dumpCS("DVS::makeSectionCut - CS to GO", viewAxis);
-        }
-    }
-    catch (Standard_Failure& e1) {
-        Base::Console().Warning("DVS::prepareShape - failed to build shape %s - %s **\n",
-                                getNameInDocument(), e1.GetMessageString());
-    }
-    return preparedShape;
+//        if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
+//            preparedShape =
+//                TechDraw::rotateShape(preparedShape, m_projectionCS, Rotation.getValue());
+//        }
+//        if (debugSection()) {
+//            BRepTools::Write(m_cutShape, "DVSCutShape.brep");//debug
+//            //            DrawUtil::dumpCS("DVS::makeSectionCut - CS to GO", viewAxis);
+//        }
+//    }
+//    catch (Standard_Failure& e1) {
+//        Base::Console().Warning("DVS::prepareShape - failed to build shape %s - %s **\n",
+//                                getNameInDocument(), e1.GetMessageString());
+//    }
+    Base::Vector3d centroid(DU::toVector3d(findCentroid(rawShape, getProjectionCS())));
+    m_cutShape = rawShape;
+    m_saveCentroid = centroid;
+    return rawShape;
 }
 
 TopoDS_Shape DrawViewSection::makeCuttingTool(double shapeSize)
@@ -559,13 +564,13 @@ void DrawViewSection::postHlrTasks(void)
         BRepTools::Write(faceIntersections, "DVSFaceIntersections.brep");//debug
     }
 
-    TopoDS_Shape centeredFaces = TechDraw::moveShape(faceIntersections, m_saveCentroid * -1.0);
+//    TopoDS_Shape centeredFaces = TechDraw::moveShape(faceIntersections, m_saveCentroid * -1.0);
 
-    TopoDS_Shape scaledSection = TechDraw::scaleShape(centeredFaces, getScale());
-    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
-        scaledSection =
-            TechDraw::rotateShape(scaledSection, getProjectionCS(), Rotation.getValue());
-    }
+//    TopoDS_Shape scaledSection = TechDraw::scaleShape(centeredFaces, getScale());
+//    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
+//        scaledSection =
+//            TechDraw::rotateShape(scaledSection, getProjectionCS(), Rotation.getValue());
+//    }
 
     m_sectionTopoDSFaces = alignSectionFaces(faceIntersections);
     if (debugSection()) {
@@ -655,17 +660,18 @@ TopoDS_Compound DrawViewSection::alignSectionFaces(TopoDS_Shape faceIntersection
 //    Base::Console().Message("DVS::alignSectionFaces() - %s - faceIntersection.isnull: %d\n",
 //                            getNameInDocument(),
 //                            faceIntersections.IsNull());
-    TopoDS_Compound sectionFaces;
-    TopoDS_Shape centeredShape =
-        TechDraw::moveShape(faceIntersections, getOriginalCentroid() * -1.0);
+//    TopoDS_Compound sectionFaces;
+//    TopoDS_Shape centeredShape =
+//        TechDraw::moveShape(faceIntersections, getOriginalCentroid() * -1.0);
 
-    TopoDS_Shape scaledSection = TechDraw::scaleShape(centeredShape, getScale());
-    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
-        scaledSection =
-            TechDraw::rotateShape(scaledSection, getProjectionCS(), Rotation.getValue());
-    }
+//    TopoDS_Shape scaledSection = TechDraw::scaleShape(centeredShape, getScale());
+//    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
+//        scaledSection =
+//            TechDraw::rotateShape(scaledSection, getProjectionCS(), Rotation.getValue());
+//    }
 
-    return mapToPage(scaledSection);
+//    return mapToPage(scaledSection);
+    return mapToPage(faceIntersections);
 }
 
 TopoDS_Compound DrawViewSection::mapToPage(TopoDS_Shape& shapeToAlign)
@@ -820,20 +826,22 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawViewSection::sectionLineEnds()
 {
     std::pair<Base::Vector3d, Base::Vector3d> result;
     Base::Vector3d stdZ(0.0, 0.0, 1.0);
-    double baseRotation = getBaseDVP()->Rotation.getValue();//Qt degrees are clockwise
-    Base::Rotation rotator(stdZ, baseRotation * M_PI / 180.0);
-    Base::Rotation unrotator(stdZ, -baseRotation * M_PI / 180.0);
+//    double baseRotation = getBaseDVP()->Rotation.getValue();//Qt degrees are clockwise
+//    Base::Rotation rotator(stdZ, baseRotation * M_PI / 180.0);
+//    Base::Rotation unrotator(stdZ, -baseRotation * M_PI / 180.0);
 
     auto sNorm = SectionNormal.getValue();
     auto axis = getBaseDVP()->Direction.getValue();
-    Base::Vector3d stdOrg(0.0, 0.0, 0.0);
+//    Base::Vector3d stdOrg(0.0, 0.0, 0.0);
     Base::Vector3d sectionLineDir = -axis.Cross(sNorm);
     sectionLineDir.Normalize();
-    sectionLineDir = getBaseDVP()->projectPoint(sectionLineDir);//convert to base view CS
+    sectionLineDir = getBaseDVP()->projectPoint(sectionLineDir, false);  //convert to base view CS
     sectionLineDir.Normalize();
 
-    Base::Vector3d sectionOrg = SectionOrigin.getValue() - getBaseDVP()->getOriginalCentroid();
-    sectionOrg = getBaseDVP()->projectPoint(sectionOrg);//convert to base view CS
+//    Base::Vector3d sectionOrg = SectionOrigin.getValue() - getBaseDVP()->getOriginalCentroid();
+    Base::Vector3d sectionOrg = SectionOrigin.getValue();
+//    sectionOrg = getBaseDVP()->projectPoint(sectionOrg);//convert to base view CS
+    sectionOrg = getBaseDVP()->projectPoint(sectionOrg, false);//convert to base view CS
     double halfSize = getBaseDVP()->getSizeAlongVector(sectionLineDir) / 2.0;
     result.first = sectionOrg + sectionLineDir * halfSize;
     result.second = sectionOrg - sectionLineDir * halfSize;

@@ -158,6 +158,8 @@ enum DimensionType {
     bool isExtentDim() const;
     virtual ReferenceVector getEffectiveReferences() const;
 
+    Base::Vector3d getOriginPoint() const;
+
 protected:
     void handleChangedPropertyType(Base::XMLReader &, const char * , App::Property * ) override;
     void Restore(Base::XMLReader& reader) override;

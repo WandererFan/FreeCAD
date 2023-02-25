@@ -350,6 +350,7 @@ private:
             throw Py::TypeError("expected arg3 to be 'Vector'");
         }
 
+        scale = 1.0;
         TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
         if (!pShape) {
             Base::Console().Message("TRACE - AATDP::findShapeOutline - input shape is null\n");
@@ -862,8 +863,6 @@ private:
 
     Py::Object makeDistanceDim(const Py::Tuple& args)
     {
-    //points come in unscaled, but makeDistDim unscales them so we need to prescale here.
-    //makeDistDim was built for extent dims which work from scaled geometry
         PyObject* pDvp(nullptr);
         PyObject* pDimType(nullptr);
         PyObject* pFrom(nullptr);
@@ -895,13 +894,16 @@ private:
             to = static_cast<Base::VectorPy*>(pTo)->value();
         }
         DrawViewDimension* dvd =
+//        DrawDimHelper::makeDistDim(dvp,
+//                                   dimType,
+//                                   DrawUtil::invertY(from),
+//                                   DrawUtil::invertY(to));
         DrawDimHelper::makeDistDim(dvp,
                                    dimType,
-                                   DrawUtil::invertY(from),
-                                   DrawUtil::invertY(to));
+                                   from,
+                                   to);
         PyObject* dvdPy = dvd->getPyObject();
         return Py::asObject(dvdPy);
-//        return Py::None();
     }
 
     Py::Object makeDistanceDim3d(const Py::Tuple& args)
@@ -936,8 +938,10 @@ private:
             to = static_cast<Base::VectorPy*>(pTo)->value();
         }
         //3d points are not scaled
-        from = DrawUtil::invertY(dvp->projectPoint(from));
-        to   = DrawUtil::invertY(dvp->projectPoint(to));
+//        from = DrawUtil::invertY(dvp->projectPoint(from));
+//        to   = DrawUtil::invertY(dvp->projectPoint(to));
+        from = dvp->projectPoint(from, false);
+        to   = dvp->projectPoint(to, false);
         //DrawViewDimension* =
         DrawDimHelper::makeDistDim(dvp,
                                    dimType,

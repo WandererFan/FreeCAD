@@ -1417,11 +1417,11 @@ DrawViewDimension* dimensionMaker(TechDraw::DrawViewPart* dvp, std::string dimTy
 //position the Dimension text on the view
 void positionDimText(DrawViewDimension* dim)
 {
-    TechDraw::pointPair pp = dim->getLinearPoints();
-    Base::Vector3d mid = (pp.first() + pp.second()) / 2.0;
-    dim->X.setValue(mid.x);
+    Q_UNUSED(dim)
+//    Base::Vector3d mid = dim->getOriginPoint();
+    dim->X.setValue(0.0);
     double fontSize = Preferences::dimFontSizeMM();
-    dim->Y.setValue(-mid.y + 0.5 * fontSize);
+    dim->Y.setValue(0.5 * fontSize);
 }
 //===========================================================================
 // Selection Validation Helpers

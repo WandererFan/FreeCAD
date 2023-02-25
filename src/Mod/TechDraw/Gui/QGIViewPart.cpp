@@ -342,6 +342,10 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
     //        path = t.map(path);
     //    }
 
+    //alternative to invertY
+    QTransform t;
+    t.scale(1.0, -1.0);
+    path = t.map(path);
     return path;
 }
 
@@ -601,7 +605,7 @@ void QGIViewPart::drawViewPart()
             if (showCenterMarks) {
                 QGICMark* cmItem = new QGICMark(i);
                 addToGroup(cmItem);
-                cmItem->setPos(Rez::guiX((*vert)->x()), Rez::guiX((*vert)->y()));
+                cmItem->setPos(Rez::guiX((*vert)->x()), Rez::guiX(-(*vert)->y()));
                 cmItem->setThick(0.5 * lineWidth);//need minimum?
                 cmItem->setSize(cAdjust * lineWidth * vertexScaleFactor);
                 cmItem->setPrettyNormal();
@@ -612,7 +616,7 @@ void QGIViewPart::drawViewPart()
             if (showVertices) {
                 QGIVertex* item = new QGIVertex(i);
                 addToGroup(item);
-                item->setPos(Rez::guiX((*vert)->x()), Rez::guiX((*vert)->y()));
+                item->setPos(Rez::guiX((*vert)->x()), Rez::guiX(-(*vert)->y()));
                 item->setNormalColor(vertexColor);
                 item->setFillColor(vertexColor);
                 item->setRadius(lineWidth * vertexScaleFactor);
@@ -808,8 +812,13 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
         //find the ends of the section line
         double scale = viewPart->getScale();
         std::pair<Base::Vector3d, Base::Vector3d> sLineEnds = viewSection->sectionLineEnds();
-        Base::Vector3d l1 = Rez::guiX(sLineEnds.first) * scale;
-        Base::Vector3d l2 = Rez::guiX(sLineEnds.second) * scale;
+//        Base::Vector3d l1 = Rez::guiX(sLineEnds.first) * scale;
+//        Base::Vector3d l2 = Rez::guiX(sLineEnds.second) * scale;
+//        Base::Vector3d l1 = Rez::guiX(sLineEnds.first);
+//        Base::Vector3d l2 = Rez::guiX(sLineEnds.second);
+        // inversion required here?
+        Base::Vector3d l1 = Rez::guiX(DU::invertY(sLineEnds.first));
+        Base::Vector3d l2 = Rez::guiX(DU::invertY(sLineEnds.second));
         //make the section line a little longer
         double fudge = 2.0 * Preferences::dimFontSizeMM();
         Base::Vector3d lineDir = l2 - l1;
@@ -818,15 +827,17 @@ void QGIViewPart::drawSectionLine(TechDraw::DrawViewSection* viewSection, bool b
 
         //which way do the arrows point?
         Base::Vector3d arrowDir = viewSection->SectionNormal.getValue();
-        arrowDir = -viewPart->projectPoint(arrowDir);      //arrows point reverse of sectionNormal
+        arrowDir = -viewPart->projectPoint(arrowDir, false);      //arrows point reverse of sectionNormal
         sectionLine->setDirection(arrowDir.x, -arrowDir.y);//3d direction needs Y inversion
 
         if (vp->SectionLineMarks.getValue()) {
             ChangePointVector points = viewSection->getChangePointsFromSectionLine();
             //extend the changePoint locations to match the fudged section line ends
-            QPointF location0 = points.front().getLocation() * scale;
+//            QPointF location0 = points.front().getLocation() * scale;
+            QPointF location0 = DU::invertY(points.front().getLocation());
             location0 = location0 - DU::toQPointF(lineDir) * fudge;
-            QPointF location1 = points.back().getLocation() * scale;
+//            QPointF location1 = points.back().getLocation() * scale;
+            QPointF location1 = DU::invertY(points.back().getLocation());
             location1 = location1 + DU::toQPointF(lineDir) * fudge;
             //change points have Rez::guiX applied in sectionLine
             points.front().setLocation(location0);
@@ -985,7 +996,6 @@ void QGIViewPart::drawHighlight(TechDraw::DrawViewDetail* viewDetail, bool b)
         return;
     }
     if (b) {
-        //        double fontSize = getPrefFontSize();
         double fontSize = Preferences::labelFontSizeMM();
         QGIHighlight* highlight = new QGIHighlight();
         scene()->addItem(highlight);
@@ -999,11 +1009,13 @@ void QGIViewPart::drawHighlight(TechDraw::DrawViewDetail* viewDetail, bool b)
         addToGroup(highlight);
         highlight->setPos(0.0, 0.0);//sb setPos(center.x, center.y)?
 
-        Base::Vector3d center = viewDetail->AnchorPoint.getValue() * viewPart->getScale();
-        double rotationRad = viewPart->Rotation.getValue() * M_PI / 180.0;
-        center.RotateZ(rotationRad);
+//        Base::Vector3d center = viewDetail->AnchorPoint.getValue() * viewPart->getScale();
+        Base::Vector3d center = viewDetail->AnchorPoint.getValue();
+//        double rotationRad = viewPart->Rotation.getValue() * M_PI / 180.0;
+//        center.RotateZ(rotationRad);
 
-        double radius = viewDetail->Radius.getValue() * viewPart->getScale();
+//        double radius = viewDetail->Radius.getValue() * viewPart->getScale();
+        double radius = viewDetail->Radius.getValue();
         highlight->setBounds(center.x - radius, center.y + radius, center.x + radius,
                              center.y - radius);
         highlight->setWidth(Rez::guiX(vp->IsoWidth.getValue()));
@@ -1029,7 +1041,8 @@ void QGIViewPart::highlightMoved(QGIHighlight* highlight, QPointF newPos)
     auto detail = dynamic_cast<DrawViewDetail*>(docObj);
     auto oldAnchor = detail->AnchorPoint.getValue();
     if (detail) {
-        Base::Vector3d delta = Rez::appX(DrawUtil::toVector3d(newPos)) / getViewObject()->getScale();
+//        Base::Vector3d delta = Rez::appX(DrawUtil::toVector3d(newPos)) / getViewObject()->getScale();
+        Base::Vector3d delta = Rez::appX(DrawUtil::toVector3d(newPos));
         delta = DrawUtil::invertY(delta);
         detail->AnchorPoint.setValue(oldAnchor + delta);
     }
@@ -1051,7 +1064,9 @@ void QGIViewPart::drawMatting()
     QGIMatting* mat = new QGIMatting();
     addToGroup(mat);
     mat->setRadius(Rez::guiX(radius));
-    mat->setPos(0.0, 0.0);
+//    mat->setPos(0.0, 0.0);
+    Base::Vector3d center = Rez::guiX(DU::invertY(dvd->AnchorPoint.getValue()));
+    mat->setPos(DU::toQPointF(center));
     mat->draw();
     mat->show();
 }
