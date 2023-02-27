@@ -117,6 +117,51 @@ void QGIViewPart::setViewPartFeature(TechDraw::DrawViewPart* obj)
     setViewFeature(static_cast<TechDraw::DrawView*>(obj));
 }
 
+// position the view such that the center of the geometry is placed at
+// the feature's X&Y properties
+void QGIViewPart::positionViewFromFeature()
+{
+    auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
+    if (!dvp) {
+        return;
+    }
+
+    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled
+    geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
+
+    Base::Vector3d viewCenter = dvp->getPosition();
+    viewCenter = Rez::guiX(viewCenter);
+
+    Base::Vector3d effectiveCenter = viewCenter + geometryCenter;
+
+    // setPosition handles Y inversion and positioning within a clip group
+    setPosition(effectiveCenter.x, effectiveCenter.y);
+}
+
+// convert our pos() + the feature's centroid to an X,Y for the feature.  This is
+// the inverse of positionViewFromFeature().
+void QGIViewPart::setFeatureXYFromPos()
+{
+    auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
+    if (!dvp) {
+        return;
+    }
+
+    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled
+    geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
+    geometryCenter.y = -geometryCenter.y;
+
+    Base::Vector3d viewPosition = DU::toVector3d(pos());
+    if (isInnerView()) {
+        viewPosition.y = getYInClip(y());
+    }
+
+    Base::Vector3d nominalCenter = viewPosition - geometryCenter;
+    dvp->setPosition(Rez::appX(nominalCenter.x), Rez::appX(-nominalCenter.y));
+}
+
+
+
 QPainterPath QGIViewPart::drawPainterPath(TechDraw::BaseGeomPtr baseGeom) const
 {
     double rot = getViewObject()->Rotation.getValue();

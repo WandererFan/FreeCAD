@@ -235,13 +235,14 @@ void QGIView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 //    if(scene() && this == scene()->mouseGrabberItem()) {
     if (m_dragState == DRAGGING) {
         if(!m_locked) {
-            if (!isInnerView()) {
-                double tempX = x(),
-                       tempY = getY();
-                getViewObject()->setPosition(Rez::appX(tempX), Rez::appX(tempY));
-            } else {
-                getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
-            }
+            setFeatureXYFromPos();
+//            if (!isInnerView()) {
+//                double tempX = x(),
+//                       tempY = getY();
+//                getViewObject()->setPosition(Rez::appX(tempX), Rez::appX(tempY));
+//            } else {
+//                getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
+//            }
         }
     }
     m_dragState = NODRAG;
@@ -294,6 +295,26 @@ void QGIView::setPosition(qreal xPos, qreal yPos)
     }
 }
 
+// basic positioning based on the feature's X&Y properties
+void QGIView::positionViewFromFeature()
+{
+    if (getViewObject()) {
+        // setPosition handles Y inversion and positioing within a clip group
+        setPosition(Rez::guiX(getViewObject()->X.getValue()),
+                    Rez::guiX(getViewObject()->Y.getValue()));
+    }
+}
+
+void QGIView::setFeatureXYFromPos()
+{
+    if (isInnerView()) {
+        getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
+    } else {
+        getViewObject()->setPosition(Rez::appX(x()), Rez::appX(-y()));
+    }
+}
+
+
 //is this needed anymore???
 double QGIView::getYInClip(double y)
 {
@@ -319,6 +340,7 @@ QGIViewClip* QGIView::getClipGroup()
 
 void QGIView::updateView(bool forceUpdate)
 {
+    Q_UNUSED(forceUpdate)
 //    Base::Console().Message("QGIV::updateView() - %s\n", getViewObject()->getNameInDocument());
 
     //allow/prevent dragging
@@ -328,10 +350,11 @@ void QGIView::updateView(bool forceUpdate)
         setFlag(QGraphicsItem::ItemIsMovable, true);
     }
 
-    if (getViewObject() && forceUpdate) {
-        setPosition(Rez::guiX(getViewObject()->X.getValue()),
-                    Rez::guiX(getViewObject()->Y.getValue()));
-    }
+    positionViewFromFeature();
+//    if (getViewObject() && forceUpdate) {
+//        setPosition(Rez::guiX(getViewObject()->X.getValue()),
+//                    Rez::guiX(getViewObject()->Y.getValue()));
+//    }
 
     double appRotation = getViewObject()->Rotation.getValue();
     double guiRotation = rotation();

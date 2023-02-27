@@ -69,6 +69,10 @@ public:
     void updateView(bool update = false) override;
     void tidy();
     QRectF boundingRect() const override;
+
+    void positionViewFromFeature() override;
+    void setFeatureXYFromPos() override;
+
     virtual void drawAllSectionLines();
     virtual void drawSectionLine(TechDraw::DrawViewSection* s, bool b);
     virtual void drawComplexSectionLine(TechDraw::DrawViewSection* viewSection, bool b);
