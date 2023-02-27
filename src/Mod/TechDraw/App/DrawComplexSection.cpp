@@ -195,7 +195,7 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
                                 getNameInDocument());
     }
 
-    // the profile wire to one side of the shape
+    //move the profile wire to one side of the shape
     gp_Trsf mov;
     mov.SetTranslation(gp_Vec(gClosestBasis) * (-dMax));
     TopLoc_Location loc(mov);
@@ -270,14 +270,11 @@ TopoDS_Shape DrawComplexSection::prepareShape(const TopoDS_Shape& cutShape, doub
         return TopoDS_Shape();
     }
 
-//    TopoDS_Shape centeredShape = TechDraw::centerShapeXY(m_alignResult, getProjectionCS());
-//    //    m_preparedShape = scaleShape(m_alignResult, getScale());
-//    m_preparedShape = scaleShape(centeredShape, getScale());
-//    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
-//        m_preparedShape =
-//            TechDraw::rotateShape(m_preparedShape, getProjectionCS(), Rotation.getValue());
-//    }
-    m_preparedShape = m_alignResult;
+    m_preparedShape = scaleShape(m_alignResult, getScale());
+    if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
+        m_preparedShape =
+            TechDraw::rotateShape(m_preparedShape, getProjectionCS(), Rotation.getValue());
+    }
 
     return m_preparedShape;
 }
@@ -368,12 +365,12 @@ void DrawComplexSection::makeAlignedPieces(const TopoDS_Shape& rawShape)
         isProfileVertical = false;
     }
 
-    double horizReverser = 1.0;//profile vector points to right, so we  to right
+    double horizReverser = 1.0;//profile vector points to right, so we move to right
     if (gProfileVec.Dot(gp_Vec(gp::OX().Direction().XYZ())) < 0.0) {
         //profileVec does not point towards stdX (right in paper space)
         horizReverser = -1.0;
     }
-    double verticalReverser = 1.0;//profile vector points to top, so we  to top
+    double verticalReverser = 1.0;//profile vector points to top, so we move to top
     if (gProfileVec.Dot(gp_Vec(gp::OY().Direction().XYZ())) < 0.0) {
         //profileVec does not point towards stdY (up in paper space)
         verticalReverser = -1.0;
@@ -403,7 +400,7 @@ void DrawComplexSection::makeAlignedPieces(const TopoDS_Shape& rawShape)
             continue;
         }
 
-        // intersection shape to the origin
+        //move intersection shape to the origin
         gp_Trsf xPieceCenter;
         xPieceCenter.SetTranslation(gp_Vec(findCentroid(intersect).XYZ()) * -1.0);
         BRepBuilderAPI_Transform mkTransXLate(intersect, xPieceCenter, true);
@@ -443,10 +440,10 @@ void DrawComplexSection::makeAlignedPieces(const TopoDS_Shape& rawShape)
         pieceYSizeAll.push_back(pieceYSize);
         pieceZSizeAll.push_back(pieceZSize);
 
-        //now we need to  the piece so that the interesting face is coincident
+        //now we need to move the piece so that the interesting face is coincident
         //with the paper plane
-        //yVector is ment of cut face to paperPlane (XZ)
-        gp_Vec yVector(gp::OY().Direction().XYZ() * pieceYSize / 2.0);// "back"
+        //yVector is movement of cut face to paperPlane (XZ)
+        gp_Vec yVector(gp::OY().Direction().XYZ() * pieceYSize / 2.0);//move "back"
         gp_Vec netDisplacement = -1.0 * gp_Vec(findCentroid(pieceAligned).XYZ()) + yVector;
         //if we are going to space along X, we need to bring the pieces back into alignment
         //with the XY plane.  If we are stacking the pieces along Z, we don't want a vertical adjustment.
@@ -805,12 +802,6 @@ TopoDS_Wire DrawComplexSection::makeSectionLineWire()
     App::DocumentObject* toolObj = CuttingToolWireObject.getValue();
     DrawViewPart* baseDvp = dynamic_cast<DrawViewPart*>(BaseView.getValue());
     if (baseDvp) {
-//        Base::Vector3d centroid = baseDvp->getCurrentCentroid();
-//        TopoDS_Shape sTrans =
-//            TechDraw::moveShape(Part::Feature::getShape(toolObj), centroid * -1.0);
-//        TopoDS_Shape sScaled = TechDraw::scaleShape(sTrans, baseDvp->getScale());
-        //we don't mirror the scaled shape here as it will be mirrored by the projection
-
         TopoDS_Shape sScaled = Part::Feature::getShape(toolObj);
         if (sScaled.ShapeType() == TopAbs_WIRE) {
             lineWire = makeNoseToTailWire(TopoDS::Wire(sScaled));

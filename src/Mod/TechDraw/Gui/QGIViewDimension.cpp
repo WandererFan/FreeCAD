@@ -565,16 +565,6 @@ void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
     setViewFeature(static_cast<TechDraw::DrawView*>(obj));
     dvDimension = obj;
 
-//    // Set the QGIGroup Properties based on the DrawView
-//    float x = Rez::guiX(obj->X.getValue());
-//    float y = Rez::guiX(-obj->Y.getValue());
-
-//    Base::Vector3d origin = Rez::guiX(DU::invertY(obj->getOriginPoint()));
-//    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
-
-////    datumLabel->setPosFromCenter(x, y);
-//    datumLabel->setPosFromCenter(absolute.x, absolute.y);
-
     positionLabelFromFeature();
 
     setNormalColorAll();
@@ -646,22 +636,8 @@ void QGIViewDimension::updateView(bool update)
         return;
     }
 
-//    // Set the QGIGroup Properties based on the DrawView
-//    float x = Rez::guiX(obj->X.getValue());
-//    float y = Rez::guiX(-obj->Y.getValue());
-
-//    Base::Vector3d origin = Rez::guiX(DU::invertY(obj->getOriginPoint()));
-//    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
-
-////    datumLabel->setPosFromCenter(x, y);
-//    datumLabel->setPosFromCenter(absolute.x, absolute.y);
-    positionLabelFromFeature();
-
     if (update || dim->X.isTouched() || dim->Y.isTouched()) {
         positionLabelFromFeature();
-//        float x = Rez::guiX(dim->X.getValue());
-//        float y = Rez::guiX(-dim->Y.getValue());
-//        datumLabel->setPosFromCenter(x, y);
         updateDim();
     }
     else if (vp->Fontsize.isTouched() || vp->Font.isTouched()) {

@@ -613,10 +613,8 @@ pointPair DrawViewDimension::getPointsOneEdge(ReferenceVector references)
     gp_Pnt gEnd1 = BRep_Tool::Pnt(TopExp::LastVertex(edge));
 
     pointPair pts(DrawUtil::toVector3d(gEnd0), DrawUtil::toVector3d(gEnd1));
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -648,10 +646,8 @@ pointPair DrawViewDimension::getPointsTwoEdges(ReferenceVector references)
     }
 
     pointPair pts = closestPoints(geometry0, geometry1);
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -688,10 +684,8 @@ pointPair DrawViewDimension::getPointsTwoVerts(ReferenceVector references)
     gp_Pnt gPoint1 = BRep_Tool::Pnt(vertex1);
 
     pointPair pts(DrawUtil::toVector3d(gPoint0), DrawUtil::toVector3d(gPoint1));
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -729,10 +723,8 @@ pointPair DrawViewDimension::getPointsEdgeVert(ReferenceVector references)
     }
 
     pointPair pts = closestPoints(geometry0, geometry1);
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -760,10 +752,8 @@ arcPoints DrawViewDimension::getArcParameters(ReferenceVector references)
     }
     const TopoDS_Edge& edge = TopoDS::Edge(geometry);
     arcPoints pts = arcPointsFromEdge(edge);
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -1087,10 +1077,8 @@ anglePoints DrawViewDimension::getAnglePointsTwoEdges(ReferenceVector references
     }
     anglePoints pts(DrawUtil::toVector3d(gApex), DrawUtil::toVector3d(gFar0),
                     DrawUtil::toVector3d(gFar1));
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 
@@ -1135,10 +1123,8 @@ anglePoints DrawViewDimension::getAnglePointsThreeVerts(ReferenceVector referenc
     gp_Pnt point2 = BRep_Tool::Pnt(vertex2);
     anglePoints pts(DrawUtil::toVector3d(point1), DrawUtil::toVector3d(point0),
                     DrawUtil::toVector3d(point2));
-//    pts.move(getViewPart()->getOriginalCentroid());
     pts.project(getViewPart());
     pts.mapToPage(getViewPart());
-//    pts.invertY();
     return pts;
 }
 

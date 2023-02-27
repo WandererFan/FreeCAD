@@ -72,8 +72,6 @@ std::string CosmeticExtension::addCosmeticVertex(Base::Vector3d pos)
 //    Base::Console().Message("CEx::addCosmeticVertex(%s)\n",
  //                           DrawUtil::formatVector(pos).c_str());
     std::vector<CosmeticVertex*> verts = CosmeticVertexes.getValues();
-//    Base::Vector3d tempPos = DrawUtil::invertY(pos);
-//    TechDraw::CosmeticVertex* cv = new TechDraw::CosmeticVertex(tempPos);
     TechDraw::CosmeticVertex* cv = new TechDraw::CosmeticVertex(pos);
     verts.push_back(cv);
     CosmeticVertexes.setValues(verts);

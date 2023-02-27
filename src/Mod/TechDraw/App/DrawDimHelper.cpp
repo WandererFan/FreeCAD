@@ -301,9 +301,8 @@ DrawDimHelper::minMax3d(DrawViewPart* dvp, ReferenceVector references, int direc
     for (auto& ref : references) {
         builder.Add(comp, ref.getGeometry());
     }
-    Base::Vector3d centroid = dvp->getOriginalCentroid();
     TopoDS_Shape centeredShape =//this result is a throw away. We will work with comp.
-        DrawViewPart::centerScaleRotate(dvp, comp, centroid);
+        DrawViewPart::centerScaleRotate(dvp, comp);
 
     //project the selected 3d shapes in the dvp's coord system
     TechDraw::GeometryObjectPtr go(

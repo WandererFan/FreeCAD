@@ -1418,7 +1418,6 @@ DrawViewDimension* dimensionMaker(TechDraw::DrawViewPart* dvp, std::string dimTy
 void positionDimText(DrawViewDimension* dim)
 {
     Q_UNUSED(dim)
-//    Base::Vector3d mid = dim->getOriginPoint();
     dim->X.setValue(0.0);
     double fontSize = Preferences::dimFontSizeMM();
     dim->Y.setValue(0.5 * fontSize);

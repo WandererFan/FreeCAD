@@ -114,7 +114,6 @@ void TaskLineDecor::getDefaults()
                     m_weight = ce->m_format.m_weight;
                     m_visible = ce->m_format.m_visible;
                 } else if (bg->source() == 2) {
-//                    TechDraw::CenterLine* cl = m_partFeat->getCenterLine(bg->getCosmeticTag);
                     TechDraw::CenterLine* cl = m_partFeat->getCenterLineBySelection(m_edges.front());
                     m_style = cl->m_format.m_style;
                     m_color = cl->m_format.m_color;

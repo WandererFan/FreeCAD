@@ -215,19 +215,15 @@ void DrawViewDetail::makeDetailShape(TopoDS_Shape& shape, DrawViewPart* dvp, Dra
     Base::Vector3d shapeCenter = Base::Vector3d(gpCenter.X(), gpCenter.Y(), gpCenter.Z());
     m_saveCentroid = shapeCenter;//centroid of original shape
 
-//    if (!dvs) {
-//        //section cutShape should already be on origin
-//        copyShape = TechDraw::moveShape(copyShape,//centre shape on origin
-//                                        -shapeCenter);
-//    }
-
-//    shapeCenter = Base::Vector3d(0.0, 0.0, 0.0);
 
 
-//    m_viewAxis = dvp->getProjectionCS(shapeCenter);//save the CS for later
-    Base::Vector3d anchor = AnchorPoint.getValue();//this is a 2D point in base view local coords
-//    anchor = DrawUtil::toR3(m_viewAxis, anchor);//actual anchor coords in R3
-    anchor = DrawUtil::toR3(getProjectionCS(), anchor);//actual anchor coords in R3
+
+    Base::Vector3d anchor = AnchorPoint.getValue();//this is a 2D point in base view local coord
+    // TODO: not sure about needing this rotation???
+    //    double baseRotationRad = dvp->Rotation.getValue() * M_PI / 180.0;
+    //    anchor.RotateZ(baseRotationRad);
+
+    anchor = DrawUtil::toR3(m_viewAxis, anchor);//actual anchor coords in R3
 
 
     Bnd_Box bbxSource;
@@ -335,38 +331,23 @@ void DrawViewDetail::makeDetailShape(TopoDS_Shape& shape, DrawViewPart* dvp, Dra
     gp_Pnt inputCenter;
     try {
         //centroid of result
-//        inputCenter = TechDraw::findCentroid(pieces, dirDetail);
-//        Base::Vector3d centroid(inputCenter.X(), inputCenter.Y(), inputCenter.Z());
-//        m_saveCentroid += centroid;//center of massaged shape
 
         if ((solidCount > 0) || (shellCount > 0)) {
-//            //align shape with detail anchor
-//            TopoDS_Shape centeredShape = TechDraw::moveShape(pieces, anchor * -1.0);
-//            m_scaledShape = TechDraw::scaleShape(centeredShape, getScale());
-//            if (debugDetail()) {
-//                BRepTools::Write(m_scaledShape, "DVDScaled.brep");//debug
-//            }
             m_scaledShape = pieces;
-        }
-        else {
+        } else {
             //no solids, no shells, do what you can with edges
             TopoDS_Shape projectedEdges = projectEdgesOntoFace(copyShape, extrusionFace, gdir);
-//            TopoDS_Shape centeredShape = TechDraw::moveShape(projectedEdges, anchor * -1.0);
             if (debugDetail()) {
                 BRepTools::Write(projectedEdges, "DVDProjectedEdges.brep");//debug
-//                BRepTools::Write(centeredShape, "DVDCenteredShape.brep");  //debug
             }
-//            m_scaledShape = TechDraw::scaleShape(centeredShape, getScale());
-            m_scaledShape = projectedEdges;
+            m_scaledShape = TechDraw::scaleShape(projectedEdges, getScale());
         }
 
-//        Base::Vector3d stdOrg(0.0, 0.0, 0.0);
-//        m_viewAxis = dvp->getProjectionCS(stdOrg);
         m_viewAxis = dvp->getProjectionCS();
 
-//        if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
-//            m_scaledShape = TechDraw::rotateShape(m_scaledShape, m_viewAxis, Rotation.getValue());
-//        }
+        if (!DrawUtil::fpCompare(Rotation.getValue(), 0.0)) {
+            m_scaledShape = TechDraw::rotateShape(m_scaledShape, m_viewAxis, Rotation.getValue());
+        }
     }//end try block
 
     catch (Standard_Failure& e1) {
@@ -388,11 +369,8 @@ void DrawViewDetail::postHlrTasks(void)
 
     Base::Vector3d anchor = AnchorPoint.getValue();//this is a 2D point on paper plane
 //   anchor = DrawUtil::toR3(getProjectionCS(), anchor);//actual anchor coords in R3
-//    geometryObject->pruneVertexGeom(Base::Vector3d(0.0, 0.0, 0.0),
-//                                    Radius.getValue()
-//                                        * getScale());//remove vertices beyond clipradius
     geometryObject->pruneVertexGeom(anchor,
-                                    Radius.getValue());//remove vertices beyond clipradius
+                                    Radius.getValue() * getScale());//remove vertices beyond clipradius
 
     //second pass if required
     if (ScaleType.isValue("Automatic") && !checkFit()) {

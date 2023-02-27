@@ -217,7 +217,6 @@ void DrawViewPart::addShapes2d(void)
         if (s.ShapeType() == TopAbs_VERTEX) {
             gp_Pnt gp = BRep_Tool::Pnt(TopoDS::Vertex(s));
             Base::Vector3d vp(gp.X(), gp.Y(), gp.Z());
-//            vp = vp - m_saveCentroid;
             //need to offset the point to match the big projection
             Base::Vector3d projected = projectPoint(vp * getScale());
             TechDraw::VertexPtr v1(std::make_shared<TechDraw::Vertex>(projected));
@@ -321,30 +320,23 @@ GeometryObjectPtr DrawViewPart::makeGeometryForShape(TopoDS_Shape& shape)
     //    Base::Console().Message("DVP::makeGeometryForShape() - %s\n", getNameInDocument());
     gp_Pnt inputCenter = TechDraw::findCentroid(shape, getProjectionCS());
     m_saveCentroid = DU::toVector3d(inputCenter);
-//    m_saveShape = centerScaleRotate(this, shape, m_saveCentroid);
-    m_saveShape = shape;
+    m_saveShape = centerScaleRotate(this, shape);
     GeometryObjectPtr go = buildGeometryObject(shape, getProjectionCS());
     return go;
 }
 
 //Modify a shape by centering, scaling and rotating and return the centered (but not rotated) shape
-TopoDS_Shape DrawViewPart::centerScaleRotate(DrawViewPart* dvp, TopoDS_Shape& inOutShape,
-                                             Base::Vector3d centroid)
+TopoDS_Shape DrawViewPart::centerScaleRotate(DrawViewPart* dvp, TopoDS_Shape& inOutShape)
 {
-    Base::Console().Message("DVP::centerScaleRotate() - %s\n", dvp->getNameInDocument());
+//    Base::Console().Message("DVP::centerScaleRotate() - %s\n", dvp->getNameInDocument());
+
+    inOutShape = TechDraw::scaleShape(inOutShape, dvp->getScale());
+    if (!DrawUtil::fpCompare(dvp->Rotation.getValue(), 0.0)) {
+        inOutShape = TechDraw::rotateShape(inOutShape, dvp->getProjectionCS(),
+                                           dvp->Rotation.getValue());//conventional rotation
+    }
+    //    BRepTools::Write(inOutShape, "DVPScaled.brep");            //debug
     return inOutShape;
-//    gp_Ax2 viewAxis = dvp->getProjectionCS();
-
-//    //center shape on origin
-//    TopoDS_Shape centeredShape = TechDraw::moveShape(inOutShape, centroid * -1.0);
-
-//    inOutShape = TechDraw::scaleShape(centeredShape, dvp->getScale());
-//    if (!DrawUtil::fpCompare(dvp->Rotation.getValue(), 0.0)) {
-//        inOutShape = TechDraw::rotateShape(inOutShape, viewAxis,
-//                                           dvp->Rotation.getValue());//conventional rotation
-//    }
-//    //    BRepTools::Write(inOutShape, "DVPScaled.brep");            //debug
-//    return centeredShape;
 }
 
 
@@ -982,8 +974,7 @@ double DrawViewPart::getSizeAlongVector(Base::Vector3d alignmentVector)
     BRepBndLib::AddOptimal(rotatedShape, shapeBox);
     double xMin = 0, xMax = 0, yMin = 0, yMax = 0, zMin = 0, zMax = 0;
     shapeBox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-//    double shapeWidth((xMax - xMin) / getScale());
-    double shapeWidth(xMax - xMin);
+    double shapeWidth((xMax - xMin) / getScale());
     return shapeWidth;
 }
 
@@ -992,8 +983,6 @@ Base::Vector3d DrawViewPart::projectPoint(const Base::Vector3d& pt, bool invert)
 {
     //    Base::Console().Message("DVP::projectPoint(%s, %d\n",
     //                            DrawUtil::formatVector(pt).c_str(), invert);
-//    Base::Vector3d stdOrg(0.0, 0.0, 0.0);
-//    gp_Ax2 viewAxis = getProjectionCS(stdOrg);
     gp_Ax2 viewAxis = getProjectionCS();
     gp_Pnt gPt(pt.x, pt.y, pt.z);
 
@@ -1409,8 +1398,7 @@ void DrawViewPart::addCosmeticVertexesToGeom()
     //    Base::Console().Message("DVP::addCosmeticVertexesToGeom()\n");
     const std::vector<TechDraw::CosmeticVertex*> cVerts = CosmeticVertexes.getValues();
     for (auto& cv : cVerts) {
-//        int iGV = geometryObject->addCosmeticVertex(cv->scaled(getScale()), cv->getTagAsString());
-        int iGV = geometryObject->addCosmeticVertex(cv->scaled(1.0), cv->getTagAsString());
+        int iGV = geometryObject->addCosmeticVertex(cv->scaled(getScale()), cv->getTagAsString());
         cv->linkGeom = iGV;
     }
 }
@@ -1495,8 +1483,7 @@ void DrawViewPart::addCosmeticEdgesToGeom()
     //    Base::Console().Message("CEx::addCosmeticEdgesToGeom()\n");
     const std::vector<TechDraw::CosmeticEdge*> cEdges = CosmeticEdges.getValues();
     for (auto& ce : cEdges) {
-//        TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(getScale());
-        TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(1.0);
+        TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(getScale());
         if (!scaledGeom)
             continue;
         //        int iGE =
@@ -1512,8 +1499,7 @@ int DrawViewPart::add1CEToGE(std::string tag)
         Base::Console().Message("CEx::add1CEToGE 2 - ce %s not found\n", tag.c_str());
         return -1;
     }
-//    TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(getScale());
-    TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(1.0);
+    TechDraw::BaseGeomPtr scaledGeom = ce->scaledGeometry(getScale());
     int iGE = geometryObject->addCosmeticEdge(scaledGeom, tag);
 
     return iGE;

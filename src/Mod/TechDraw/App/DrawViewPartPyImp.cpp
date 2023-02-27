@@ -186,9 +186,6 @@ PyObject* DrawViewPartPy::makeCosmeticVertex3d(PyObject *args)
 
     DrawViewPart* dvp = getDrawViewPartPtr();
     Base::Vector3d pnt1 = static_cast<Base::VectorPy*>(pPnt1)->value();
-//    Base::Vector3d centroid = dvp->getOriginalCentroid();
-//    pnt1 = pnt1 - centroid;
-//    Base::Vector3d projected = DrawUtil::invertY(dvp->projectPoint(pnt1));
     Base::Vector3d projected = dvp->projectPoint(pnt1, false);
 
     std::string id = dvp->addCosmeticVertex(projected);
@@ -343,16 +340,11 @@ PyObject* DrawViewPartPy::makeCosmeticLine3D(PyObject *args)
     }
 
     DrawViewPart* dvp = getDrawViewPartPtr();
-//    Base::Vector3d centroid = dvp->getOriginalCentroid();
 
     Base::Vector3d pnt1 = static_cast<Base::VectorPy*>(pPnt1)->value();
-//    pnt1 = pnt1 - centroid;
-//    pnt1 = DrawUtil::invertY(dvp->projectPoint(pnt1));
     pnt1 = dvp->projectPoint(pnt1, false);
 
     Base::Vector3d pnt2 = static_cast<Base::VectorPy*>(pPnt2)->value();
-//    pnt2 = pnt2 - centroid;
-//    pnt2 = DrawUtil::invertY(dvp->projectPoint(pnt2));
     pnt2 = dvp->projectPoint(pnt2, false);
 
     std::string newTag = dvp->addCosmeticEdge(pnt1, pnt2);
@@ -390,7 +382,6 @@ PyObject* DrawViewPartPy::makeCosmeticCircle(PyObject *args)
     }
 
     DrawViewPart* dvp = getDrawViewPartPtr();
-//    Base::Vector3d pnt1 = DrawUtil::invertY(static_cast<Base::VectorPy*>(pPnt1)->value());
     Base::Vector3d pnt1 = static_cast<Base::VectorPy*>(pPnt1)->value();
     TechDraw::BaseGeomPtr bg = std::make_shared<TechDraw::Circle> (pnt1, radius);
     std::string newTag = dvp->addCosmeticEdge(bg);
@@ -431,7 +422,6 @@ PyObject* DrawViewPartPy::makeCosmeticCircleArc(PyObject *args)
 
     //from here on is almost duplicate of makeCosmeticCircle
     DrawViewPart* dvp = getDrawViewPartPtr();
-//    Base::Vector3d pnt1 = DrawUtil::invertY(static_cast<Base::VectorPy*>(pPnt1)->value());
     Base::Vector3d pnt1 = static_cast<Base::VectorPy*>(pPnt1)->value();
     TechDraw::BaseGeomPtr bg = std::make_shared<TechDraw::AOC> (pnt1, radius, angle1, angle2);
     std::string newTag = dvp->addCosmeticEdge(bg);
@@ -662,11 +652,6 @@ PyObject* DrawViewPartPy::getEdgeByIndex(PyObject *args)
         return nullptr;
     }
 
-//    TopoDS_Shape temp = TechDraw::mirrorShapeVec(geom->occEdge,
-//                                      Base::Vector3d(0.0, 0.0, 0.0),
-//                                      1.0 / dvp->getScale());
-
-//    TopoDS_Edge outEdge = TopoDS::Edge(temp);
     TopoDS_Edge outEdge = TopoDS::Edge(geom->getOCCEdge());
 
     return new Part::TopoShapeEdgePy(new Part::TopoShape(outEdge));
@@ -689,8 +674,7 @@ PyObject* DrawViewPartPy::getVertexByIndex(PyObject *args)
         return nullptr;
     }
 
-//    Base::Vector3d point = DrawUtil::invertY(vert->point()) / dvp->getScale();
-    Base::Vector3d point = vert->point();
+    Base::Vector3d point = vert->point() / dvp->getScale();
 
     gp_Pnt gPoint(point.x, point.y, point.z);
     BRepBuilderAPI_MakeVertex mkVertex(gPoint);
@@ -710,21 +694,12 @@ PyObject* DrawViewPartPy::getEdgeBySelection(PyObject *args)
     edgeIndex = DrawUtil::getIndexFromName(std::string(selName));
     DrawViewPart* dvp = getDrawViewPartPtr();
 
-    //this is d and +Yup
-    //need und and +Ydown
     TechDraw::BaseGeomPtr geom = dvp->getGeomByIndex(edgeIndex);
     if (!geom) {
         PyErr_SetString(PyExc_ValueError, "Wrong edge index");
         return nullptr;
     }
 
-//    TopoDS_Shape temp = TechDraw::mirrorShapeVec(geom->occEdge,
-//                                      Base::Vector3d(0.0, 0.0, 0.0),
-//                                      1.0 / dvp->get());
-
-//    TopoDS_Edge outEdge = TopoDS::Edge(temp);
-
-//    return new Part::TopoShapeEdgePy(new Part::TopoShape(outEdge));
     return new Part::TopoShapeEdgePy(new Part::TopoShape(geom->getOCCEdge()));
 }
 
@@ -739,16 +714,13 @@ PyObject* DrawViewPartPy::getVertexBySelection(PyObject *args)
     vertexIndex = DrawUtil::getIndexFromName(std::string(selName));
     DrawViewPart* dvp = getDrawViewPartPtr();
 
-    //this is d and +Yup
-    //need unscaled and +Ydown
     TechDraw::VertexPtr vert = dvp->getProjVertexByIndex(vertexIndex);
     if (!vert) {
         PyErr_SetString(PyExc_ValueError, "Wrong vertex index");
         return nullptr;
     }
 
-//    Base::Vector3d point = DrawUtil::invertY(vert->point()) / dvp->getScale();
-    Base::Vector3d point = vert->point();
+    Base::Vector3d point = vert->point() / dvp->getScale();
     gp_Pnt gPoint(point.x, point.y, point.z);
     BRepBuilderAPI_MakeVertex mkVertex(gPoint);
     TopoDS_Vertex outVertex = mkVertex.Vertex();
