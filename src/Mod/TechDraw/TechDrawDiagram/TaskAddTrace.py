@@ -71,20 +71,12 @@ class TaskAddTrace:
 
         self.dialogOpen = False;
 
-    def accept(self):
-        print ("TaskAddTrace.Accept()")
-        return True
-
-    def reject(self):
-        print ("TaskAddTrace.Reject()")
-        return True
-
     def connectToSignal(self):
-        print("TPC.connectToSignal()")
+        #print("TPC.connectToSignal()")
         self.controller.signalFinished.connect(self.slotFinishedSignalFromController)
 
     def fromSymbolPicked(self):
-        print("TaskAddTrace.fromSymbolPicked()")
+        #print("TaskAddTrace.fromSymbolPicked()")
         if not self.form.lwSymbols.selectedItems():
             return
         self.stage = "from"
@@ -96,10 +88,9 @@ class TaskAddTrace:
         self.form.leFromSymbol.setText(symbolName)
         self.fromSymbol = self.diagram.getSymbol(symbolId)
         self.fillPortList(self.fromSymbol)
-        print("TaskAddTrace.fromSymbolPicked - fromSymbol.Location: {0}".format(self.fromSymbol.Location))
 
     def toSymbolPicked(self):
-        print("TaskAddTrace.toSymbolPicked()")
+        #print("TaskAddTrace.toSymbolPicked()")
         if not self.form.lwSymbols.selectedItems():
             return
         self.stage = "to"
@@ -113,7 +104,7 @@ class TaskAddTrace:
         self.fillPortList(self.toSymbol)
 
     def fillSymbolList(self):
-        print("TaskAddTrace.fillSymbolList()")
+        #print("TaskAddTrace.fillSymbolList()")
         self.form.lwSymbols.clear()
         self.idList.clear()
         self.nameList.clear()
@@ -125,17 +116,17 @@ class TaskAddTrace:
             self.nameList.append(symbol.Name)
 
     def fillPortList(self, symbol):
-        print("TaskAddTrace.fillPortList()")
+        #print("TaskAddTrace.fillPortList()")
         self.form.lwPorts.clear()
         if not symbol.Ports:
-            print("TaskAddTrace.fillPortList - adding default port to list")
+            # print("TaskAddTrace.fillPortList - adding default port to list")
             item = QtGui.QListWidgetItem()
             self.form.lwPorts.addItem(item)
             item.setText("default")
             return
             
         for port in symbol.Ports:
-            print("TaskAddTrace.fillPortList - adding port to list from symbol")
+            # print("TaskAddTrace.fillPortList - adding port to list from symbol")
             item = QtGui.QListWidgetItem()
             self.form.lwPorts.addItem(item)
             item.setText(port.Name)
@@ -153,6 +144,11 @@ class TaskAddTrace:
             else:
                 self.controller.setFrom(self.fromSymbol, self.fromPort)
             self.controller.begin()
+            # def showStatus(self, msgText, duration):
+            App.Console.PrintMessage("Drawing a trace - ESC when done\n")
+            sbar = Gui.getMainWindow().statusBar()
+            duration = 3000
+            sbar.showMessage("Drawing a trace - ESC when done", duration)
 
     def drawingFinished(self):
         print("TaskAddTrace.drawingFinished()")
@@ -163,11 +159,24 @@ class TaskAddTrace:
         trace.FromPort = self.fromPort.Name
         trace.ToSymbol = self.toSymbol.SymbolId
         trace.ToPort = self.toPort.Name
-        #how to shut down controller?
         self.controller.goAway()
         TDDiagramWorkers.placeTrace(self.diagram, traceId)
+        self.stage = "finished"
 
     @Slot()
     def slotFinishedSignalFromController(self):
-        print("TPC.slotFinishedSignalFromContoller()")
+        # print("TPC.slotFinishedSignalFromContoller()")
         self.drawingFinished()
+
+    def accept(self):
+        print ("TaskAddTrace.Accept()")
+        # TODO: turn off the pencil painter
+        if not self.stage == "finished":
+            self.controller.drawingFinished()
+            # self.drawingFinished()
+        # self.controller.goAway()
+        return True
+
+    def reject(self):
+        print ("TaskAddTrace.Reject()")
+        return True

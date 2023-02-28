@@ -92,7 +92,7 @@ def addSymbol(diagram, symbolFile):
 def repaintDiagram(diagram):
     # print("workers.repaintDiagram()")
     scene = TDG.getSceneForPage(diagram)
-    #TODO: we should hide and remove all the old painters here
+    #TODO: we should hide and remove all the old painters here before drawing new ones
     if not scene:
         print("Error: no scene for diagram")
         return
@@ -137,6 +137,7 @@ class TracePencilController(QtCore.QObject):
         self.fromSymbol = fromSymbol
         self.fromPort = fromPort
         self.startPos = App.Vector(0, 0, 0)
+        self.finished = False
         if fromSymbol:
             self.startPos = fromSymbol.Location
         if fromPort:
@@ -155,7 +156,7 @@ class TracePencilController(QtCore.QObject):
         self.tracePencil.signalFinished.connect(self.slotFinishedSignalFromPencil)
 
     def drawingFinished(self):
-        # print("TPC.drawingFinished()")
+        print("TPC.drawingFinished()")
         waypoints = list()
         self.points = self.tracePencil.getPoints()
         self.finished = True
@@ -176,6 +177,7 @@ class TracePencilController(QtCore.QObject):
 
     def begin(self):
         # print("TPC.begin()")
+        self.finished = False
         self.tracePencil.setCaller(self)
         self.scene.addItem(self.tracePencil)
         self.tracePencil.setPos(self.startPos.x, self.startPos.y)
@@ -235,7 +237,7 @@ def addTrace(diagram, route, name=None):
     return traceId
 
 def getPainter(diagram, targetType, targetId):
-    print("TDDiagramWorkers.getPainter()")
+    # print("TDDiagramWorkers.getPainter()")
     sceneItems = TDG.getSceneForPage(diagram).items()
     for item in sceneItems:
         itemId = item.data(1)
@@ -246,7 +248,7 @@ def getPainter(diagram, targetType, targetId):
 
 # remove a trace from the diagram
 def removeTrace(diagram, idToDelete, painterToDelete=None):
-    print("TDDiagramWorkers.removeTrace()")
+    # print("TDDiagramWorkers.removeTrace()")
     trace = diagram.getTrace(idToDelete)
     traceId = diagram.removeTrace(trace)
     # remove painter for trace
@@ -257,7 +259,8 @@ def removeTrace(diagram, idToDelete, painterToDelete=None):
                              TDDiagramTypeManager.getTypeByName("PathPainter"),
                              traceId)
         if not painter:
-            return None # throw something?
+            # we can't find the painter - might not be one?
+            return None
 
     scene = TDG.getSceneForPage(diagram)
     painter.setSelected(False)
@@ -279,8 +282,31 @@ def redrawTrace(diagram, idToRedraw):
     sceneItems = TDG.getSceneForPage(diagram).items()
     for item in sceneItems:
         itemTraceId = item.data(1)
-        if item.type() == tracePainterType and item.data(1) == traceId:
+        if item.type() == tracePainterType and item.data(1) == idToRedraw:
             item.load(points)
             return
 
-    return None
+
+# remove a symbol from the diagram
+def removeSymbol(diagram, idToDelete, painterToDelete=None):
+    # print("TDDiagramWorkers.removeSymbol()")
+    symbol = diagram.getSymbol(idToDelete)
+    connectedTraces = diagram.getTracesForSymbol(idToDelete)
+    for trace in connectedTraces:
+            removeTrace(diagram, trace.TraceId)
+
+    symbolId = diagram.removeSymbol(symbol)
+    # remove painter for symbol
+    painter = painterToDelete  # ??
+    if not painter:
+        # caller didn't know the painter
+        painter = getPainter(diagram,
+                             TDDiagramTypeManager.getTypeByName("SvgPainter"),
+                             symbolId)
+        if not painter:
+            return None # throw something?
+
+    scene = TDG.getSceneForPage(diagram)
+    painter.setSelected(False)
+    scene.removeItem(painter)
+    return symbolId
