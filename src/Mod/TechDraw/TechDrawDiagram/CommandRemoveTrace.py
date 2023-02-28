@@ -59,7 +59,7 @@ class CommandRemoveTrace:
 
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
-        print("TechDraw CommandRemoveTrace Activated()")
+        # print("TechDraw CommandRemoveTrace Activated()")
         diagram = TDDiagramUtil.findDiagram()
         if not diagram:
             return

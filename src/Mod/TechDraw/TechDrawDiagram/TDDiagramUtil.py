@@ -31,7 +31,8 @@ def haveDiagram():
     return False
 
 #from DrawGuiUtil::findPage
-#finds the first diagram in the active document.  Should look through all the open
+#finds the first diagram in the active document.
+# TODO: Should look through all the open documents?
 #documents looking for a diagram, and if more than 1 is found, ask for help
 def findDiagram():
     for object in App.ActiveDocument.Objects:

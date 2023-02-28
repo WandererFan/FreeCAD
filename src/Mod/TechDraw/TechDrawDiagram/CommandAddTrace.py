@@ -50,7 +50,7 @@ class CommandAddTrace:
 
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
-        print("TechDraw CommandAddTrace Activated()")
+        #print("TechDraw CommandAddTrace Activated()")
         diagram = TDDiagramUtil.findDiagram()
         if diagram:
             self.ui  = TechDrawDiagram.TaskAddTrace(diagram)

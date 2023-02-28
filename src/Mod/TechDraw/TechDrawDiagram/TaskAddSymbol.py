@@ -68,7 +68,7 @@ class TaskAddSymbol:
         return True
 
     def placeSymbol(self):
-        print("TaskAddSymbol.placeSymbol()")
+        #print("TaskAddSymbol.placeSymbol()")
         if not self.form.lwSymbols.selectedItems():
             return
 
@@ -80,12 +80,12 @@ class TaskAddSymbol:
         TDDiagramWorkers.symbolRubberStamp(self.diagram, symbolId)
 
     def pickFromFile(self, fileName):
-        print("TaskAddSymbol.pickFromFile()")
+        #print("TaskAddSymbol.pickFromFile()")
         TDDiagramWorkers.addSymbol(self.diagram, fileName)
         self.fillSymbolList()
 
     def fillSymbolList(self):
-        print("TaskAddSymbol.fillSymbolList()")
+        #print("TaskAddSymbol.fillSymbolList()")
         self.form.lwSymbols.clear()
         self.idList.clear()
         self.nameList.clear()

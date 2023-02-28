@@ -71,7 +71,7 @@ class TaskRemoveTrace:
 
 
     def slotRemoveTrace(self):
-        print("TaskRemoveTrace.slotRemoveTrace(")
+        # print("TaskRemoveTrace.slotRemoveTrace(")
         if not self.form.lwTraces.selectedItems():
             return
 
@@ -84,7 +84,7 @@ class TaskRemoveTrace:
 
 
     def fillTraceList(self):
-        print("TaskRemoveTrace.fillTraceList()")
+        # print("TaskRemoveTrace.fillTraceList()")
         self.form.lwTraces.clear()
         self.idList.clear()
         self.nameList.clear()

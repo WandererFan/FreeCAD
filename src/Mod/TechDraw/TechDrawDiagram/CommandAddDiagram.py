@@ -49,7 +49,7 @@ class CommandAddDiagram:
 
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
-        print("TechDraw CommandAddDiagram Activated()")
+        #print("TechDraw CommandAddDiagram Activated()")
         TechDrawDiagram.TDDiagramWorkers.diagramNew()
 
     def IsActive(self):

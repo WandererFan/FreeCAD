@@ -50,7 +50,7 @@ class CommandAddSymbol:
 
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
-        print("TechDraw CommandAddSymbol Activated()")
+        # print("TechDraw CommandAddSymbol Activated()")
         diagram = TDDiagramUtil.findDiagram()
         if diagram:
             self.ui  = TechDrawDiagram.TaskAddSymbol(diagram)
