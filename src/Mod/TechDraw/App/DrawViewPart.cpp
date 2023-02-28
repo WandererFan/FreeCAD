@@ -1136,7 +1136,13 @@ Base::Vector3d DrawViewPart::getOriginalCentroid() const { return m_saveCentroid
 
 Base::Vector3d DrawViewPart::getCurrentCentroid() const
 {
+    if (isRestoring()) {
+        return Base::Vector3d(0.0, 0.0, 0.0);
+    }
     TopoDS_Shape shape = getSourceShape();
+    if (shape.IsNull()) {
+        return Base::Vector3d(0.0, 0.0, 0.0);
+    }
     gp_Ax2 cs = getProjectionCS(Base::Vector3d(0.0, 0.0, 0.0));
     Base::Vector3d center = TechDraw::findCentroidVec(shape, cs);
     return center;

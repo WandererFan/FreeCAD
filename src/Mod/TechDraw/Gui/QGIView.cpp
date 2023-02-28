@@ -92,12 +92,14 @@ QGIView::QGIView()
     m_decorPen.setStyle(Qt::DashLine);
     m_decorPen.setWidth(0); // 0 => 1px "cosmetic pen"
 
+    m_frame = new QGraphicsItemGroup();
+    addToGroup(m_frame);
     m_label = new QGCustomLabel();
-    addToGroup(m_label);
+    m_frame->addToGroup(m_label);
     m_border = new QGCustomBorder();
-    addToGroup(m_border);
+    m_frame->addToGroup(m_border);
     m_caption = new QGICaption();
-    addToGroup(m_caption);
+    m_frame->addToGroup(m_caption);
     m_lock = new QGCustomImage();
     m_lock->setParentItem(m_border);
     m_lock->load(QString::fromUtf8(":/icons/TechDraw_Lock.svg"));
@@ -165,6 +167,7 @@ QVariant QGIView::itemChange(GraphicsItemChange change, const QVariant &value)
     QPointF newPos(0.0, 0.0);
 //    Base::Console().Message("QGIV::itemChange(%d)\n", change);
     if(change == ItemPositionChange && scene()) {
+        Base::Console().Message("QGIV::itemChange - position has changed\n");
         newPos = value.toPointF();            //position within parent!
         if(m_locked){
             newPos.setX(pos().x());
@@ -231,7 +234,7 @@ void QGIView::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 void QGIView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
     //TODO: this should be done in itemChange - item position has changed
-//    Base::Console().Message("QGIV::mouseReleaseEvent() - %s\n", getViewName());
+    Base::Console().Message("QGIV::mouseReleaseEvent() - %s\n", getViewName());
 //    if(scene() && this == scene()->mouseGrabberItem()) {
     if (m_dragState == DRAGGING) {
         if(!m_locked) {
@@ -277,7 +280,7 @@ void QGIView::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 //sets position in /Gui(graphics), not /App
 void QGIView::setPosition(qreal xPos, qreal yPos)
 {
-//    Base::Console().Message("QGIV::setPosition(%.3f, %.3f) (gui)\n", x, y);
+    Base::Console().Message("QGIV::setPosition(%.3f, %.3f) (gui) - %s\n", xPos, yPos, getViewObject()->getNameInDocument());
     double newX = xPos;
     double newY;
     double oldX = pos().x();
@@ -298,6 +301,7 @@ void QGIView::setPosition(qreal xPos, qreal yPos)
 // basic positioning based on the feature's X&Y properties
 void QGIView::positionViewFromFeature()
 {
+    Base::Console().Message("QGIV::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
     if (getViewObject()) {
         // setPosition handles Y inversion and positioing within a clip group
         setPosition(Rez::guiX(getViewObject()->X.getValue()),
@@ -307,6 +311,7 @@ void QGIView::positionViewFromFeature()
 
 void QGIView::setFeatureXYFromPos()
 {
+    Base::Console().Message("QGIV::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
     if (isInnerView()) {
         getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
     } else {
@@ -341,14 +346,9 @@ QGIViewClip* QGIView::getClipGroup()
 void QGIView::updateView(bool forceUpdate)
 {
     Q_UNUSED(forceUpdate)
-//    Base::Console().Message("QGIV::updateView() - %s\n", getViewObject()->getNameInDocument());
+    Base::Console().Message("QGIV::updateView() - %s\n", getViewObject()->getNameInDocument());
 
-    //allow/prevent dragging
-    if (getViewObject()->isLocked()) {
-        setFlag(QGraphicsItem::ItemIsMovable, false);
-    } else {
-        setFlag(QGraphicsItem::ItemIsMovable, true);
-    }
+    allowPreventDragging();
 
     positionViewFromFeature();
 //    if (getViewObject() && forceUpdate) {
@@ -363,6 +363,15 @@ void QGIView::updateView(bool forceUpdate)
     }
 
     QGIView::draw();
+}
+
+void QGIView::allowPreventDragging()
+{
+    if (getViewObject()->isLocked()) {
+        setFlag(QGraphicsItem::ItemIsMovable, false);
+    } else {
+        setFlag(QGraphicsItem::ItemIsMovable, true);
+    }
 }
 
 //QGIVP derived classes do not need a rotate view method as rotation is handled on App side.
@@ -425,13 +434,14 @@ void QGIView::toggleCache(bool state)
 void QGIView::draw()
 {
 //    Base::Console().Message("QGIV::draw()\n");
-    double xFeat, yFeat;
+//    double xFeat, yFeat;
     if (getViewObject()) {
-        xFeat = Rez::guiX(getViewObject()->X.getValue());
-        yFeat = Rez::guiX(getViewObject()->Y.getValue());
-        if (!getViewObject()->LockPosition.getValue()) {
-            setPosition(xFeat, yFeat);
-        }
+        positionViewFromFeature();
+//        xFeat = Rez::guiX(getViewObject()->X.getValue());
+//        yFeat = Rez::guiX(getViewObject()->Y.getValue());
+//        if (!getViewObject()->LockPosition.getValue()) {
+//            setPosition(xFeat, yFeat);
+//        }
     }
     if (isVisible()) {
         drawBorder();

@@ -121,34 +121,48 @@ void QGIViewPart::setViewPartFeature(TechDraw::DrawViewPart* obj)
 // the feature's X&Y properties
 void QGIViewPart::positionViewFromFeature()
 {
+    Base::Console().Message("QGIVP::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
     auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
     if (!dvp) {
         return;
     }
 
-    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled
+    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
+    geometryCenter = dvp->projectPoint(geometryCenter, false);
     geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
+    Base::Console().Message("QGIVP::positionViewFromFeature - geometryCenter: %s\n",
+                            DU::formatVector(geometryCenter).c_str());
 
-    Base::Vector3d viewCenter = dvp->getPosition();
-    viewCenter = Rez::guiX(viewCenter);
+    Base::Vector3d nominalCenter = dvp->getPosition();
+    nominalCenter = Rez::guiX(nominalCenter);
+    Base::Console().Message("QGIVP::positionViewFromFeature - nominalCenter: %s\n",
+                            DU::formatVector(nominalCenter).c_str());
 
-    Base::Vector3d effectiveCenter = viewCenter + geometryCenter;
+    Base::Vector3d delta = geometryCenter - nominalCenter;
+    Base::Console().Message("QGIVP::positionViewFromFeature - delta: %s\n",
+                            DU::formatVector(delta).c_str());
+
+    QTransform transform;
+    transform.translate(-geometryCenter.x, geometryCenter.y);
+    setTransform(transform);
 
     // setPosition handles Y inversion and positioning within a clip group
-    setPosition(effectiveCenter.x, effectiveCenter.y);
+    setPosition(nominalCenter.x, nominalCenter.y);
 }
 
 // convert our pos() + the feature's centroid to an X,Y for the feature.  This is
 // the inverse of positionViewFromFeature().
 void QGIViewPart::setFeatureXYFromPos()
 {
+    Base::Console().Message("QGIVP::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
     auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
     if (!dvp) {
         return;
     }
 
-    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled
-    geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
+    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
+    geometryCenter = dvp->projectPoint(geometryCenter, false);
+    geometryCenter = Rez::guiX(geometryCenter) * dvp->getScale();
     geometryCenter.y = -geometryCenter.y;
 
     Base::Vector3d viewPosition = DU::toVector3d(pos());
@@ -156,11 +170,10 @@ void QGIViewPart::setFeatureXYFromPos()
         viewPosition.y = getYInClip(y());
     }
 
-    Base::Vector3d nominalCenter = viewPosition - geometryCenter;
+//    Base::Vector3d nominalCenter = viewPosition - geometryCenter;
+    Base::Vector3d nominalCenter = viewPosition;
     dvp->setPosition(Rez::appX(nominalCenter.x), Rez::appX(-nominalCenter.y));
 }
-
-
 
 QPainterPath QGIViewPart::drawPainterPath(TechDraw::BaseGeomPtr baseGeom) const
 {
@@ -396,23 +409,23 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
 
 void QGIViewPart::updateView(bool update)
 {
-    //    Base::Console().Message("QGIVP::updateView() - %s\n", getViewObject()->getNameInDocument());
-    auto viewPart(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
-    if (!viewPart)
-        return;
-    auto vp = static_cast<ViewProviderViewPart*>(getViewProvider(getViewObject()));
-    if (!vp)
-        return;
+    Base::Console().Message("QGIVP::updateView() - %s\n", getViewObject()->getNameInDocument());
+    allowPreventDragging();
 
-    if (update)
+    positionViewFromFeature();
+
+    if (update) {
         draw();
-    QGIView::updateView(update);
+    }
+//    QGIView::updateView(update);
+    QGIView::draw();
 }
 
 void QGIViewPart::draw()
 {
-    if (!isVisible())
+    if (!isVisible()) {
         return;
+    }
 
     drawViewPart();
     drawMatting();
@@ -424,8 +437,9 @@ void QGIViewPart::draw()
 void QGIViewPart::drawViewPart()
 {
     auto viewPart(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
-    if (!viewPart)
+    if (!viewPart) {
         return;
+    }
     //    Base::Console().Message("QGIVP::DVP() - %s / %s\n", viewPart->getNameInDocument(), viewPart->Label.getValue());
     if (!viewPart->hasGeometry()) {
         removePrimitives();//clean the slate

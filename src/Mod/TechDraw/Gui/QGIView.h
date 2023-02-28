@@ -185,6 +185,8 @@ protected:
 
     Base::Reference<ParameterGrp> getParmGroupCol();
 
+    void allowPreventDragging();
+
 private:
     TechDraw::DrawView *viewObj;
     std::string viewName;
@@ -201,10 +203,13 @@ private:
     QColor m_colSel;
     QColor m_colSetting;
     QFont m_font;
+
+    QGraphicsItemGroup* m_frame;
     QGCustomLabel* m_label;
     QGCustomBorder* m_border;
     QGICaption* m_caption;
     QGCustomImage* m_lock;
+
     QPen m_decorPen;
     double m_lockWidth;
     double m_lockHeight;

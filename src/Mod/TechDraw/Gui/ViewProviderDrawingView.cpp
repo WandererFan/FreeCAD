@@ -217,9 +217,11 @@ void ViewProviderDrawingView::updateData(const App::Property* prop)
     //only move the view on X, Y change
     if (prop == &(getViewObject()->X)  ||
         prop == &(getViewObject()->Y) ){
+        Base::Console().Message("VPDV::updateData - X or Y\n");
         QGIView* qgiv = getQView();
         if (qgiv) {
-            qgiv->QGIView::updateView(true);
+//            qgiv->QGIView::updateView(true);
+            qgiv->updateView(true);
         }
     }
 
