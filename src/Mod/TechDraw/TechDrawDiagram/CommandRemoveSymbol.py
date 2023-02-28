@@ -1,5 +1,5 @@
 # ***************************************************************************
-# *   Copyright (c) 2022 Wanderer Fan <wandererfan@gmail.com>               *
+# *   Copyright (c) 2023 Wanderer Fan <wandererfan@gmail.com>               *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -22,16 +22,25 @@
 
 __title__ = "TechDrawDiagram.CommandRemoveSymbol"
 __author__ = "WandererFan"
-__url__ = "https://www.freecadweb.org"
+__url__ = "https://www.freecad.org"
 __version__ = "00.01"
-__date__ = "2022/12/31"
+__date__ = "2023/02/25"
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
+from PySide import QtCore
+import PySide.QtGui as QtGui
+from PySide.QtCore import QObject, Signal, Slot
 
 import FreeCAD as App
 import FreeCADGui as Gui
 
+import TechDraw as TD
+import TechDrawGui as TDG
+
 import TechDrawDiagram
+from TechDrawDiagram import TDDiagramWorkers
+from TechDrawDiagram import TDDiagramUtil
+from TechDrawDiagram import TDDiagramTypeManager
 
 class CommandRemoveSymbol:
     """Remove a Symbol from the current Diagram."""
@@ -47,14 +56,31 @@ class CommandRemoveSymbol:
                 'MenuText': QT_TRANSLATE_NOOP("TechDraw_RemoveSymbol", "Remove Symbol"),
                 'ToolTip': QT_TRANSLATE_NOOP("TechDraw_RemoveSymbol", "Remove a Symbol from the current Diagram")}
 
+
     def Activated(self):
         """Run the following code when the command is activated (button press)."""
-        print("TechDraw CommandRemoveSymbol Activated()")
-        #sel = Gui.Selection.getSelection()
+        # print("TechDraw CommandRemoveSymbol Activated()")
+        diagram = TDDiagramUtil.findDiagram()
+        if not diagram:
+            return
 
-        #self.ui  = TechDrawDiagram.TaskRemoveSymbol()
-        #self.ui.setValues(viewName, fromPageName, toPageName)
-        #Gui.Control.showDialog(self.ui)
+        # find selected symbol painters in scene and delete them or display a selection task
+        symbolPainterType = TDDiagramTypeManager.getTypeByName("SvgPainter")
+        sceneItems = TDG.getSceneForPage(diagram).selectedItems()
+        # there's a pythonic way to do this :(
+        symbolsInScene = list()
+        for item in sceneItems:
+            if item.type() == symbolPainterType:
+                symbolsInScene.append(item)
+
+        if not symbolsInScene:
+            self.ui = TechDrawDiagram.TaskRemoveSymbol(diagram)
+            Gui.Control.showDialog(self.ui)
+            return
+
+        for item in symbolsInScene:
+            TDDiagramWorkers.removeSymbol(diagram, item.Id, item)
+
 
     def IsActive(self):
         """Return True when the command should be active or False when it should be disabled (greyed)."""

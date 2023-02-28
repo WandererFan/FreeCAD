@@ -1,5 +1,5 @@
 # ***************************************************************************
-# *   Copyright (c) 2022 Wanderer Fan <wandererfan@gmail.com>               *
+# *   Copyright (c) 2023 Wanderer Fan <wandererfan@gmail.com>               *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -22,9 +22,9 @@
 
 __title__ = "TechDrawDiagram.TaskRemoveSymbol"
 __author__ = "WandererFan"
-__url__ = "https://www.freecadweb.org"
+__url__ = "https://www.freecad.org"
 __version__ = "00.01"
-__date__ = "2022/01/11"
+__date__ = "2023/02/25"
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
 from PySide import QtCore
@@ -42,40 +42,56 @@ from TechDrawDiagram import TDDiagramUtil
 import os
 
 class TaskRemoveSymbol:
-    def __init__(self):
-        import os
+    def __init__(self, diagram):
+        self.diagram = diagram
+
         self._uiPath = App.getHomePath()
-        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/TaskRemoveSymbol.ui")
+        self._uiPath = os.path.join(self._uiPath, "Mod/TechDraw/TechDrawDiagram/Gui/DiagramRemoveSymbol.ui")
         self.form = Gui.PySideUic.loadUi(self._uiPath)
+        self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_RemoveSymbol", "Remove Symbol From Diagram"))
 
-        self.form.setWindowTitle(QT_TRANSLATE_NOOP("TechDraw_RemoveSymbol", "Remove Symbol to Diagram"))
+        # shouldn't need these lists, but i can not make item.data(x) work :(
+        self.idList = list()
+        self.nameList = list()
+        self.fillSymbolList()
 
-#        self.form.pbView.clicked.connect(self.pickView)
-#        self.viewName = ""
-
-        self.dialogOpen = False;
-
-
-    def accept(self):
-#        print ("Accept")
-#        fromPage = App.ActiveDocument.getObject(self.fromPageName)
-        return True
-
-
-    def reject(self):
-#        print ("Reject")
-        return True
-
-
-    def pickView(self):
-#        print("pickView")
-#        if (self.dialogOpen) :
-#            return
+        self.form.pbRemove.clicked.connect(self.slotRemoveSymbol)
 
         self.dialogOpen = False
 
 
-    def setValues(self, viewName, fromPageName, toPageName):
-        self.form.leView.setText(viewName)
-        self.form.leFromPage.setText(fromPageName)
+    def accept(self):
+        print ("Accept")
+        return True
+
+
+    def reject(self):
+        print ("Reject")
+        return True
+
+
+    def slotRemoveSymbol(self):
+        # print("TaskRemoveSymbol.slotRemoveSymbol(")
+        if not self.form.lwSymbols.selectedItems():
+            return
+
+        selItem = self.form.lwSymbols.currentItem()
+        selectedIndex = self.form.lwSymbols.currentRow()
+
+        symbolId = self.idList[selectedIndex]
+        symbolName = self.nameList[selectedIndex]
+        TDDiagramWorkers.removeSymbol(self.diagram, symbolId)
+
+
+    def fillSymbolList(self):
+        # print("TaskRemoveSymbol.fillSymbolList()")
+        self.form.lwSymbols.clear()
+        self.idList.clear()
+        self.nameList.clear()
+        for symbol in self.diagram.Symbols:
+            item = QtGui.QListWidgetItem()
+            self.form.lwSymbols.addItem(item)
+            item.setText("{0} - {1}".format(symbol.SymbolId, symbol.Name))
+            self.idList.append(symbol.SymbolId)
+            self.nameList.append(symbol.Name)
 

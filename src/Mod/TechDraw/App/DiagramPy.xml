@@ -13,6 +13,7 @@
       <Author Licence="LGPL" Name="WandererFan" EMail="wandererfan@gmail.com" />
       <UserDocu>Feature for creating and manipulating Diagrams on Pages</UserDocu>
     </Documentation>
+    <!--- TODO: these get/put methods should be attributes -->
     <Methode Name="addSymbol">
       <Documentation>
         <UserDocu>addSymbol(DiagramSymbol) - Add a Symbol to this Diagram</UserDocu>
@@ -43,9 +44,14 @@
         <UserDocu>removeTrace(DiagramTrace) - Remove a Trace from this Diagram</UserDocu>
       </Documentation>
     </Methode>
-        <Methode Name="getTrace">
+    <Methode Name="getTrace">
       <Documentation>
         <UserDocu>getTrace(traceId) - get a Trace from this Diagram</UserDocu>
+      </Documentation>
+    </Methode>
+    <Methode Name="getTracesForSymbol">
+      <Documentation>
+        <UserDocu>getTracesForSymbol(symbolId) - get all the traces that connect to a symbol</UserDocu>
       </Documentation>
     </Methode>
     <CustomAttributes />

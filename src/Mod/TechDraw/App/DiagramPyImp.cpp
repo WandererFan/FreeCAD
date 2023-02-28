@@ -146,6 +146,34 @@ PyObject* DiagramPy::getTrace(PyObject* args)
     return Py_None;
 }
 
+
+PyObject* DiagramPy::getTracesForSymbol(PyObject* args)
+{
+    int id;
+    if (!PyArg_ParseTuple(args, "i", &id)) {
+        return nullptr;
+    }
+
+    Diagram* diagram = getDiagramPtr();
+    DiagramSymbol* symbol = diagram->getSymbol(id);
+    //make a empty py list
+    Py::List list;
+
+    if (symbol) {
+        //get the traces connected to symbol
+        std::vector<DiagramTrace*> affected = diagram->getTracesForSymbol(id);
+        for (auto& item : affected) {
+            //add to output list
+            PyObject* trace = new DiagramTracePy(item);
+            list.append(Py::asObject(trace));
+        }
+        return Py::new_reference_to(list);
+    }
+    // no symbol !?
+    return nullptr;
+}
+
+
 PyObject *DiagramPy::getCustomAttributes(const char* ) const
 {
     return nullptr;

@@ -110,7 +110,7 @@ int Diagram::removeSymbol(TechDraw::DiagramSymbol* toDelete)
     return id;
 }
 
-DiagramSymbol* Diagram::getSymbol(SymbolId id)
+DiagramSymbol* Diagram::getSymbol(SymbolId id) const
 {
     for (auto& symbol : Symbols.getValues()) {
         if (symbol->getSymbolId() == id) {
@@ -148,7 +148,7 @@ int Diagram::removeTrace(TechDraw::DiagramTrace* toDelete)
     return id;
 }
 
-DiagramTrace* Diagram::getTrace(TraceId id)
+DiagramTrace* Diagram::getTrace(TraceId id) const
 {
     for (auto& trace : Traces.getValues()) {
         if (trace->getTraceId() == id) {
@@ -157,6 +157,19 @@ DiagramTrace* Diagram::getTrace(TraceId id)
     }
     return nullptr;
 }
+
+std::vector<DiagramTrace*> Diagram::getTracesForSymbol(SymbolId id)
+{
+    DiagramSymbol* symbol = getSymbol(id);
+    std::vector<DiagramTrace*> affected;
+    for (auto& trace : Traces.getValues()) {
+        if (trace->isInterested(symbol)) {
+            affected.push_back(trace);
+        }
+    }
+    return affected;
+}
+
 
 int Diagram::addMetaEntry(std::string key, std::string data)
 {

@@ -57,11 +57,11 @@ public:
     virtual SymbolId addSymbol(TechDraw::DiagramSymbol* symbol);
     virtual SymbolId copySymbol(SymbolId id);
     virtual int removeSymbol(TechDraw::DiagramSymbol* toDelete);
-    virtual DiagramSymbol* getSymbol(SymbolId id);
+    virtual DiagramSymbol* getSymbol(SymbolId id) const;
     virtual TraceId addTrace(TechDraw::DiagramTrace* trace);
     virtual int removeTrace(TechDraw::DiagramTrace* toDelete);
-    virtual DiagramTrace* getTrace(TraceId id);
-
+    virtual DiagramTrace* getTrace(TraceId id) const;
+    virtual std::vector<DiagramTrace*> getTracesForSymbol(SymbolId id);
     virtual int addMetaEntry(std::string key, std::string data);
     virtual int removeMetaEntry(std::string key);
 
