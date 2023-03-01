@@ -160,19 +160,12 @@ void QGIViewPart::setFeatureXYFromPos()
         return;
     }
 
-    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
-    geometryCenter = dvp->projectPoint(geometryCenter, false);
-    geometryCenter = Rez::guiX(geometryCenter) * dvp->getScale();
-    geometryCenter.y = -geometryCenter.y;
-
     Base::Vector3d viewPosition = DU::toVector3d(pos());
     if (isInnerView()) {
         viewPosition.y = getYInClip(y());
     }
 
-//    Base::Vector3d nominalCenter = viewPosition - geometryCenter;
-    Base::Vector3d nominalCenter = viewPosition;
-    dvp->setPosition(Rez::appX(nominalCenter.x), Rez::appX(-nominalCenter.y));
+    dvp->setPosition(Rez::appX(viewPosition.x), Rez::appX(-viewPosition.y));
 }
 
 QPainterPath QGIViewPart::drawPainterPath(TechDraw::BaseGeomPtr baseGeom) const
