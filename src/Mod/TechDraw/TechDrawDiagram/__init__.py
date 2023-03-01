@@ -52,6 +52,7 @@ from .TaskRemoveSymbol import TaskRemoveSymbol
 
 from .CommandAddTrace import CommandAddTrace
 from .CommandRemoveTrace import CommandRemoveTrace
+from .CommandEditTrace import CommandEditTrace
 from .TaskAddTrace import TaskAddTrace
 from .TaskRemoveTrace import TaskRemoveTrace
 

@@ -277,6 +277,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     *diagram << "TechDraw_RemoveSymbol";
     *diagram << "TechDraw_AddTrace";
     *diagram << "TechDraw_RemoveTrace";
+    *diagram << "TechDraw_EditTrace";
 
     Gui::ToolBarItem* stacking = new Gui::ToolBarItem(root);
     stacking->setCommand("TechDraw Stacking");
@@ -428,6 +429,7 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     *diagram << "TechDraw_RemoveSymbol";
     *diagram << "TechDraw_AddTrace";
     *diagram << "TechDraw_RemoveTrace";
+    *diagram << "TechDraw_EditTrace";
 
     Gui::ToolBarItem* clips = new Gui::ToolBarItem(root);
     clips->setCommand("TechDraw Clips");

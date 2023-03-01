@@ -38,6 +38,7 @@ set(TechDraw_DiagramScripts
     TechDrawDiagram/TaskRemoveSymbol.py
     TechDrawDiagram/CommandAddTrace.py
     TechDrawDiagram/CommandRemoveTrace.py
+    TechDrawDiagram/CommandEditTrace.py
     TechDrawDiagram/TaskAddTrace.py
     TechDrawDiagram/TaskRemoveTrace.py
     TechDrawDiagram/TDDiagramUtil.py
