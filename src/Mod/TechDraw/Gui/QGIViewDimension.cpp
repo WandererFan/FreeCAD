@@ -574,24 +574,34 @@ void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
     draw();
 }
 
-// set the dataLabel's position based on the X,Y offset and origin values from the
-// Dimension feature
+// position the dimension text relative to the geo-center of the geometry
 void QGIViewDimension::positionLabelFromFeature()
 {
-    auto dim(dynamic_cast<TechDraw::DrawViewDimension*>(getViewObject()));
-    if (!dim) {
+    Base::Console().Message("QGIVD::positionLabelFromFeature() - %s\n", getViewObject()->getNameInDocument());
+
+    TechDraw::DrawViewDimension* dim = dynamic_cast<TechDraw::DrawViewDimension*>(getViewObject());
+    const TechDraw::DrawViewPart* dvp = dim->getViewPart();
+    if (!dim || !dvp) {
         return;
     }
 
-    float x = Rez::guiX(dim->X.getValue());
-    float y = Rez::guiX(-dim->Y.getValue());
+    Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
+    geometryCenter = dvp->projectPoint(geometryCenter, false);
+    geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
+    Base::Console().Message("QGIVD::positionLabelFromFeature - geometryCenter: %s\n",
+                            DU::formatVector(geometryCenter).c_str());
 
-    Base::Vector3d origin = Rez::guiX(DU::invertY(dim->getOriginPoint()));
-    Base::Vector3d absolute = origin + Base::Vector3d(x, y, 0.0);
+    Base::Vector3d nominalPosition = dim->getPosition();
+    nominalPosition = Rez::guiX(nominalPosition);
+    Base::Console().Message("QGIVD::positionLabelFromFeature - nominalPosition: %s\n",
+                            DU::formatVector(nominalPosition).c_str());
 
-    datumLabel->setPosFromCenter(absolute.x, absolute.y);
+    Base::Vector3d netPosition = geometryCenter + nominalPosition;
+    Base::Console().Message("QGIVP::positionViewFromFeature - delta: %s\n",
+                            DU::formatVector(netPosition).c_str());
+
+    datumLabel->setPosFromCenter(netPosition.x, -netPosition.y);
 }
-
 
 void QGIViewDimension::setNormalColorAll()
 {
