@@ -144,14 +144,15 @@ class TaskAddTrace:
             else:
                 self.controller.setFrom(self.fromSymbol, self.fromPort)
             self.controller.begin()
-            # def showStatus(self, msgText, duration):
-            App.Console.PrintMessage("Drawing a trace - ESC when done\n")
-            sbar = Gui.getMainWindow().statusBar()
-            duration = 3000
-            sbar.showMessage("Drawing a trace - ESC when done", duration)
+            TDDiagramUtil.showStatus("Drawing a trace - ESC when done", 4000)
+            # def TDDiagramUtils.showStatus(self, msgText, duration):
+            # App.Console.PrintMessage("Drawing a trace - ESC when done\n")
+            # sbar = Gui.getMainWindow().statusBar()
+            # duration = 3000
+            # sbar.showMessage("Drawing a trace - ESC when done", duration)
 
     def drawingFinished(self):
-        print("TaskAddTrace.drawingFinished()")
+        #print("TaskAddTrace.drawingFinished()")
         route = TDDiagramWorkers.makeTraceRoute(self.diagram, self.controller.getPoints())
         traceId = TDDiagramWorkers.addTrace(self.diagram, route)
         trace = self.diagram.getTrace(traceId)
@@ -165,18 +166,17 @@ class TaskAddTrace:
 
     @Slot()
     def slotFinishedSignalFromController(self):
-        # print("TPC.slotFinishedSignalFromContoller()")
+        # print("TPC.slotFinishedSignalFromController()")
         self.drawingFinished()
 
     def accept(self):
-        print ("TaskAddTrace.Accept()")
-        # TODO: turn off the pencil painter
+        #print ("TaskAddTrace.Accept()")
         if not self.stage == "finished":
             self.controller.drawingFinished()
-            # self.drawingFinished()
-        # self.controller.goAway()
         return True
 
     def reject(self):
         print ("TaskAddTrace.Reject()")
+        if self.controller:
+            self.controller.goAway()
         return True

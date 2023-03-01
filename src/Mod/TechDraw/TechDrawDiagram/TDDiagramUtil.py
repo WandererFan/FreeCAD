@@ -23,23 +23,31 @@
 from PySide import QtCore
 
 import FreeCAD as App
+import FreeCADGui as Gui
 
+# true if there is at least 1 Diagram in the ActiveDocument
 def haveDiagram():
     for object in App.ActiveDocument.Objects:
         if object.isDerivedFrom("TechDraw::Diagram"):
             return True
     return False
 
-#from DrawGuiUtil::findPage
-#finds the first diagram in the active document.
-# TODO: Should look through all the open documents?
-#documents looking for a diagram, and if more than 1 is found, ask for help
+# from DrawGuiUtil::findPage
+# finds the first diagram in the active document.
+# TODO: Should look through all the open documents? Or call this findAnyPage
+# documents looking for a diagram, and if more than 1 is found, ask for help?
 def findDiagram():
     for object in App.ActiveDocument.Objects:
         if object.isDerivedFrom("TechDraw::Diagram"):
             return object
     return None
 
-#returns App.Vector given a QPointF
+# returns App.Vector given a QPointF
 def toVector3d(pointf):
     return App.Vector(pointf.x(), pointf.y(), 0.0)
+
+# display a message in ReportView and StatusBar
+def showStatus(msgText, duration = 3000):
+    App.Console.PrintMessage("{0}\n".format(msgText))
+    sbar = Gui.getMainWindow().statusBar()
+    sbar.showMessage(msgText, duration)
