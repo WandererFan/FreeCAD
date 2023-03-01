@@ -62,6 +62,7 @@
         <file>icons/actions/TechDraw_DiagramTrace.svg</file>
         <file>icons/actions/TechDraw_DiagramTraceAdd.svg</file>
         <file>icons/actions/TechDraw_DiagramTraceRemove.svg</file>
+        <file>icons/actions/TechDraw_DiagramTraceEdit.svg</file>
         <file>icons/arrow-ccw.svg</file>
         <file>icons/arrow-cw.svg</file>
         <file>icons/arrow-down.svg</file>
