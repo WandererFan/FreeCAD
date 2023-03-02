@@ -301,7 +301,7 @@ void QGIView::setPosition(qreal xPos, qreal yPos)
 // basic positioning based on the feature's X&Y properties
 void QGIView::positionViewFromFeature()
 {
-    Base::Console().Message("QGIV::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIV::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
     if (getViewObject()) {
         // setPosition handles Y inversion and positioing within a clip group
         setPosition(Rez::guiX(getViewObject()->X.getValue()),
@@ -311,7 +311,7 @@ void QGIView::positionViewFromFeature()
 
 void QGIView::setFeatureXYFromPos()
 {
-    Base::Console().Message("QGIV::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIV::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
     if (isInnerView()) {
         getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
     } else {
@@ -351,10 +351,6 @@ void QGIView::updateView(bool forceUpdate)
     allowPreventDragging();
 
     positionViewFromFeature();
-//    if (getViewObject() && forceUpdate) {
-//        setPosition(Rez::guiX(getViewObject()->X.getValue()),
-//                    Rez::guiX(getViewObject()->Y.getValue()));
-//    }
 
     double appRotation = getViewObject()->Rotation.getValue();
     double guiRotation = rotation();
@@ -434,14 +430,8 @@ void QGIView::toggleCache(bool state)
 void QGIView::draw()
 {
 //    Base::Console().Message("QGIV::draw()\n");
-//    double xFeat, yFeat;
     if (getViewObject()) {
         positionViewFromFeature();
-//        xFeat = Rez::guiX(getViewObject()->X.getValue());
-//        yFeat = Rez::guiX(getViewObject()->Y.getValue());
-//        if (!getViewObject()->LockPosition.getValue()) {
-//            setPosition(xFeat, yFeat);
-//        }
     }
     if (isVisible()) {
         drawBorder();
