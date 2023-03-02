@@ -239,13 +239,6 @@ void QGIView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
     if (m_dragState == DRAGGING) {
         if(!m_locked) {
             setFeatureXYFromPos();
-//            if (!isInnerView()) {
-//                double tempX = x(),
-//                       tempY = getY();
-//                getViewObject()->setPosition(Rez::appX(tempX), Rez::appX(tempY));
-//            } else {
-//                getViewObject()->setPosition(Rez::appX(x()), Rez::appX(getYInClip(y())));
-//            }
         }
     }
     m_dragState = NODRAG;
