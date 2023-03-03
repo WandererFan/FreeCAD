@@ -437,23 +437,23 @@ void QGIViewBalloon::setFeatureXYFromPos()
         scale = balloonParent->getScale();
     }
 
-    double x = Rez::appX(balloonLabel->X() / scale);
-    double y = Rez::appX(balloonLabel->Y() / scale);
+    double x = Rez::appX(balloonLabel->X() / scale);    // App coords
+    double y = -Rez::appX(balloonLabel->Y() / scale);
 
     Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Drag Balloon"));
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.X = %f",
                             dvb->getNameInDocument(), x);
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.Y = %f",
-                            dvb->getNameInDocument(), -y);
+                            dvb->getNameInDocument(), y);
 
     //update the arrow tip position if it was moved in the drag
     if (m_originDragged) {
-        Base::Vector3d bubblePos(x, -y, 0.0);
-        Base::Vector3d newOrigin = bubblePos + m_saveOffset;
+        Base::Vector3d bubblePos(x, y, 0.0);   // App coords
+        Base::Vector3d newOrigin = bubblePos + m_saveOffset;    //App coords
         Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginX = %f",
                                 dvb->getNameInDocument(), newOrigin.x);
         Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginY = %f",
-                                dvb->getNameInDocument(), -newOrigin.y);
+                                dvb->getNameInDocument(), newOrigin.y);
     }
 
     Gui::Command::commitCommand();
@@ -497,17 +497,13 @@ std::pair <QPointF, QPointF> QGIViewBalloon::getPositionsFromView()
     return { bubblePos, arrowTipPos };
 }
 
+// update the general characteristics of the view
 void QGIViewBalloon::updateView(bool update)
 {
     Base::Console().Message("QGIVB::updateView() - drag: %d  originMoved: %d\n", m_dragState, m_originDragged);
     Q_UNUSED(update);
     auto balloon(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
     if (!balloon) {
-        return;
-    }
-
-    auto vp = static_cast<ViewProviderBalloon*>(getViewProvider(getViewObject()));
-    if (!vp) {
         return;
     }
 
@@ -521,14 +517,14 @@ void QGIViewBalloon::updateView(bool update)
         balloonLabel->setFlag(QGraphicsItem::ItemIsMovable, true);
     }
 
-    updateBalloon();
+    updateBubble();
     draw();
 }
 
 //update the bubble contents
-void QGIViewBalloon::updateBalloon(bool obtuse)
+void QGIViewBalloon::updateBubble(bool obtuse)
 {
-    //    Base::Console().Message("QGIVB::updateBalloon()\n");
+    //    Base::Console().Message("QGIVB::updateBubble()\n");
     (void)obtuse;
     const auto balloon(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
     if (!balloon) {

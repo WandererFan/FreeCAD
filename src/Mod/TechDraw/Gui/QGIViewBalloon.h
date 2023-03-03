@@ -223,7 +223,7 @@ public Q_SLOTS:
     void balloonLabelDragFinished();
     void select(bool state);
     void hover(bool state);
-    void updateBalloon(bool obtuse = false);
+    void updateBubble(bool obtuse = false);
 
 protected:
     void draw() override;
@@ -248,7 +248,7 @@ private:
 
     bool m_originDragged = false;
     bool m_ctrl;
-    Base::Vector3d m_saveOffset;
+    Base::Vector3d m_saveOffset;    // in App coordinates
 
     int m_dragState;
 };
