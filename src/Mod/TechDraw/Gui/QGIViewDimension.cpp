@@ -577,7 +577,7 @@ void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension* obj)
 // position the dimension text relative to the geo-center of the geometry
 void QGIViewDimension::positionLabelFromFeature()
 {
-    Base::Console().Message("QGIVD::positionLabelFromFeature() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIVD::positionLabelFromFeature() - %s\n", getViewObject()->getNameInDocument());
 
     TechDraw::DrawViewDimension* dim = dynamic_cast<TechDraw::DrawViewDimension*>(getViewObject());
     const TechDraw::DrawViewPart* dvp = dim->getViewPart();
@@ -588,17 +588,11 @@ void QGIViewDimension::positionLabelFromFeature()
     Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
     geometryCenter = dvp->projectPoint(geometryCenter, false);
     geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
-    Base::Console().Message("QGIVD::positionLabelFromFeature - geometryCenter: %s\n",
-                            DU::formatVector(geometryCenter).c_str());
 
     Base::Vector3d nominalPosition = dim->getPosition();
     nominalPosition = Rez::guiX(nominalPosition);
-    Base::Console().Message("QGIVD::positionLabelFromFeature - nominalPosition: %s\n",
-                            DU::formatVector(nominalPosition).c_str());
 
     Base::Vector3d netPosition = geometryCenter + nominalPosition;
-    Base::Console().Message("QGIVP::positionViewFromFeature - delta: %s\n",
-                            DU::formatVector(netPosition).c_str());
 
     datumLabel->setPosFromCenter(netPosition.x, -netPosition.y);
 }

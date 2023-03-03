@@ -214,7 +214,6 @@ public:
     void positionViewFromFeature() override;
     void setFeatureXYFromPos() override;
     std::pair <QPointF, QPointF> getPositionsFromFeature();
-    std::pair <QPointF, QPointF> getPositionsFromView();
     void positionLabel();
 
 public Q_SLOTS:
@@ -223,11 +222,10 @@ public Q_SLOTS:
     void balloonLabelDragFinished();
     void select(bool state);
     void hover(bool state);
-    void updateBubble(bool obtuse = false);
+    void updateBubble();
 
 protected:
     void draw() override;
-    void drawBalloon(bool dragged = false);
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
     virtual void setSvgPens();
     virtual void setPens();

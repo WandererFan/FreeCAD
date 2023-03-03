@@ -121,7 +121,7 @@ void QGIViewPart::setViewPartFeature(TechDraw::DrawViewPart* obj)
 // the feature's X&Y properties
 void QGIViewPart::positionViewFromFeature()
 {
-    Base::Console().Message("QGIVP::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIVP::positionViewFromFeature() - %s\n", getViewObject()->getNameInDocument());
     auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
     if (!dvp) {
         return;
@@ -146,7 +146,7 @@ void QGIViewPart::positionViewFromFeature()
 // the inverse of positionViewFromFeature().
 void QGIViewPart::setFeatureXYFromPos()
 {
-    Base::Console().Message("QGIVP::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIVP::setFeatureXYFromPos() - %s\n", getViewObject()->getNameInDocument());
     auto dvp(dynamic_cast<TechDraw::DrawViewPart*>(getViewObject()));
     if (!dvp) {
         return;
@@ -394,7 +394,7 @@ QPainterPath QGIViewPart::geomToPainterPath(BaseGeomPtr baseGeom, double rot)
 
 void QGIViewPart::updateView(bool update)
 {
-    Base::Console().Message("QGIVP::updateView() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIVP::updateView() - %s\n", getViewObject()->getNameInDocument());
     allowPreventDragging();
 
     positionViewFromFeature();

@@ -167,7 +167,6 @@ QVariant QGIView::itemChange(GraphicsItemChange change, const QVariant &value)
     QPointF newPos(0.0, 0.0);
 //    Base::Console().Message("QGIV::itemChange(%d)\n", change);
     if(change == ItemPositionChange && scene()) {
-        Base::Console().Message("QGIV::itemChange - position has changed\n");
         newPos = value.toPointF();            //position within parent!
         if(m_locked){
             newPos.setX(pos().x());
@@ -233,8 +232,8 @@ void QGIView::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 
 void QGIView::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
-    //TODO: this should be done in itemChange - item position has changed
-    Base::Console().Message("QGIV::mouseReleaseEvent() - %s\n", getViewName());
+    //TODO: this should be done in itemChange - item position has changed?
+//    Base::Console().Message("QGIV::mouseReleaseEvent() - %s\n", getViewName());
 //    if(scene() && this == scene()->mouseGrabberItem()) {
     if (m_dragState == DRAGGING) {
         if(!m_locked) {
@@ -273,7 +272,7 @@ void QGIView::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 //sets position in /Gui(graphics), not /App
 void QGIView::setPosition(qreal xPos, qreal yPos)
 {
-    Base::Console().Message("QGIV::setPosition(%.3f, %.3f) (gui) - %s\n", xPos, yPos, getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIV::setPosition(%.3f, %.3f) (gui) - %s\n", xPos, yPos, getViewObject()->getNameInDocument());
     double newX = xPos;
     double newY;
     double oldX = pos().x();
@@ -339,7 +338,7 @@ QGIViewClip* QGIView::getClipGroup()
 void QGIView::updateView(bool forceUpdate)
 {
     Q_UNUSED(forceUpdate)
-    Base::Console().Message("QGIV::updateView() - %s\n", getViewObject()->getNameInDocument());
+//    Base::Console().Message("QGIV::updateView() - %s\n", getViewObject()->getNameInDocument());
 
     allowPreventDragging();
 
