@@ -130,17 +130,9 @@ void QGIViewPart::positionViewFromFeature()
     Base::Vector3d geometryCenter = dvp->getCurrentCentroid(); //unscaled, 3d point
     geometryCenter = dvp->projectPoint(geometryCenter, false);
     geometryCenter = Rez::guiX(geometryCenter) * getViewObject()->getScale();
-    Base::Console().Message("QGIVP::positionViewFromFeature - geometryCenter: %s\n",
-                            DU::formatVector(geometryCenter).c_str());
 
     Base::Vector3d nominalCenter = dvp->getPosition();
     nominalCenter = Rez::guiX(nominalCenter);
-    Base::Console().Message("QGIVP::positionViewFromFeature - nominalCenter: %s\n",
-                            DU::formatVector(nominalCenter).c_str());
-
-    Base::Vector3d delta = geometryCenter - nominalCenter;
-    Base::Console().Message("QGIVP::positionViewFromFeature - delta: %s\n",
-                            DU::formatVector(delta).c_str());
 
     QTransform transform;
     transform.translate(-geometryCenter.x, geometryCenter.y);
