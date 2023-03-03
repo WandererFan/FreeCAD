@@ -59,6 +59,11 @@
 
 using namespace TechDraw;
 using namespace TechDrawGui;
+using DU = DrawUtil;
+
+#define NODRAG 0
+#define DRAGSTARTED 1
+#define DRAGGING 2
 
 QGIBalloonLabel::QGIBalloonLabel()
 {
@@ -89,12 +94,16 @@ QVariant QGIBalloonLabel::itemChange(GraphicsItemChange change, const QVariant& 
             setPrettySel();
         }
         else {
-            Q_EMIT selected(false);
             setPrettyNormal();
+            Q_EMIT selected(false);
+            if (m_drag) {
+                //stop the drag if we are no longer selected.
+                m_drag = false;
+                Q_EMIT dragFinished();
+            }
+            update();
         }
-        update();
-    }
-    else if (change == ItemPositionHasChanged && scene()) {
+    } else if (change == ItemPositionHasChanged && scene()) {
         setLabelCenter();
         if (m_drag) {
             Q_EMIT dragging(m_ctrl);
@@ -106,23 +115,24 @@ QVariant QGIBalloonLabel::itemChange(GraphicsItemChange change, const QVariant& 
 
 void QGIBalloonLabel::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+    Base::Console().Message("QGIBL::mousePressEvent()\n");
     m_ctrl = false;
     m_drag = true;
     if (event->modifiers() & Qt::ControlModifier) {
         m_ctrl = true;
     }
+    Q_EMIT dragStarted(m_ctrl);
     QGraphicsItem::mousePressEvent(event);
 }
 
 void QGIBalloonLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (QLineF(event->screenPos(), event->buttonDownScreenPos(Qt::LeftButton)).length() > 0) {
-        if (scene() && this == scene()->mouseGrabberItem()) {
-            Q_EMIT dragFinished();
-        }
-    }
+    Base::Console().Message("QGIBL::mouseReleaseEvent()\n");
     m_ctrl = false;
-    m_drag = false;
+    if (m_drag) {
+        m_drag = false;
+        Q_EMIT dragFinished();
+    }
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
@@ -190,7 +200,10 @@ void QGIBalloonLabel::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 void QGIBalloonLabel::setPosFromCenter(const double& xCenter, const double& yCenter)
 {
+    Base::Console().Message("QGIBL::setPosFromCenter(%.3f, %.3f)\n", xCenter, yCenter);
     //set label's Qt position(top, left) given boundingRect center point
+    Base::Console().Message("QGIBL::setPositionFromCenter - w: %.3f h: %.3f\n",
+                            m_labelText->boundingRect().width(), m_labelText->boundingRect().height());
     setPos(xCenter - m_labelText->boundingRect().width() / 2.,
            yCenter - m_labelText->boundingRect().height() / 2.);
 }
@@ -200,6 +213,13 @@ void QGIBalloonLabel::setLabelCenter()
     //save label's bRect center (posX, posY) given Qt position (top, left)
     posX = x() + m_labelText->boundingRect().width() / 2.;
     posY = y() + m_labelText->boundingRect().height() / 2.;
+}
+
+QPointF QGIBalloonLabel::getLabelCenter()
+{
+    double cx = x() + m_labelText->boundingRect().width() / 2.;
+    double cy = y() + m_labelText->boundingRect().height() / 2.;
+    return { cx, cy };
 }
 
 void QGIBalloonLabel::setFont(QFont font) { m_labelText->setFont(font); }
@@ -232,7 +252,7 @@ void QGIBalloonLabel::setColor(QColor color)
 //**************************************************************
 QGIViewBalloon::QGIViewBalloon()
     : dvBalloon(nullptr), hasHover(false), m_lineWidth(0.0), m_obtuse(false), parent(nullptr),
-      m_dragInProgress(false)
+    m_originDragged(false), m_dragState(NODRAG)
 {
     m_ctrl = false;
 
@@ -275,9 +295,8 @@ QGIViewBalloon::QGIViewBalloon()
     balloonShape->setZValue(ZVALUE::DIMENSION + 1);//above balloonLines!
     balloonShape->setStyle(Qt::SolidLine);
 
-    balloonLabel->setPosFromCenter(0, 0);
-
     // connecting the needed slots and signals
+    QObject::connect(balloonLabel, &QGIBalloonLabel::dragStarted, this, &QGIViewBalloon::balloonLabelDragStarted);
     QObject::connect(balloonLabel, &QGIBalloonLabel::dragging, this, &QGIViewBalloon::balloonLabelDragged);
 
     QObject::connect(balloonLabel, &QGIBalloonLabel::dragFinished, this, &QGIViewBalloon::balloonLabelDragFinished);
@@ -291,6 +310,7 @@ QGIViewBalloon::QGIViewBalloon()
 
 QVariant QGIViewBalloon::itemChange(GraphicsItemChange change, const QVariant& value)
 {
+    Base::Console().Message("QGIVB::itemChange()\n");
     if (change == ItemSelectedHasChanged && scene()) {
         if (isSelected()) {
             balloonLabel->setSelected(true);
@@ -298,9 +318,8 @@ QVariant QGIViewBalloon::itemChange(GraphicsItemChange change, const QVariant& v
         else {
             balloonLabel->setSelected(false);
         }
-        draw();
     }
-    return QGIView::itemChange(change, value);
+    return QGraphicsItemGroup::itemChange(change, value);
 }
 
 //Set selection state for this and it's children
@@ -315,7 +334,7 @@ void QGIViewBalloon::setGroupSelection(bool isSelected)
 
 void QGIViewBalloon::select(bool state)
 {
-    //    Base::Console().Message("QGIVBall::select(%d)\n", state);
+    Base::Console().Message("QGIVBall::select(%d)\n", state);
     setSelected(state);
     draw();
 }
@@ -328,13 +347,32 @@ void QGIViewBalloon::hover(bool state)
 
 void QGIViewBalloon::setViewPartFeature(TechDraw::DrawViewBalloon* balloonFeat)
 {
-    //    Base::Console().Message("QGIVB::setViewPartFeature()\n");
+    Base::Console().Message("QGIVB::setViewPartFeature()\n");
     if (!balloonFeat) {
+        Base::Console().Message("QGIVB::setViewPartFeature - feature is null\n");
         return;
     }
 
     setViewFeature(static_cast<TechDraw::DrawView*>(balloonFeat));
-    dvBalloon = balloonFeat;
+
+    balloonLabel->setColor(prefNormalColor());
+
+    QString labelText = QString::fromUtf8(balloonFeat->Text.getStrValue().data());
+    balloonLabel->setDimString(labelText, Rez::guiX(balloonFeat->TextWrapLen.getValue()));
+
+    positionLabel();
+
+    updateView();
+}
+
+void QGIViewBalloon::positionViewFromFeature()
+{
+    Base::Console().Message("QGIVB::positionViewFromFeature()\n");
+    auto balloonFeat(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+    if (!balloonFeat) {
+        Base::Console().Message("QGIVB::positionViewFromFeature - no feature yet\n");
+        return;
+    }
 
     DrawView* balloonParent = nullptr;
     double scale = 1.0;
@@ -348,21 +386,120 @@ void QGIViewBalloon::setViewPartFeature(TechDraw::DrawViewBalloon* balloonFeat)
 
     float x = Rez::guiX(balloonFeat->X.getValue() * scale);
     float y = Rez::guiX(-balloonFeat->Y.getValue() * scale);
-
-    balloonLabel->setColor(prefNormalColor());
     balloonLabel->setPosFromCenter(x, y);
+    // ??? why do we not set the arrow tip's position here?
+}
 
-    QString labelText = QString::fromUtf8(balloonFeat->Text.getStrValue().data());
-    balloonLabel->setDimString(labelText, Rez::guiX(balloonFeat->TextWrapLen.getValue()));
+void QGIViewBalloon::positionLabel()
+{
+    Base::Console().Message("QGIVB::positionLabel()\n");
+    auto balloonFeat(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+    if (!balloonFeat) {
+        Base::Console().Message("QGIVB::positionLabel - no feature yet\n");
+        return;
+    }
 
-    updateBalloon();
+    auto vp = static_cast<ViewProviderBalloon*>(getViewProvider(getViewObject()));
+    if (!vp) {
+        Base::Console().Message("QGIVB::positionLabel - no vp yet\n");
+        return;
+    }
 
-    draw();
+    double scale = 1.0;
+    DrawView* balloonParent = getSourceView();
+    if (balloonParent) {
+        scale = balloonParent->getScale();
+    }
+
+    // need the font set to get the right size label.boundingRect.
+    QFont font;
+    font.setFamily(QString::fromUtf8(vp->Font.getValue()));
+    font.setPixelSize(exactFontSize(vp->Font.getValue(), vp->Fontsize.getValue()));
+    balloonLabel->setFont(font);
+
+    float x = Rez::guiX(balloonFeat->X.getValue() * scale);
+    float y = Rez::guiX(-balloonFeat->Y.getValue() * scale);
+
+    balloonLabel->setPosFromCenter(x, y);
+}
+
+void QGIViewBalloon::setFeatureXYFromPos()
+{
+    Base::Console().Message("setFeatureXYFromPos()\n");
+    auto dvb(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+    if (!dvb) {
+        return;
+    }
+
+    double scale = 1.0;
+    DrawView* balloonParent = getSourceView();
+    if (balloonParent) {
+        scale = balloonParent->getScale();
+    }
+
+    double x = Rez::appX(balloonLabel->X() / scale);
+    double y = Rez::appX(balloonLabel->Y() / scale);
+
+    Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Drag Balloon"));
+    Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.X = %f",
+                            dvb->getNameInDocument(), x);
+    Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.Y = %f",
+                            dvb->getNameInDocument(), -y);
+
+    //update the arrow tip position if it was moved in the drag
+    if (m_originDragged) {
+        Base::Vector3d bubblePos(x, -y, 0.0);
+        Base::Vector3d newOrigin = bubblePos + m_saveOffset;
+        Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginX = %f",
+                                dvb->getNameInDocument(), newOrigin.x);
+        Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginY = %f",
+                                dvb->getNameInDocument(), -newOrigin.y);
+    }
+
+    Gui::Command::commitCommand();
+}
+
+//get the bubble and arrow tip positions from the Balloon feature in local coordinates
+std::pair <QPointF, QPointF> QGIViewBalloon::getPositionsFromFeature()
+{
+    Base::Console().Message("QGIVB::getPositionsFromFeature()\n");
+    TechDraw::DrawViewBalloon* dvb = dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject());
+    if (!dvb) {
+        throw Base::RuntimeError("Balloon has no feature!");
+    }
+
+    const TechDraw::DrawView* dvParent = dvb->getParentView();
+    if (!dvParent) {
+        throw Base::RuntimeError("Balloon has no parent!");
+    }
+
+    double bubbleX = Rez::guiX(dvb->X.getValue() * dvParent->getScale());
+    double bubbleY = -Rez::guiX(dvb->Y.getValue() * dvParent->getScale());
+    double arrowTipX = Rez::guiX(dvb->OriginX.getValue() * dvParent->getScale());
+    double arrowTipY = -Rez::guiX(dvb->OriginY.getValue() * dvParent->getScale());
+
+    QPointF bubblePos(bubbleX, bubbleY);
+    QPointF tipPos(arrowTipX, arrowTipY);
+
+    return { bubblePos, tipPos };
+}
+
+//get the current bubble and arrow tip positions in the view
+std::pair <QPointF, QPointF> QGIViewBalloon::getPositionsFromView()
+{
+    Base::Console().Message("QGIVB::getPositionsFromView()\n");
+    QPointF bubblePos = balloonLabel->getLabelCenter();
+    QPointF arrowTipPos = arrow->pos();
+    QPointF offset = DU::toQPointF(m_saveOffset);
+    if (m_originDragged) {
+        arrowTipPos = bubblePos - offset;
+    }
+    return { bubblePos, arrowTipPos };
 }
 
 void QGIViewBalloon::updateView(bool update)
 {
-    //    Base::Console().Message("QGIVB::updateView()\n");
+    Base::Console().Message("QGIVB::updateView() - drag: %d  originMoved: %d\n", m_dragState, m_originDragged);
     Q_UNUSED(update);
     auto balloon(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
     if (!balloon) {
@@ -374,10 +511,14 @@ void QGIViewBalloon::updateView(bool update)
         return;
     }
 
-    if (update) {
-        QString labelText = QString::fromUtf8(balloon->Text.getStrValue().data());
-        balloonLabel->setDimString(labelText, Rez::guiX(balloon->TextWrapLen.getValue()));
-        setNormalColorAll();
+    if (balloon->X.isTouched() || balloon->Y.isTouched()) {
+        positionViewFromFeature();
+    }
+
+    if (balloon->isLocked()) {
+        balloonLabel->setFlag(QGraphicsItem::ItemIsMovable, false);
+    } else {
+        balloonLabel->setFlag(QGraphicsItem::ItemIsMovable, true);
     }
 
     updateBalloon();
@@ -424,90 +565,96 @@ void QGIViewBalloon::updateBalloon(bool obtuse)
     }
 
     balloonLabel->setDimString(labelText, Rez::guiX(balloon->TextWrapLen.getValue()));
-    float x = Rez::guiX(balloon->X.getValue() * refObj->getScale());
-    float y = Rez::guiX(balloon->Y.getValue() * refObj->getScale());
-    balloonLabel->setPosFromCenter(x, -y);
 }
+
+void QGIViewBalloon::balloonLabelDragStarted(bool ctrl)
+{
+    m_dragState = DRAGSTARTED;
+    m_ctrl = ctrl;
+    m_originDragged = ctrl;
+    if (ctrl) {
+        // we are moving the arrow tip, so save the current offset
+        auto balloonFeat(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+        if (!balloonFeat) {
+            return;
+        }
+        float x = balloonFeat->X.getValue();
+        float y = balloonFeat->Y.getValue();
+        Base::Vector3d bubblePos(x, y, 0.0);
+        float xOrg = balloonFeat->OriginX.getValue();
+        float yOrg = balloonFeat->OriginY.getValue();
+        Base::Vector3d originPos(xOrg, yOrg, 0.0);
+        m_saveOffset = originPos - bubblePos;
+    } else {
+        m_saveOffset = Base::Vector3d(0.0, 0.0, 0.0);
+    }
+}
+
 
 void QGIViewBalloon::balloonLabelDragged(bool ctrl)
 {
-    m_ctrl = ctrl;
-    auto dvb(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
-    if (!dvb) {
-        return;
+    Q_UNUSED(ctrl)
+    Base::Console().Message("QGIVB::BalloonLabelDragged()\n");
+    if (m_dragState == DRAGSTARTED) {
+        m_dragState = DRAGGING;
     }
 
-    if (!m_dragInProgress) {//first drag movement
-        m_dragInProgress = true;
-        if (ctrl) {//moving whole thing, remember Origin offset from Bubble
-            m_saveOffset = dvb->getOriginOffset();
-        }
+    if (m_dragState == DRAGGING) {
+        setFeatureXYFromPos();
     }
+//    m_ctrl = ctrl;
+//    m_originDragged = ctrl;
+//    setFeatureXYFromPos();
+//    drawBalloon(true);
+//    auto dvb(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+//    if (!dvb) {
+//        return;
+//    }
 
-    // store if origin is also moving to be able to later calc new origin and update feature
-    if (ctrl) {
-        m_originDragged = true;
-    }
+//    if (!m_dragInProgress) {    //first drag movement
+//        m_dragInProgress = true;
+//        Base::Console().Message("QGIVB::balloonLabelDragged - center: %s arrow: %s\n",
+//                                DU::formatVector(balloonLabel->getLabelCenter()).c_str(),
+//                                DU::formatVector(arrow->pos()).c_str());
+//        QPointF offset = arrow->pos() - balloonLabel->boundingRect().center();
+//        m_saveOffset = DU::toVector3d(offset);
+//    }
 
-    DrawView* balloonParent = getSourceView();
-    if (balloonParent) {
-        // redraw the balloon at the new position
-        // note that we don't store the new position to the X/Y properties
-        // since the dragging is not yet finished
-        drawBalloon(true);
-    }
+//    // store if origin is also moving to be able to later calc new origin and update feature
+//    if (ctrl) {
+//        m_originDragged = true;
+//    }
+
+//    DrawView* balloonParent = getSourceView();
+//    if (balloonParent) {
+//        // redraw the balloon at the new position
+//        // note that we don't store the new position to the X/Y properties
+//        // since the dragging is not yet finished
+//        drawBalloon(true);
+//    }
 }
 
 void QGIViewBalloon::balloonLabelDragFinished()
 {
-    // stores the final drag position for undo
-
-    auto dvb(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
-    if (!dvb) {
-        return;
+    Base::Console().Message("QGIVB::balloonLabelDragFinished\n");
+    if (m_dragState == DRAGGING) {
+        m_originDragged = false;
+        m_dragState = NODRAG;
+        setFeatureXYFromPos();
     }
-
-    double scale = 1.0;
-    DrawView* balloonParent = getSourceView();
-    if (balloonParent) {
-        scale = balloonParent->getScale();
-    }
-
-    //set feature position (x, y) from graphic position
-    double x = Rez::appX(balloonLabel->X() / scale), y = Rez::appX(balloonLabel->Y() / scale);
-    Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Drag Balloon"));
-    Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.X = %f",
-                            dvb->getNameInDocument(), x);
-    Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.Y = %f",
-                            dvb->getNameInDocument(), -y);
-
-    // for the case that origin was also dragged, calc new origin and update feature
-    if (m_originDragged) {
-        Base::Vector3d pos(x, -y, 0.0);
-        Base::Vector3d newOrg = pos - m_saveOffset;
-        Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginX = %f",
-                                dvb->getNameInDocument(), newOrg.x);
-        Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.%s.OriginY = %f",
-                                dvb->getNameInDocument(), newOrg.y);
-    }
-
-    Gui::Command::commitCommand();
-
-    m_dragInProgress = false;
-    m_originDragged = false;
 }
 
-//from QGVP::mouseReleaseEvent - pos = eventPos in scene coords?
-void QGIViewBalloon::placeBalloon(QPointF pos)
+//from QGVP::mouseReleaseEvent - pos = eventPos in scene coords
+void QGIViewBalloon::placeBalloon(QPointF scenePos)
 {
-    //    Base::Console().Message("QGIVB::placeBalloon(%s)\n",
-    //                            DrawUtil::formatVector(pos).c_str());
-    auto balloon(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
-    if (!balloon) {
+    Base::Console().Message("QGIVB::placeBalloon(%s)\n",
+                            DrawUtil::formatVector(scenePos).c_str());
+    auto balloonFeat(dynamic_cast<TechDraw::DrawViewBalloon*>(getViewObject()));
+    if (!balloonFeat) {
         return;
     }
 
-    DrawView* balloonParent = dynamic_cast<DrawView*>(balloon->SourceView.getValue());
+    DrawView* balloonParent = dynamic_cast<DrawView*>(balloonFeat->SourceView.getValue());
     if (!balloonParent) {
         return;
     }
@@ -517,57 +664,57 @@ void QGIViewBalloon::placeBalloon(QPointF pos)
         return;
     }
 
+    int idx = featPage->getNextBalloonIndex();
+    QString labelText = QString::number(idx);
+    balloonFeat->Text.setValue(std::to_string(idx).c_str());
+
     auto vp = static_cast<ViewProviderBalloon*>(getViewProvider(getViewObject()));
     if (!vp) {
         return;
     }
-
-    QGIView* qgivParent = nullptr;
-    QPointF viewPos;
-    Gui::ViewProvider* objVp = QGIView::getViewProvider(balloonParent);
-    auto partVP = dynamic_cast<ViewProviderViewPart*>(objVp);
-    if (partVP) {
-        qgivParent = partVP->getQView();
-        if (qgivParent) {
-            //tip position is mouse release pos in parentView coords ==> OriginX, OriginY
-            //bubble pos is some arbitrary shift from tip position ==> X, Y
-            viewPos = qgivParent->mapFromScene(pos);
-            balloon->OriginX.setValue(Rez::appX(viewPos.x()) / balloonParent->getScale());
-            balloon->OriginY.setValue(-Rez::appX(viewPos.y()) / balloonParent->getScale());
-            balloon->X.setValue(Rez::appX((viewPos.x() + 200.0) / balloonParent->getScale()));
-            balloon->Y.setValue(-Rez::appX((viewPos.y() - 200.0) / balloonParent->getScale()));
-        }
-    }
-
-    int idx = featPage->getNextBalloonIndex();
-    QString labelText = QString::number(idx);
-    balloon->Text.setValue(std::to_string(idx).c_str());
-
     QFont font = balloonLabel->getFont();
     font.setPixelSize(calculateFontPixelSize(vp->Fontsize.getValue()));
     font.setFamily(QString::fromUtf8(vp->Font.getValue()));
     font.setPixelSize(exactFontSize(vp->Font.getValue(), vp->Fontsize.getValue()));
     balloonLabel->setFont(font);
+    balloonLabel->setDimString(labelText, Rez::guiX(balloonFeat->TextWrapLen.getValue()));
 
     prepareGeometryChange();
 
     // Default label position
+    Gui::ViewProvider* objVp = QGIView::getViewProvider(balloonParent);
+    auto partVP = dynamic_cast<ViewProviderViewPart*>(objVp);
+    if (!partVP) {
+        return;
+    }
+    QGIView* qgivParent = partVP->getQView();
+    if (!qgivParent) {
+        return;
+    }
+    QPointF viewPos = qgivParent->mapFromScene(scenePos);
+
+    //tip position is mouse release pos in parentView coords ==> OriginX, OriginY
+    //bubble pos is some arbitrary shift from tip position ==> X, Y
+    balloonFeat->OriginX.setValue(Rez::appX(viewPos.x()) / balloonParent->getScale());
+    balloonFeat->OriginY.setValue(-Rez::appX(viewPos.y()) / balloonParent->getScale());
+    balloonFeat->X.setValue(Rez::appX((viewPos.x() + 200.0) / balloonParent->getScale()));
+    balloonFeat->Y.setValue(-Rez::appX((viewPos.y() - 200.0) / balloonParent->getScale()));
     balloonLabel->setPosFromCenter(viewPos.x() + 200, viewPos.y() - 200);
-    balloonLabel->setDimString(labelText, Rez::guiX(balloon->TextWrapLen.getValue()));
 
     draw();
 }
 
 void QGIViewBalloon::draw()
 {
-    //    Base::Console().Message("QGIVB::draw()\n");
+    Base::Console().Message("QGIVB::draw()\n");
     // just redirect
     drawBalloon(false);
 }
 
 void QGIViewBalloon::drawBalloon(bool dragged)
 {
-    //    Base::Console().Message("QGIVB::drawBalloon(%d)\n", dragged);
+    Q_UNUSED(dragged)
+    Base::Console().Message("QGIVB::drawBalloon(%d)\n", dragged);
     if (!isVisible()) {
         return;
     }
@@ -587,11 +734,6 @@ void QGIViewBalloon::drawBalloon(bool dragged)
     if (!refObj) {
         return;
     }
-    //    if (!refObj->hasGeometry()) {// nothing to draw yet (restoring)
-    //        balloonLabel->hide();
-    //        hide();
-    //        return;
-    //    }
 
     auto vp = static_cast<ViewProviderBalloon*>(getViewProvider(getViewObject()));
     if (!vp) {
@@ -602,37 +744,23 @@ void QGIViewBalloon::drawBalloon(bool dragged)
 
     double textWidth = balloonLabel->getDimText()->boundingRect().width();
     double textHeight = balloonLabel->getDimText()->boundingRect().height();
-    float x, y, arrowTipX, arrowTipY;
-    // when not dragging take the X/Y properties otherwise the current label position
-    if (!dragged) {
-        x = Rez::guiX(balloon->X.getValue() * refObj->getScale());
-        y = Rez::guiX(balloon->Y.getValue() * refObj->getScale());
-        arrowTipX = Rez::guiX(balloon->OriginX.getValue() * refObj->getScale());
-        arrowTipY = -Rez::guiX(balloon->OriginY.getValue() * refObj->getScale());
-    }
-    else {
-        x = balloonLabel->X();
-        y = -balloonLabel->Y();
-        if (m_originDragged) {
-            double scale = Rez::guiX(refObj->getScale());
-            Base::Vector3d pos(x / scale, y / scale, 0.0);
-            Base::Vector3d newOrg = pos - m_saveOffset;
-            arrowTipX = newOrg.x * scale;
-            arrowTipY = -newOrg.y * scale;
-        }
-        else {
-            arrowTipX = Rez::guiX(balloon->OriginX.getValue() * refObj->getScale());
-            arrowTipY = -Rez::guiX(balloon->OriginY.getValue() * refObj->getScale());
-        }
-    }
-    Base::Vector3d lblCenter(x, -y, 0.0);
 
-    if (balloon->isLocked()) {
-        balloonLabel->setFlag(QGraphicsItem::ItemIsMovable, false);
-    }
-    else {
-        balloonLabel->setFlag(QGraphicsItem::ItemIsMovable, true);
-    }
+    // figure out where to draw the balloon
+    std::pair<QPointF, QPointF> positions;
+//    if (m_dragInProgress) {
+//        Base::Console().Message("QGIVB::draw - positioning from view\n");
+//        positions = getPositionsFromView();
+//    } else {
+//        positions = getPositionsFromFeature();
+//        Base::Console().Message("QGIVB::draw - positioning from feature\n");
+//    }
+    positions = getPositionsFromFeature();
+    double x = positions.first.x();
+    double y = positions.first.y();
+    double arrowTipX = positions.second.x();
+    double arrowTipY = positions.second.y();
+    Base::Console().Message("QGIVB::draw - x,y: %.3f, %.3f  tip: %.3f, %.3f\n", x, y, arrowTipX, arrowTipY);
+    Base::Vector3d lblCenter(x, y, 0.0);
 
     Base::Vector3d dLineStart;
     Base::Vector3d kinkPoint;

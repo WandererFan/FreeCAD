@@ -78,6 +78,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
                QWidget* widget = nullptr) override;
     void setLabelCenter();
+    QPointF getLabelCenter();
     void setPosFromCenter(const double& xCenter, const double& yCenter);
     double X() const
     {
@@ -137,6 +138,7 @@ Q_SIGNALS:
     void hover(bool state);
     void selected(bool state);
     void dragFinished();
+    void dragStarted(bool state);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -209,7 +211,14 @@ public:
         return dvBalloon;
     }
 
+    void positionViewFromFeature() override;
+    void setFeatureXYFromPos() override;
+    std::pair <QPointF, QPointF> getPositionsFromFeature();
+    std::pair <QPointF, QPointF> getPositionsFromView();
+    void positionLabel();
+
 public Q_SLOTS:
+    void balloonLabelDragStarted(bool ctrl);
     void balloonLabelDragged(bool ctrl);
     void balloonLabelDragFinished();
     void select(bool state);
@@ -237,10 +246,11 @@ private:
     bool m_obtuse;
     QGIView* parent;//used to create edit dialog
 
-    bool m_dragInProgress;
     bool m_originDragged = false;
     bool m_ctrl;
     Base::Vector3d m_saveOffset;
+
+    int m_dragState;
 };
 
 }// namespace TechDrawGui
