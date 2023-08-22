@@ -67,6 +67,8 @@ public:
 protected:
     void replaceFileIncluded(std::string newTemplateFileName);
     std::map<std::string, std::string> getEditableTextsFromTemplate();
+    void setDefaultTextValues();
+    std::string getDefaultValueForKey(std::string key);
 
 };
 

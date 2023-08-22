@@ -41,8 +41,12 @@
 #include "DrawSVGTemplatePy.h"
 #include "DrawUtil.h"
 #include "XMLQuery.h"
+#include "Preferences.h"
 
 using namespace TechDraw;
+
+// TODO: we aren't using defines for constants any more.
+#define NOTFOUNDTOKEN "NoSuchValue"
 
 PROPERTY_SOURCE(TechDraw::DrawSVGTemplate, TechDraw::DrawTemplate)
 
@@ -81,10 +85,14 @@ void DrawSVGTemplate::onChanged(const App::Property* prop)
         //if we are restoring an existing file we just want the properties set as they were save,
         //but if we are not restoring, we need to replace the embedded file and extract the new
         //EditableTexts.
-        //We could try to find matching field names are preserve the values from
-        //the old template, but there is no guarantee that the same fields will be present.
+        // an argument could be made for preserving previous values when
+        // changing template. Would need to grab current EditableTexts, then
+        // replace matching keys after setDefaultTextValues()
         replaceFileIncluded(Template.getValue());
+        // set EditableTexts to the placeholders in the Svg source
         EditableTexts.setValues(getEditableTextsFromTemplate());
+        // replace matching field names with preference values
+        setDefaultTextValues();
         QDomDocument templateDocument;
         if (getTemplateDocument(Template.getValue(), templateDocument)) {
             extractTemplateAttributes(templateDocument);
@@ -110,19 +118,6 @@ QString DrawSVGTemplate::processTemplate()
     if (!getTemplateDocument(PageResult.getValue(), templateDocument)) {
         return QString();
     }
-
-//    QFile templateFile(Base::Tools::fromStdString(PageResult.getValue()));
-//    if (!templateFile.open(QIODevice::ReadOnly)) {
-//        Base::Console().Error("DrawSVGTemplate::processTemplate can't read embedded template %s!\n", PageResult.getValue());
-//        return QString();
-//    }
-
-//    QDomDocument templateDocument;
-//    if (!templateDocument.setContent(&templateFile)) {
-//        Base::Console().Error("DrawSVGTemplate::processTemplate - failed to parse file: %s\n",
-//            PageResult.getValue());
-//        return QString();
-//    }
 
     XMLQuery query(templateDocument);
     std::map<std::string, std::string> substitutions = EditableTexts.getValues();
@@ -152,27 +147,6 @@ QString DrawSVGTemplate::processTemplate()
     });
 
     extractTemplateAttributes(templateDocument);
-//    // Calculate the dimensions of the page and store for retrieval
-//    // Obtain the size of the SVG document by reading the document attributes
-//    QDomElement docElement = templateDocument.documentElement();
-//    Base::Quantity quantity;
-
-//    // Obtain the width
-//    QString str = docElement.attribute(QString::fromLatin1("width"));
-//    quantity = Base::Quantity::parse(str);
-//    quantity.setUnit(Base::Unit::Length);
-
-//    Width.setValue(quantity.getValue());
-
-//    str = docElement.attribute(QString::fromLatin1("height"));
-//    quantity = Base::Quantity::parse(str);
-//    quantity.setUnit(Base::Unit::Length);
-
-//    Height.setValue(quantity.getValue());
-
-//    bool isLandscape = getWidth() / getHeight() >= 1.;
-
-//    Orientation.setValue(isLandscape ? 1 : 0);
 
     //all Qt holds on files should be released on exit #4085
     return templateDocument.toString();
@@ -253,41 +227,11 @@ std::map<std::string, std::string> DrawSVGTemplate::getEditableTextsFromTemplate
 //    Base::Console().Message("DSVGT::getEditableTextsFromTemplate()\n");
     std::map<std::string, std::string> editables;
 
-//    std::string templateFilename = Template.getValue();
-//    if (templateFilename.empty()) {
-//        return editables;
-//    }
-
 // if we pass the filename we can reuse getTemplateDocument here
     QDomDocument templateDocument;
     if (!getTemplateDocument(Template.getValue(), templateDocument)) {
         return editables;
     }
-
-
-//    Base::FileInfo tfi(templateFilename);
-//    if (!tfi.isReadable()) {
-//        // if there is an old absolute template file set use a redirect
-//        tfi.setFile(App::Application::getResourceDir() + "Mod/Drawing/Templates/" + tfi.fileName());
-//        // try the redirect
-//        if (!tfi.isReadable()) {
-//            Base::Console().Error("DrawSVGTemplate::getEditableTextsFromTemplate() not able to open %s!\n", Template.getValue());
-//            return editables;
-//        }
-//    }
-
-//    QFile templateFile(QString::fromUtf8(tfi.filePath().c_str()));
-//    if (!templateFile.open(QIODevice::ReadOnly)) {
-//        Base::Console().Error("DrawSVGTemplate::getEditableTextsFromTemplate() can't read template %s!\n", Template.getValue());
-//        return editables;
-//    }
-
-//    QDomDocument templateDocument;
-//    if (!templateDocument.setContent(&templateFile)) {
-//        Base::Console().Message("DrawSVGTemplate::getEditableTextsFromTemplate() - failed to parse file: %s\n",
-//                                Template.getValue());
-//        return editables;
-//    }
 
     XMLQuery query(templateDocument);
 
@@ -307,6 +251,30 @@ std::map<std::string, std::string> DrawSVGTemplate::getEditableTextsFromTemplate
     });
 
     return editables;
+}
+
+/// update EditableTexts with any default values that match template field names
+void DrawSVGTemplate::setDefaultTextValues()
+{
+    std::map<std::string, std::string> textsMap = EditableTexts.getValues();
+    for (auto entry : textsMap) {
+        auto newValue = getDefaultValueForKey(entry.first);
+        if (newValue != NOTFOUNDTOKEN) {
+            // replace the field value if a default is available
+            textsMap[entry.first] = newValue;
+        }
+    }
+    EditableTexts.setValues(textsMap);
+}
+
+/// simple look up in user.cfg
+std::string DrawSVGTemplate::getDefaultValueForKey(std::string key)
+{
+    // this routine would be different in a json version where it would
+    // retrieve and unpack the packed key-value pairs (if not available yet)
+    // then look up the key
+
+    return Preferences::getPreferenceGroup("Template")->GetASCII(key.c_str(), NOTFOUNDTOKEN);
 }
 
 //! get a translated label string from the context (ex TaskActiveView), the base name (ex ActiveView) and
