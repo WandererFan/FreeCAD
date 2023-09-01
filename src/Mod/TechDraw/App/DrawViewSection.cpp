@@ -282,7 +282,7 @@ TopoDS_Shape DrawViewSection::getShapeToCut()
         dvp = static_cast<TechDraw::DrawViewPart *>(base);
         shapeToCut = dvp->getSourceShape();
         if (FuseBeforeCut.getValue()) {
-            shapeToCut = dvp->getSourceShapeFused();
+            shapeToCut = dvp->getSourceShape(true);
         }
 
     } else {

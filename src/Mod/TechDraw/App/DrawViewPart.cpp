@@ -22,6 +22,18 @@
  *                                                                         *
  ***************************************************************************/
 
+//===========================================================================
+// DrawViewPart overview
+//===========================================================================
+//
+// 1) get the shapes from the source objects
+// 2) center, scale and rotate the shapes
+// 3) project the shape using the OCC HLR algorithms
+// 4) add cosmetic and other objects that don't participate in hlr
+// 5) find the closed regions (faces) in the edges returned by hlr
+// everything else is mostly providing services to other objects, such as the
+// actual drawing routines in Gui
+
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -82,12 +94,6 @@
 using namespace TechDraw;
 using DU = DrawUtil;
 
-//===========================================================================
-// DrawViewPart
-//===========================================================================
-
-
-//PROPERTY_SOURCE(TechDraw::DrawViewPart, TechDraw::DrawView)
 PROPERTY_SOURCE_WITH_EXTENSIONS(TechDraw::DrawViewPart, TechDraw::DrawView)
 
 DrawViewPart::DrawViewPart(void)
@@ -101,14 +107,11 @@ DrawViewPart::DrawViewPart(void)
 
     CosmeticExtension::initExtension(this);
 
-    double defDist = Preferences::getPreferenceGroup("General")->GetFloat("FocusDistance", 100.0);
-
     //properties that affect Geometry
     ADD_PROPERTY_TYPE(Source, (nullptr), group, App::Prop_None, "3D Shape to view");
     Source.setScope(App::LinkScope::Global);
     Source.setAllowExternal(true);
     ADD_PROPERTY_TYPE(XSource, (nullptr), group, App::Prop_None, "External 3D Shape to view");
-
 
     ADD_PROPERTY_TYPE(Direction, (0.0, -1.0, 0.0), group, App::Prop_None,
                       "Projection Plane normal. The direction you are looking from.");
@@ -116,27 +119,30 @@ DrawViewPart::DrawViewPart(void)
                       "Projection Plane X Axis in R3. Rotates/Mirrors View");
     ADD_PROPERTY_TYPE(Perspective, (false), group, App::Prop_None,
                       "Perspective(true) or Orthographic(false) projection");
-    ADD_PROPERTY_TYPE(Focus, (defDist), group, App::Prop_None, "Perspective view focus distance");
+    ADD_PROPERTY_TYPE(Focus, (Preferences::getPreferenceGroup("General")->GetFloat("FocusDistance", 100.0)),
+                    group, App::Prop_None, "Perspective view focus distance");
 
     //properties that control HLR algo
-    bool coarseView = Preferences::getPreferenceGroup("General")->GetBool("CoarseView", false);
-    ADD_PROPERTY_TYPE(CoarseView, (coarseView), sgroup, App::Prop_None, "Coarse View on/off");
-    ADD_PROPERTY_TYPE(SmoothVisible, (prefSmoothViz()), sgroup, App::Prop_None,
-                      "Show Visible Smooth lines");
-    ADD_PROPERTY_TYPE(SeamVisible, (prefSeamViz()), sgroup, App::Prop_None,
+    ADD_PROPERTY_TYPE(CoarseView, (Preferences::getPreferenceGroup("General")->GetBool("CoarseView", false)),
+        sgroup, App::Prop_None, "Coarse View on/off");
+    ADD_PROPERTY_TYPE(SmoothVisible, (Preferences::getPreferenceGroup("HLR")->GetBool("SmoothViz", true)),
+        sgroup, App::Prop_None, "Show Visible Smooth lines");
+    ADD_PROPERTY_TYPE(SeamVisible, (Preferences::getPreferenceGroup("HLR")->GetBool("SeamViz", false)),
+        sgroup, App::Prop_None,
                       "Show Visible Seam lines");
-    ADD_PROPERTY_TYPE(IsoVisible, (prefIsoViz()), sgroup, App::Prop_None,
-                      "Show Visible Iso u, v lines");
-    ADD_PROPERTY_TYPE(HardHidden, (prefHardHid()), sgroup, App::Prop_None,
-                      "Show Hidden Hard lines");
-    ADD_PROPERTY_TYPE(SmoothHidden, (prefSmoothHid()), sgroup, App::Prop_None,
-                      "Show Hidden Smooth lines");
-    ADD_PROPERTY_TYPE(SeamHidden, (prefSeamHid()), sgroup, App::Prop_None,
-                      "Show Hidden Seam lines");
-    ADD_PROPERTY_TYPE(IsoHidden, (prefIsoHid()), sgroup, App::Prop_None,
-                      "Show Hidden Iso u, v lines");
-    ADD_PROPERTY_TYPE(IsoCount, (prefIsoCount()), sgroup, App::Prop_None,
-                      "Number of iso parameters lines");
+    ADD_PROPERTY_TYPE(IsoVisible, (Preferences::getPreferenceGroup("HLR")->GetBool("IsoViz", false)),
+        sgroup, App::Prop_None, "Show Visible Iso u, v lines");
+    ADD_PROPERTY_TYPE(HardHidden, (Preferences::getPreferenceGroup("HLR")->GetBool("HardHid", false)),
+        sgroup, App::Prop_None, "Show Hidden Hard lines");
+    ADD_PROPERTY_TYPE(SmoothHidden, (Preferences::getPreferenceGroup("HLR")->GetBool("SmoothHid", false)),
+        sgroup, App::Prop_None, "Show Hidden Smooth lines");
+    ADD_PROPERTY_TYPE(SeamHidden, (Preferences::getPreferenceGroup("HLR")->GetBool("SeamHid", false)),
+        sgroup, App::Prop_None, "Show Hidden Seam lines");
+    ADD_PROPERTY_TYPE(IsoHidden, (Preferences::getPreferenceGroup("HLR")->GetBool("IsoHid", false)),
+        sgroup, App::Prop_None, "Show Hidden Iso u, v lines");
+    ADD_PROPERTY_TYPE(IsoCount, (Preferences::getPreferenceGroup("HLR")->GetBool("IsoCount", 0)),
+        sgroup, App::Prop_None, "Number of iso parameters lines");
+
     ADD_PROPERTY_TYPE(ScrubCount, (Preferences::scrubCount()), sgroup, App::Prop_None,
                       "The number of times FreeCAD should try to clean the HLR result.");
 
@@ -158,6 +164,21 @@ DrawViewPart::~DrawViewPart()
     removeAllReferencesFromGeom();
 }
 
+//! returns a compound of all the shapes from the DocumentObjects in the Source &
+//!  XSource property lists
+TopoDS_Shape DrawViewPart::getSourceShape(bool fuse) const
+{
+    //    Base::Console().Message("DVP::getSourceShape()\n");
+    const std::vector<App::DocumentObject*>& links = getAllSources();
+    if (links.empty()) {
+        return TopoDS_Shape();
+    }
+    if (fuse) {
+        return ShapeExtractor::getShapesFused(links);
+    }
+    return ShapeExtractor::getShapes(links);
+}
+
 std::vector<TopoDS_Shape> DrawViewPart::getSourceShape2d() const
 {
     //    Base::Console().Message("DVP::getSourceShape2d()\n");
@@ -165,36 +186,20 @@ std::vector<TopoDS_Shape> DrawViewPart::getSourceShape2d() const
     return ShapeExtractor::getShapes2d(links);
 }
 
-TopoDS_Shape DrawViewPart::getSourceShape() const
-{
-    //    Base::Console().Message("DVP::getSourceShape()\n");
-    const std::vector<App::DocumentObject*>& links = getAllSources();
-    if (links.empty()) {
-        return TopoDS_Shape();
-    }
-    return ShapeExtractor::getShapes(links);
-}
-
-TopoDS_Shape DrawViewPart::getSourceShapeFused() const
-{
-    //    Base::Console().Message("DVP::getSourceShapeFused()\n");
-    const std::vector<App::DocumentObject*>& links = getAllSources();
-    if (links.empty()) {
-        return TopoDS_Shape();
-    }
-    return ShapeExtractor::getShapesFused(links);
-}
-
+//! deliver a shape appropriate for making a detail view based on this view
+//! TODO: why does dvp do the thinking for detail, but section picks its own
+//! version of the shape?  Should we have a getShapeForSection?
 TopoDS_Shape DrawViewPart::getShapeForDetail() const
 {
-    return TechDraw::rotateShape(getSourceShapeFused(), getProjectionCS(), Rotation.getValue());
+    return TechDraw::rotateShape(getSourceShape(true), getProjectionCS(), Rotation.getValue());
 }
 
+//! combine the regular links and xlinks into a single list
 std::vector<App::DocumentObject*> DrawViewPart::getAllSources() const
 {
     //    Base::Console().Message("DVP::getAllSources()\n");
     std::vector<App::DocumentObject*> links = Source.getValues();
-    std::vector<DocumentObject*> xLinks = XSource.getValues();
+    std::vector<App::DocumentObject*> xLinks = XSource.getValues();
 
     std::vector<App::DocumentObject*> result = links;
     if (!xLinks.empty()) {
@@ -203,11 +208,11 @@ std::vector<App::DocumentObject*> DrawViewPart::getAllSources() const
     return result;
 }
 
-//pick supported 2d shapes out of the Source properties and
-//add them directly to the geometry without going through HLR
+//! pick supported 2d shapes out of the Source properties and
+//! add them directly to the geometry without going through HLR
 void DrawViewPart::addShapes2d(void)
 {
-    std::vector<TopoDS_Shape> shapes = getSourceShape2d();
+    std::vector<TopoDS_Shape> shapes = ShapeExtractor::getShapes2d(getAllSources());
     for (auto& s : shapes) {
         //just vertices for now
         if (s.ShapeType() == TopAbs_VERTEX) {
@@ -220,17 +225,17 @@ void DrawViewPart::addShapes2d(void)
             geometryObject->addVertex(v1);
         }
         else if (s.ShapeType() == TopAbs_EDGE) {
-            //not supporting edges yet.
-            //            Base::Console().Message("DVP::add2dShapes - found loose edge - isNull: %d\n", s.IsNull());
-            //            TopoDS_Shape sTrans = TechDraw::moveShape(s,
-            //                                                      m_saveCentroid * -1.0);
-            //            TopoDS_Shape sScale = TechDraw::scaleShape(sTrans,
-            //                                                       getScale());
-            //            TopoDS_Shape sMirror = TechDraw::mirrorShape(sScale);
-            //            TopoDS_Edge edge = TopoDS::Edge(sMirror);
-            //            BaseGeomPtr bg = projectEdge(edge);
+            //not supporting edges yet.  Why?
+            //Base::Console().Message("DVP::add2dShapes - found loose edge - isNull: %d\n", s.IsNull());
+            TopoDS_Shape sTrans = TechDraw::moveShape(s,
+                                                      m_saveCentroid * -1.0);
+            TopoDS_Shape sScale = TechDraw::scaleShape(sTrans,
+                                                       getScale());
+            TopoDS_Shape sMirror = TechDraw::mirrorShape(sScale);
+            TopoDS_Edge edge = TopoDS::Edge(sMirror);
+            BaseGeomPtr bg = projectEdge(edge);
 
-            //            geometryObject->addEdge(bg);
+            geometryObject->addEdge(bg);
             //save connection between source feat and this edge
         }
     }
@@ -311,7 +316,7 @@ void DrawViewPart::partExec(TopoDS_Shape& shape)
     }
 }
 
-//prepare the shape for HLR processing by centering, scaling and rotating it
+//! prepare the shape for HLR processing by centering, scaling and rotating it
 GeometryObjectPtr DrawViewPart::makeGeometryForShape(TopoDS_Shape& shape)
 {
 //    Base::Console().Message("DVP::makeGeometryForShape() - %s\n", getNameInDocument());
@@ -331,7 +336,7 @@ GeometryObjectPtr DrawViewPart::makeGeometryForShape(TopoDS_Shape& shape)
     return buildGeometryObject(localShape, getProjectionCS());
 }
 
-//Modify a shape by centering, scaling and rotating and return the centered (but not rotated) shape
+//! Modify a shape by centering, scaling and rotating and return the centered (but not rotated) shape
 TopoDS_Shape DrawViewPart::centerScaleRotate(DrawViewPart* dvp, TopoDS_Shape& inOutShape,
                                              Base::Vector3d centroid)
 {
@@ -350,7 +355,7 @@ TopoDS_Shape DrawViewPart::centerScaleRotate(DrawViewPart* dvp, TopoDS_Shape& in
     return centeredShape;
 }
 
-//create a geometry object and trigger the HLR process in another thread
+//! create a geometry object and trigger the HLR process in another thread
 TechDraw::GeometryObjectPtr DrawViewPart::buildGeometryObject(TopoDS_Shape& shape,
                                                               const gp_Ax2& viewAxis)
 {
@@ -397,7 +402,7 @@ TechDraw::GeometryObjectPtr DrawViewPart::buildGeometryObject(TopoDS_Shape& shap
     return go;
 }
 
-//continue processing after hlr thread completes
+//! continue processing after hlr thread completes
 void DrawViewPart::onHlrFinished(void)
 {
     //    Base::Console().Message("DVP::onHlrFinished() - %s\n", getNameInDocument());
@@ -447,7 +452,7 @@ void DrawViewPart::onHlrFinished(void)
     }
 }
 
-//run any tasks that need to been done after geometry is available
+//! run any tasks that need to been done after geometry is available
 void DrawViewPart::postHlrTasks(void)
 {
     //    Base::Console().Message("DVP::postHlrTasks() - %s\n", getNameInDocument());
@@ -956,7 +961,7 @@ QRectF DrawViewPart::getRect() const
 }
 
 //returns a compound of all the visible projected edges
-TopoDS_Shape DrawViewPart::getShape() const
+TopoDS_Shape DrawViewPart::getEdgeCompound() const
 {
     BRep_Builder builder;
     TopoDS_Compound result;
@@ -982,17 +987,18 @@ TopoDS_Shape DrawViewPart::getShape() const
     return TopoDS_Shape();
 }
 
-//returns the (unscaled) size of the visible lines along the alignment vector.
-//alignment vector is already projected onto our CS, so only has X,Y components
+// returns the (unscaled) size of the visible lines along the alignment vector.
+// alignment vector is already projected onto our CS, so only has X,Y components
+// used in calculating the length of a section line
 double DrawViewPart::getSizeAlongVector(Base::Vector3d alignmentVector)
 {
     //    Base::Console().Message("DVP::GetSizeAlongVector(%s)\n", DrawUtil::formatVector(alignmentVector).c_str());
     double alignmentAngle = atan2(alignmentVector.y, alignmentVector.x) * -1.0;
     gp_Ax2 OXYZ;//shape has already been projected and we will rotate around Z
-    if (getShape().IsNull()) {
+    if (getEdgeCompound().IsNull()) {
         return 1.0;
     }
-    TopoDS_Shape rotatedShape = rotateShape(getShape(), OXYZ, alignmentAngle * 180.0 / M_PI);
+    TopoDS_Shape rotatedShape = TechDraw::rotateShape(getEdgeCompound(), OXYZ, alignmentAngle * 180.0 / M_PI);
     Bnd_Box shapeBox;
     shapeBox.SetGap(0.0);
     BRepBndLib::AddOptimal(rotatedShape, shapeBox);
@@ -1021,8 +1027,7 @@ Base::Vector3d DrawViewPart::projectPoint(const Base::Vector3d& pt, bool invert)
     return result;
 }
 
-//project a loose edge onto the paper plane
-//TODO:: loose edges not supported yet
+//project an edge onto the paper plane
 BaseGeomPtr DrawViewPart::projectEdge(const TopoDS_Edge& e) const
 {
     Base::Vector3d stdOrg(0.0, 0.0, 0.0);
@@ -1216,7 +1221,7 @@ const BaseGeomPtrVector DrawViewPart::getVisibleFaceEdges() const
 
 bool DrawViewPart::handleFaces()
 {
-    return Preferences::getPreferenceGroup("General")->GetBool("HandleFaces", 1l);
+    return Preferences::getPreferenceGroup("General")->GetBool("HandleFaces", true);
 }
 
 bool DrawViewPart::newFaceFinder(void)

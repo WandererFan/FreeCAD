@@ -179,12 +179,13 @@ public:
 
     virtual std::vector<TopoDS_Wire> getWireForFace(int idx) const;
 
-    virtual TopoDS_Shape getSourceShape() const;
-    virtual TopoDS_Shape getSourceShapeFused() const;
-    virtual std::vector<TopoDS_Shape> getSourceShape2d() const;
+    virtual TopoDS_Shape getSourceShape(bool fuse = false) const;
     virtual TopoDS_Shape getShapeForDetail() const;
 
-    TopoDS_Shape getShape() const;
+    virtual std::vector<TopoDS_Shape> getSourceShape2d() const;
+    std::vector<App::DocumentObject*> getAllSources() const;
+
+    TopoDS_Shape getEdgeCompound() const;
     double getSizeAlongVector(Base::Vector3d alignmentVector);
 
     virtual void postHlrTasks(void);
@@ -220,8 +221,6 @@ public:
     void updateReferenceVert(std::string tag, Base::Vector3d loc2d);
     void removeAllReferencesFromGeom();
     void resetReferenceVerts();
-
-    std::vector<App::DocumentObject*> getAllSources() const;
 
     bool waitingForFaces() const { return m_waitingForFaces; }
     void waitingForFaces(bool s) { m_waitingForFaces = s; }

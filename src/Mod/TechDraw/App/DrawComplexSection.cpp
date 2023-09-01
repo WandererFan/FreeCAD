@@ -155,7 +155,7 @@ TopoDS_Shape DrawComplexSection::getShapeToCut()
     if (base && base == this) {
         shapeToCut = getSourceShape();
         if (FuseBeforeCut.getValue()) {
-            shapeToCut = getSourceShapeFused();
+            shapeToCut = getSourceShape(true);
         }
         return shapeToCut;
     }
@@ -163,9 +163,9 @@ TopoDS_Shape DrawComplexSection::getShapeToCut()
         || !base->getTypeId().isDerivedFrom(
             TechDraw::DrawViewPart::getClassTypeId())) {//is second clause necessary?
         //Complex section is based on 3d objects, need to get our own shapes since we can't ask a dvp
-        shapeToCut = getSourceShape();
+        shapeToCut = getSourceShape(false);
         if (FuseBeforeCut.getValue()) {
-            shapeToCut = getSourceShapeFused();
+            shapeToCut = getSourceShape(true);
         }
         return shapeToCut;
     }
