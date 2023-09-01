@@ -22,26 +22,26 @@
  *                                                                         *
  ***************************************************************************/
 
-//DrawViewSection processing overview
+// DrawViewSection processing overview
 
-//execute
-//    sectionExec(getShapeToCut())
+// execute
+//     sectionExec(getShapeToCut())
 
-//sectionExec
-//    makeSectionCut(baseShape)
+// sectionExec
+//     makeSectionCut(baseShape)
 
-//makeSectionCut (separate thread)
-//    m_cuttingTool = makeCuttingTool (DVSTool.brep)
-//    m_cutPieces = (baseShape - m_cuttingTool) (DVSCutPieces.brep)
+// makeSectionCut (separate thread)
+//     m_cuttingTool = makeCuttingTool (DVSTool.brep)
+//     m_cutPieces = (baseShape - m_cuttingTool) (DVSCutPieces.brep)
 
-//onSectionCutFinished
-//    m_preparedShape = prepareShape(m_cutPieces) - centered, scaled, rotated
-//    geometryObject = DVP::buildGeometryObject(m_preparedShape)  (HLR)
+// onSectionCutFinished
+//     m_preparedShape = prepareShape(m_cutPieces) - centered, scaled, rotated
+//     geometryObject = DVP::buildGeometryObject(m_preparedShape)  (HLR)
 
-//postHlrTasks
-//    faceIntersections = findSectionPlaneIntersections
-//    m_sectionTopoDSFaces = alignSectionFaces(faceIntersections)
-//    m_tdSectionFaces = makeTDSectionFaces(m_sectionTopoDSFaces)
+// postHlrTasks
+//     faceIntersections = findSectionPlaneIntersections
+//     m_sectionTopoDSFaces = alignSectionFaces(faceIntersections)
+//     m_tdSectionFaces = makeTDSectionFaces(m_sectionTopoDSFaces)
 
 #include "PreCompiled.h"
 
@@ -90,14 +90,14 @@
 #include "EdgeWalker.h"
 #include "GeometryObject.h"
 #include "Preferences.h"
-
+#include "DrawViewDetail.h"
 #include "DrawViewSection.h"
 
 using namespace TechDraw;
 
 using DU = DrawUtil;
 
-//class to store geometry of points where the section line changes direction
+// class to store geometry of points where the section line changes direction
 ChangePoint::ChangePoint(QPointF location, QPointF preDirection, QPointF postDirection)
 {
     m_location = location;
@@ -115,10 +115,13 @@ ChangePoint::ChangePoint(gp_Pnt location, gp_Dir preDirection, gp_Dir postDirect
     m_postDirection.setY(postDirection.Y());
 }
 
-void ChangePoint::scale(double scaleFactor) { m_location = m_location * scaleFactor; }
+void ChangePoint::scale(double scaleFactor)
+{
+    m_location = m_location * scaleFactor;
+}
 
-const char* DrawViewSection::SectionDirEnums[] = {"Right", "Left",    "Up",
-                                                  "Down",  "Aligned", nullptr};
+const char* DrawViewSection::SectionDirEnums[] =
+    {"Right", "Left", "Up", "Down", "Aligned", nullptr};
 
 const char* DrawViewSection::CutSurfaceEnums[] = {"Hide", "Color", "SvgHatch", "PatHatch", nullptr};
 
@@ -128,7 +131,9 @@ const char* DrawViewSection::CutSurfaceEnums[] = {"Hide", "Color", "SvgHatch", "
 
 PROPERTY_SOURCE(TechDraw::DrawViewSection, TechDraw::DrawViewPart)
 
-DrawViewSection::DrawViewSection() : m_waitingForCut(false), m_shapeSize(0.0)
+DrawViewSection::DrawViewSection()
+    : m_waitingForCut(false)
+    , m_shapeSize(0.0)
 {
     static const char* sgroup = "Section";
     static const char* fgroup = "Cut Surface Format";
@@ -260,6 +265,17 @@ void DrawViewSection::onChanged(const App::Property* prop)
         requestPaint();
         return;
     }
+    else if (prop == &BaseView) {
+        // if the BaseView is a Section, then the option of using UsePreviousCut is
+        // valid.
+        if (BaseView.getValue()->getTypeId().isDerivedFrom(
+                TechDraw::DrawViewSection::getClassTypeId())) {
+            UsePreviousCut.setStatus(App::Property::ReadOnly, false);
+        }
+        else {
+            UsePreviousCut.setStatus(App::Property::ReadOnly, true);
+        }
+    }
 
     DrawView::onChanged(prop);
 }
@@ -270,16 +286,25 @@ TopoDS_Shape DrawViewSection::getShapeToCut()
     App::DocumentObject *base = BaseView.getValue();
     TechDraw::DrawViewPart *dvp = nullptr;
     TechDraw::DrawViewSection *dvs = nullptr;
+    TechDraw::DrawViewDetail* dvd(nullptr);
     if (!base) {
         return TopoDS_Shape();
     }
 
     TopoDS_Shape shapeToCut;
     if (base->getTypeId().isDerivedFrom(TechDraw::DrawViewSection::getClassTypeId())) {
-        dvs = static_cast<TechDraw::DrawViewSection *>(base);
-        shapeToCut = dvs->getCutShape();
-    } else if (base->getTypeId().isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())) {
-        dvp = static_cast<TechDraw::DrawViewPart *>(base);
+        dvs = static_cast<TechDraw::DrawViewSection*>(base);
+        shapeToCut = dvs->getShapeToCut();
+        if (UsePreviousCut.getValue()) {
+            shapeToCut = dvs->getCutShapeRaw();
+        }
+    }
+    else if (base->getTypeId().isDerivedFrom(TechDraw::DrawViewDetail::getClassTypeId())) {
+        dvd = static_cast<TechDraw::DrawViewDetail*>(base);
+        shapeToCut = dvd->getDetailShape();
+    }
+    else if (base->getTypeId().isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())) {
+        dvp = static_cast<TechDraw::DrawViewPart*>(base);
         shapeToCut = dvp->getSourceShape();
         if (FuseBeforeCut.getValue()) {
             shapeToCut = dvp->getSourceShape(true);
@@ -476,6 +501,7 @@ TopoDS_Shape DrawViewSection::prepareShape(const TopoDS_Shape& rawShape, double 
         inputCenter = TechDraw::findCentroid(rawShape, m_projectionCS);
         Base::Vector3d centroid(inputCenter.X(), inputCenter.Y(), inputCenter.Z());
 
+        m_cutShapeRaw = rawShape;
         preparedShape = TechDraw::moveShape(rawShape, centroid * -1.0);
         m_cutShape = preparedShape;
         m_saveCentroid = centroid;
