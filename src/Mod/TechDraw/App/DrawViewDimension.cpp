@@ -1482,7 +1482,8 @@ void DrawViewDimension::handleNoExactMatch()
 //    Base::Console().Message("%s - trying to match changed geometry - stage 2\n", getNameInDocument());
     // this is where we insert the clever logic to determine that the changed geometry
     // actually still represents the "front top left" edge.
-    updateSavedGeometry();
+    // once the reference is repaired, save the new geometry
+    // updateSavedGeometry();
     m_referencesCorrect = true;
 }
 
