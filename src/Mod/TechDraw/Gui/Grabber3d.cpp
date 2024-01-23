@@ -20,6 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
+// Gabber3d - a class for making a screen grap of the active 3d window
+
 #include "PreCompiled.h"
 
 #include <Base/Console.h>

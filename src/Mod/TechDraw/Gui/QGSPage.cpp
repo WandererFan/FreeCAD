@@ -717,7 +717,7 @@ QGIView* QGSPage::findParent(QGIView* view) const
     const std::vector<QGIView*> qviews = getViews();
     TechDraw::DrawView* myFeat = view->getViewObject();
 
-    TechDraw::DrawView *ownerFeat = myFeat->claimParent();
+    TechDraw::DrawView *ownerFeat = myFeat->getOwner();
     if (ownerFeat) {
         QGIView *ownerView = getQGIVByName(ownerFeat->getNameInDocument());
         if (ownerView) {

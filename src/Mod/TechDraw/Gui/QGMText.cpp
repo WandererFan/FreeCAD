@@ -20,6 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
+// QGMText - a movable, editable text item 
+
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <QGraphicsScene>

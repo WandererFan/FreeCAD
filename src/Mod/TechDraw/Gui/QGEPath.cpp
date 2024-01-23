@@ -231,9 +231,9 @@ void QGEPath::showMarkers(std::vector<QPointF> points)
             v, &QGMarker::endEdit,
             this, &QGEPath::onEndEdit
            );
-//TODO: double r = getMarkerSize();
-//      v->setRadius(r);
-        v->setRadius(50.0);
+        double r = PreferencesGui::get3dMarkerSize();
+        v->setRadius(r);
+        // v->setRadius(50.0);
         v->setNormalColor(PreferencesGui::getAccessibleQColor(QColor(Qt::black)));
         v->setZValue(ZVALUE::VERTEX);
         v->setPos(p);
@@ -312,7 +312,7 @@ std::vector<QPointF> QGEPath::getDeltasFromLeader()
         return qDeltas;
     }
 
-    DrawLeaderLine* featLeader = m_parentLeader->getFeature();
+    DrawLeaderLine* featLeader = m_parentLeader->getLeaderFeature();
     if (!featLeader) {
         Base::Console().Message("QGEP::getDeltasFromLeader - featLeader is nullptr\n");
         return  qDeltas;

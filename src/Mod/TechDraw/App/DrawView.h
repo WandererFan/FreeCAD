@@ -84,7 +84,7 @@ public:
 
     virtual DrawPage* findParentPage() const;
     virtual std::vector<DrawPage*> findAllParentPages() const;
-    virtual DrawView *claimParent() const;
+    virtual DrawView *getOwner() const;
 
     virtual int countParentPages() const;
     virtual QRectF getRect() const;                      //must be overridden by derived class

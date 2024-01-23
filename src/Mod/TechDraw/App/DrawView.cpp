@@ -405,7 +405,7 @@ bool DrawView::isInClip()
     return false;
 }
 
-DrawView *DrawView::claimParent() const
+DrawView *DrawView::getOwner() const
 {
     App::PropertyLink *ownerProp = const_cast<DrawView *>(this)->getOwnerProperty();
     if (ownerProp) {

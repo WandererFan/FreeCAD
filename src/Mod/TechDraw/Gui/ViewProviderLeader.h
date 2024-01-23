@@ -48,11 +48,12 @@ public:
     /// constructor
     ViewProviderLeader();
     /// destructor
-    ~ViewProviderLeader() override;
+    ~ViewProviderLeader() override = default;
 
     App::PropertyLength             LineWidth;
     App::PropertyEnumeration        LineStyle;
     App::PropertyColor              Color;
+    App::PropertyBool               UseOldCoords;
 
     bool useNewSelectionModel() const override {return false;}
     void onChanged(const App::Property* p) override;

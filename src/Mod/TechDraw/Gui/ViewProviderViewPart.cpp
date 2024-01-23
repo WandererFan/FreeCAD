@@ -220,7 +220,7 @@ std::vector<App::DocumentObject*> ViewProviderViewPart::claimChildren() const
     try {
       for(std::vector<App::DocumentObject *>::const_iterator it = views.begin(); it != views.end(); ++it) {
           auto view = dynamic_cast<TechDraw::DrawView *>(*it);
-          if (view && view->claimParent() == getViewPart()) {
+          if (view && view->getOwner() == getViewPart()) {
               temp.push_back(view);
               continue;
           }

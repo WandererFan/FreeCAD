@@ -403,7 +403,7 @@ std::vector<App::DocumentObject*> ViewProviderPage::claimChildren(void) const
             TechDraw::DrawView* featView = dynamic_cast<TechDraw::DrawView*>(*it);
 
             // If the child view appoints a parent, skip it
-            if (featView && featView->claimParent()) {
+            if (featView && featView->getOwner()) {
                 continue;
             }
 

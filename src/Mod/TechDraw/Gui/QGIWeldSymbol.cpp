@@ -69,7 +69,7 @@ QGIWeldSymbol::QGIWeldSymbol(QGILeaderLine* myParent) :
     setCacheMode(QGraphicsItem::NoCache);
 
     setParentItem(m_qgLead);
-    m_leadFeat = m_qgLead->getFeature();
+    m_leadFeat = m_qgLead->getLeaderFeature();
     setZValue(ZVALUE::DIMENSION);
 
     m_tailText = new QGCustomText();

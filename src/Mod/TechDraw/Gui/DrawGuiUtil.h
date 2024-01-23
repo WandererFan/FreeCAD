@@ -81,6 +81,8 @@ class TechDrawGuiExport DrawGuiUtil {
     static bool isSelectedInTree(QGraphicsItem *item);
     static void setSelectedTree(QGraphicsItem *item, bool selected);
 
+    static Base::Vector3d fromSceneCoords(const Base::Vector3d& sceneCoord);
+    static Base::Vector3d toSceneCoords(const Base::Vector3d& pageCoord);
 };
 
 } //end namespace TechDrawGui

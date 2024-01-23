@@ -243,7 +243,7 @@ int DrawPage::addView(App::DocumentObject* docObj)
     DrawView* view = static_cast<DrawView*>(docObj);
 
     //position all new views without owners in center of Page (exceptDVDimension)
-    if (!view->claimParent()
+    if (!view->getOwner()
         && !docObj->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())
         && !docObj->isDerivedFrom(TechDraw::DrawViewBalloon::getClassTypeId())) {
         view->X.setValue(getPageWidth() / 2.0);
