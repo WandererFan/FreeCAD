@@ -28,6 +28,7 @@
 #include <App/Document.h>
 #include <tuple>
 
+#define BuildBaseExtended true
 #include "MeasurePosition.h"
 
 

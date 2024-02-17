@@ -29,6 +29,7 @@
 #include <Base/Tools.h>
 #include <Base/Precision.h>
 
+#define BuildBaseExtended true
 #include "MeasureAngle.h"
 
 

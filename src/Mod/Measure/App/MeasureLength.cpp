@@ -34,6 +34,7 @@
 
 #include <Mod/Part/App/PartFeature.h>
 
+#define BuildBaseExtended true
 #include "MeasureLength.h"
 
 

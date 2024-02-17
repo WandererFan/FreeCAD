@@ -83,7 +83,19 @@ protected:
 using MeasurePython = App::FeaturePythonT<MeasureBase>;
 
 template <typename T>
+#ifdef MeasureExport
+// we are in the Measure module
+#ifdef BuildBaseExtended
+// fiddle with win export macro
+class FREECAD_DECL_EXPORT MeasureBaseExtendable : public MeasureBase
+#else
+class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
+#endif
+#else
+// we are outside of the Measure module, so we
+// use the normal expansion of MeasureExport
 class MeasureExport MeasureBaseExtendable : public MeasureBase
+#endif
 {
 
     using GeometryHandler = std::function<T (std::string*, std::string*)>;

@@ -30,6 +30,7 @@
 #include <Base/Tools.h>
 # include <BRepExtrema_DistShapeShape.hxx>
 
+#define BuildBaseExtended true
 #include "MeasureDistance.h"
 
 
