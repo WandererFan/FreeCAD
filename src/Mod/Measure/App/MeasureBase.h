@@ -86,15 +86,15 @@ template <typename T>
 #ifdef MeasureExport
 // we are in the Measure module
 #ifdef BuildBaseExtended
-// fiddle with win export macro
+// we are actually making MeasureBaseExtendable not just talking to it
 class FREECAD_DECL_EXPORT MeasureBaseExtendable : public MeasureBase
 #else
 class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
 #endif
 #else
 // we are outside of the Measure module, so we
-// use the normal expansion of MeasureExport
-class MeasureExport MeasureBaseExtendable : public MeasureBase
+// need to import?
+class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
 #endif
 {
 
