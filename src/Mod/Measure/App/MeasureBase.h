@@ -124,6 +124,7 @@ public:
     if (MeasureBaseExtendable<T>::m_mapLink) {
         return MeasureBaseExtendable<T>::m_mapLink;
     }
+
     MeasureBaseExtendable<T>::m_mapLink = new MeasureBaseExtendable<T>::HandlerMap();
     return MeasureBaseExtendable<T>::m_mapLink;
 }
@@ -134,6 +135,7 @@ private:
     // static HandlerMap* m_mapLink;
 };
 
+//  instantiates the static member
 template <class T> typename MeasureBaseExtendable<T>::HandlerMap* MeasureBaseExtendable<T>::m_mapLink;
 
 //template MeasureBaseExtendable<

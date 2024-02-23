@@ -31,6 +31,10 @@
 #include "MeasurePosition.h"
 
 
+namespace Measure{
+static MeasureBaseExtendable<MeasurePositionInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasurePositionInfo>::HandlerMap();
+}
+
 using namespace Measure;
 
 

@@ -36,7 +36,9 @@
 
 #include "MeasureArea.h"
 
-
+namespace Measure{
+static MeasureBaseExtendable<MeasureAreaInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureAreaInfo>::HandlerMap();
+}
 using namespace Measure;
 
 PROPERTY_SOURCE(Measure::MeasureArea, Measure::MeasureBase)

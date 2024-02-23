@@ -31,7 +31,9 @@
 
 #include "MeasureAngle.h"
 
-
+namespace Measure{
+static MeasureBaseExtendable<MeasureAngleInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureAngleInfo>::HandlerMap();
+}
 using namespace Measure;
 
 

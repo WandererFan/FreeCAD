@@ -39,6 +39,9 @@
 
 #include "MeasureRadius.h"
 
+namespace Measure{
+static MeasureBaseExtendable<MeasureRadiusInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureRadiusInfo>::HandlerMap();
+}
 
 using namespace Measure;
 

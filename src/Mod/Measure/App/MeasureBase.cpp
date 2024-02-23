@@ -178,26 +178,6 @@ Base::Placement MeasureBase::getPlacement() {
     return this->Placement.getValue();
 }
 
-// MeasureBase::HandlerMap* MeasureBase::Map()
-// {
-//     if (m_mapLink) {
-//         return m_mapLink;
-//     }
-//     m_mapLink = new HandlerMap();
-//     return m_mapLink;
-// }
-
-// template<typename T>
-// typename MeasureBaseExtendable<T>::HandlerMap* MeasureBaseExtendable<T>::Map()
-// {
-//     if (MeasureBaseExtendable<T>::m_mapLink) {
-//         return MeasureBaseExtendable<T>::m_mapLink;
-//     }
-//     MeasureBaseExtendable<T>::m_mapLink = new MeasureBaseExtendable<T>::HandlerMap();
-//     return MeasureBaseExtendable<T>::m_mapLink;
-// }
-
-
 
 // Python Drawing feature ---------------------------------------------------------
 

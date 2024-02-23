@@ -36,6 +36,9 @@
 
 #include "MeasureLength.h"
 
+namespace Measure{
+static MeasureBaseExtendable<MeasureLengthInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureLengthInfo>::HandlerMap();
+}
 
 using namespace Measure;
 
@@ -164,7 +167,7 @@ Base::Placement MeasureLength::getPlacement() {
     const std::vector<std::string>& subElements = Elements.getSubValues();
 
     if (objects.empty() || subElements.empty()) {
-        return Base::Placement();
+        return {};
     }
 
     App::DocumentObject* object = objects.front();

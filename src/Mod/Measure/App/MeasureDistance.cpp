@@ -32,7 +32,9 @@
 
 #include "MeasureDistance.h"
 
-
+namespace Measure{
+static MeasureBaseExtendable<MeasureDistanceInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureDistanceInfo>::HandlerMap();
+}
 using namespace Measure;
 
 
