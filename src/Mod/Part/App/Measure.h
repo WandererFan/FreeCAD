@@ -24,19 +24,30 @@
 #define PART_MEASURE_H
 
 #include <Mod/Part/PartGlobal.h>
+#include <functional>
+#include <string>
 
 
+#include <Mod/Measure/MeasureInfo.h>
 
 namespace Part
 {
 
+using GeometryHandler = std::function<Measure::MeasureInfo* (std::string*, std::string*)>;
+using CallbackEntry = std::pair<std::string, GeometryHandler>;
+using CallbackTable = std::vector<CallbackEntry>
 
 class PartExport Measure
 {
 public:
 
     static void initialize();
-
+    static CallbackTable  reportLengthCallbacks();
+    static CallbackTable  reportAngleCallbacks();
+    static CallbackTable  reportAreaCallbacks();
+    static CallbackTable  reportDistanceCallbacks();
+    static CallbackTable  reportPositionCallbacks();
+    static CallbackTable  reportRadiusCallbacks();
 };
 
 
