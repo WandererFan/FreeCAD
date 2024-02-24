@@ -30,7 +30,7 @@
 
 #include <tuple>
 #include <functional>
-#include <string.h>
+#include <string>
 #include <map>
 
 #include <App/PropertyGeo.h>
@@ -38,6 +38,7 @@
 #include <App/PropertyUnits.h>
 #include <Base/Vector3D.h>
 
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure

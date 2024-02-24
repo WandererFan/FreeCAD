@@ -83,7 +83,11 @@ protected:
 using MeasurePython = App::FeaturePythonT<MeasureBase>;
 
 template <typename T>
-class MeasureExport MeasureBaseExtendable : public MeasureBase
+#ifdef BuildingBase
+class FREECAD_DECL_EXPORT MeasureBaseExtendable : public MeasureBase
+#else
+class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
+#endif
 {
 
     using GeometryHandler = std::function<T (std::string*, std::string*)>;
@@ -119,11 +123,11 @@ public:
     }
 
 private:
-    static HandlerMap _mGeometryHandlers;
+    inline static HandlerMap _mGeometryHandlers = HandlerMap();
 };
 
-template <typename T>
-typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers;
+// template <typename T>
+// typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers;
 
 
 } //namespace Measure

@@ -32,6 +32,7 @@
 #include <App/GeoFeature.h>
 #include <Base/Placement.h>
 
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure
