@@ -93,10 +93,6 @@ private:
 
 };
 
-// template <typename T>
-// typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers = 0;
-//MeasureLength::HandlerMap _mGeometryHandlers = HandlerMap();
-// Measure::MeasureBaseExtendable<Measure::MeasureLengthInfo>::HandlerMap _mGeometryHandlers =
 
 } //namespace Measure
 
