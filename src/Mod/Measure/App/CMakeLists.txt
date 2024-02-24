@@ -52,6 +52,9 @@ SET(MeasureModule_SRCS
     MeasureRadius.cpp
     MeasureRadius.h
     MeasureInfo.h
+    MapKeeper.cpp
+    MapKeeper.h
+    HandlerTable.h
 
     Preferences.cpp
     Preferences.h

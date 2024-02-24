@@ -40,8 +40,15 @@
 #include "MeasureLength.h"
 #include "MeasureArea.h"
 #include "MeasureRadius.h"
+#include "MapKeeper.h"
+
+#include "HandlerTable.h"
 
 namespace Measure {
+
+
+static MapKeeper* m_mapKeeper;
+
 class Module : public Py::ExtensionModule<Module>
 {
 public:
@@ -140,8 +147,10 @@ PyMOD_INIT_FUNC(Measure)
             MeasureRadius::isPrioritizedSelection
         );
 
-    Part::MeasureClient::registerMeasureHandlers();
-
+    // not cleaning up properly here
+    m_mapKeeper = new MapKeeper();
+    CallbackTable partCallbacks = Part::MeasureClient::registerMeasureHandlers();
+    m_mapKeeper->loadMaps(partCallbacks);
     Base::Console().Log("Loading Measure module... done\n");
     PyMOD_Return(mod);
 }

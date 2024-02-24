@@ -24,15 +24,11 @@
 #ifndef APP_MEASUREPOSITION_H
 #define APP_MEASUREPOSITION_H
 
+#include <QTextStream>
+
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
 #include <App/PropertyUnits.h>
-#include <tuple>
-// #include <App/Measure.h>
-#include <functional>
-#include <string.h>
-#include <map>
-#include <QTextStream>
 
 #include <Mod/Measure/MeasureGlobal.h>
 #include "MeasureBase.h"
@@ -71,13 +67,13 @@ public:
     }
 
     static bool isValidSelection(const App::MeasureSelection& selection);
-    void parseSelection(const App::MeasureSelection& selection);
+    void parseSelection(const App::MeasureSelection& selection) override;
     
     std::vector<std::string> getInputProps() override {return {"Element"};}
     App::Property* getResultProp() override {return &this->Position;}
     QString getResultString() override;
 
-    Base::Placement getPlacement();
+    Base::Placement getPlacement() override;
 
     // Return the object we are measuring
     std::vector<App::DocumentObject*> getSubject() const override;

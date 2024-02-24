@@ -414,33 +414,56 @@ Measure::MeasureDistanceInfo* MeasureDistanceHandler(std::string* objectName, st
 
 
 using namespace Measure;
+using namespace Part;
 
-void Part::MeasureClient::initialize() {
+void MeasureClient::initialize() {
 
     App::Application& app = App::GetApplication();
     app.addMeasureHandler("Part", PartMeasureTypeCb);
 }
 
-void Part::MeasureClient::registerMeasureHandlers( )
+Measure::CallbackTable MeasureClient::registerMeasureHandlers()
 {
+    Measure::CallbackTable result;
+//    std::vector<std::string> proxyList(  { "Part", "PartDesign", "Sketcher" } );
 
-    std::vector<std::string> proxyList(  { "Part", "PartDesign", "Sketcher" } );
+    result.emplace_back(HandlerEntry{"Length", "Part", MeasureLengthHandler});
+    result.emplace_back(HandlerEntry{"Length", "PartDesign", MeasureLengthHandler});
+    result.emplace_back(HandlerEntry{"Length", "Sketcher", MeasureLengthHandler});
+    result.emplace_back(HandlerEntry{"Position", "Part", MeasurePositionHandler});
+    result.emplace_back(HandlerEntry{"Position", "PartDesign", MeasurePositionHandler});
+    result.emplace_back(HandlerEntry{"Position", "Sketcher", MeasurePositionHandler});
+    result.emplace_back(HandlerEntry{"Area", "Part", MeasureAreaHandler});
+    result.emplace_back(HandlerEntry{"Area", "PartDesign", MeasureAreaHandler});
+    result.emplace_back(HandlerEntry{"Area", "Sketcher", MeasureAreaHandler});
+    result.emplace_back(HandlerEntry{"Angle", "Part", MeasureAngleHandler});
+    result.emplace_back(HandlerEntry{"Angle", "PartDesign", MeasureAngleHandler});
+    result.emplace_back(HandlerEntry{"Angle", "Sketcher", MeasureAngleHandler});
+    result.emplace_back(HandlerEntry{"Distance", "Part", MeasureDistanceHandler});
+    result.emplace_back(HandlerEntry{"Distance", "PartDesign", MeasureDistanceHandler});
+    result.emplace_back(HandlerEntry{"Distance", "Sketcher", MeasureDistanceHandler});
+    result.emplace_back(HandlerEntry{"Radius", "Part", MeasureRadiusHandler});
+    result.emplace_back(HandlerEntry{"Radius", "PartDesign", MeasureRadiusHandler});
+    result.emplace_back(HandlerEntry{"Radius", "Sketcher", MeasureRadiusHandler});
 
+    return result;
+
+//    HandlerEntry he0("Length", "Part", MeasureLengthHandler);
     // Extend MeasureLength
-    MeasureLength::addGeometryHandlerCBs(proxyList, MeasureLengthHandler);
+    // MeasureLength::addGeometryHandlerCBs("Length", proxyList, MeasureLengthHandler);
 
     // Extend MeasurePosition
-    MeasurePosition::addGeometryHandlerCBs(proxyList, MeasurePositionHandler);
+    // MeasurePosition::addGeometryHandlerCBs("Position", proxyList, MeasurePositionHandler);
 
     // Extend MeasureArea
-    MeasureArea::addGeometryHandlerCBs(proxyList, MeasureAreaHandler);
+    // MeasureArea::addGeometryHandlerCBs("Area", proxyList, MeasureAreaHandler);
 
     // Extend MeasureAngle
-    MeasureAngle::addGeometryHandlerCBs(proxyList, MeasureAngleHandler);
+    // MeasureAngle::addGeometryHandlerCBs("Angle", proxyList, MeasureAngleHandler);
 
     // Extend MeasureDistance
-    MeasureDistance::addGeometryHandlerCBs(proxyList, MeasureDistanceHandler);
+    // MeasureDistance::addGeometryHandlerCBs("Distance", proxyList, MeasureDistanceHandler);
 
     // Extend MeasureRadius
-    MeasureRadius::addGeometryHandlerCBs(proxyList, MeasureRadiusHandler);
+    // MeasureRadius::addGeometryHandlerCBs("Radius", proxyList, MeasureRadiusHandler);
 }

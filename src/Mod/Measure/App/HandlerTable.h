@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: LGPL-2.0-or-later
+
 /***************************************************************************
- *   Copyright (c) 2023 David Friedli <david[at]friedli-be.ch>             *
+ *   Copyright (c) 2024 wandererfan <wandererfan at gmail dot com>         *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,33 +22,37 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef PART_MEASURE_H
-#define PART_MEASURE_H
+//! HandlerTable.h
+//! a convenience for passing callbacks around
 
-#include <Mod/Part/PartGlobal.h>
-#include <functional>
+#ifndef MEASURE_HANDLERTABLE_H
+#define MEASURE_HANDLERTABLE_H
+
+#include <Mod/Measure/MeasureGlobal.h>
+
 #include <string>
-#include <vector>
+#include <functional>
+#include "MeasureInfo.h"
 
-#include <Mod/Measure/App/MeasureInfo.h>
-#include <Mod/Measure/App/HandlerTable.h>
+namespace Measure {
 
+using CallbackItem = std::function<typename Measure::MeasureInfo* (std::string*, std::string*)>;
 
-namespace Part
-{
-
-
-class PartExport MeasureClient
-{
+class MeasureExport HandlerEntry {
 public:
-
-    static void initialize();
-
-    static Measure::CallbackTable registerMeasureHandlers();
-
+    HandlerEntry() = default;
+    HandlerEntry(std::string type, std::string modName, CallbackItem cb) { measureType = type; moduleName = modName; callback = cb;}
+    ~HandlerEntry() = default;
+    
+    std::string measureType;
+    std::string moduleName;
+    CallbackItem callback;
+    
 };
 
+using CallbackTable = std::vector<HandlerEntry>;
 
-} //namespace Part
+}  //end namespace Measure
 
 #endif
+

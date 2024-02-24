@@ -32,9 +32,7 @@
 
 #include "MeasureDistance.h"
 
-namespace Measure{
-static MeasureBaseExtendable<MeasureDistanceInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureDistanceInfo>::HandlerMap();
-}
+
 using namespace Measure;
 
 
@@ -79,7 +77,7 @@ bool MeasureDistance::isValidSelection(const App::MeasureSelection& selection){
         const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
         std::string mod = ob->getClassTypeId().getModuleName(className);
 
-        if (!hasGeometryHandler(mod)) {
+        if (!hasGeometryHandler("Distance", mod)) {
             return false;
         }
 
@@ -147,11 +145,11 @@ bool MeasureDistance::getShape(App::PropertyLinkSub* prop, TopoDS_Shape& rShape)
     const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
     std::string mod = ob->getClassTypeId().getModuleName(className);
     
-    if (!hasGeometryHandler(mod)) {
+    if (!hasGeometryHandler("Distance", mod)) {
         return false;
     }
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Distance", mod);
     std::string obName = static_cast<std::string>(ob->getNameInDocument());
 
     auto info = handler(&obName, &subName);

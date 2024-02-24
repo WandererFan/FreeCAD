@@ -31,11 +31,7 @@
 
 #include "MeasureAngle.h"
 
-namespace Measure{
-static MeasureBaseExtendable<MeasureAngleInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureAngleInfo>::HandlerMap();
-}
 using namespace Measure;
-
 
 PROPERTY_SOURCE(Measure::MeasureAngle, Measure::MeasureBase)
 
@@ -75,7 +71,7 @@ bool MeasureAngle::isValidSelection(const App::MeasureSelection& selection){
         const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
         std::string mod = ob->getClassTypeId().getModuleName(className);
 
-        if (!hasGeometryHandler(mod)) {
+        if (!hasGeometryHandler("Angle", mod)) {
             return false;
         }
 
@@ -140,11 +136,11 @@ bool MeasureAngle::getVec(App::DocumentObject& ob, std::string& subName, Base::V
     const char* className = ob.getSubObject(subName.c_str())->getTypeId().getName();
     std::string mod = ob.getClassTypeId().getModuleName(className);
 
-    if (!hasGeometryHandler(mod)) {
+    if (!hasGeometryHandler("Angle", mod)) {
         return false;
     }
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Angle", mod);
 
     std::string obName = static_cast<std::string>(ob.getNameInDocument());
     auto info = handler(&obName, &subName);
@@ -158,11 +154,11 @@ Base::Vector3d MeasureAngle::getLoc(App::DocumentObject& ob, std::string& subNam
     const char* className = ob.getSubObject(subName.c_str())->getTypeId().getName();
     std::string mod = ob.getClassTypeId().getModuleName(className);
 
-    if (!hasGeometryHandler(mod)) {
+    if (!hasGeometryHandler("Angle", mod)) {
         return Base::Vector3d();
     }
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Angle", mod);
     std::string obName = static_cast<std::string>(ob.getNameInDocument());
     auto info = handler(&obName, &subName);
     auto angleInfo = static_cast<MeasureAngleInfo*>(info);

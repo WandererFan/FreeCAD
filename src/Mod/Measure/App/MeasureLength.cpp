@@ -36,9 +36,6 @@
 
 #include "MeasureLength.h"
 
-namespace Measure{
-static MeasureBaseExtendable<MeasureLengthInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureLengthInfo>::HandlerMap();
-}
 
 using namespace Measure;
 
@@ -74,7 +71,7 @@ bool MeasureLength::isValidSelection(const App::MeasureSelection& selection){
         const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
         std::string mod = ob->getClassTypeId().getModuleName(className);
 
-        if (!hasGeometryHandler(mod)) {
+        if (!hasGeometryHandler("Length", mod)) {
             return false;
         }
 
@@ -134,7 +131,7 @@ void MeasureLength::recalculateLength()
         // Get the Geometry handler based on the module
         const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
         const std::string& mod = object->getClassTypeId().getModuleName(className);
-        auto handler = getGeometryHandlerCB(mod);
+        auto handler = getGeometryHandlerCB("Length", mod);
         if (!handler) {
             throw Base::RuntimeError("No geometry handler available for submitted element type");
         }
@@ -175,7 +172,7 @@ Base::Placement MeasureLength::getPlacement() {
     const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
     const std::string& mod = object->getClassTypeId().getModuleName(className);
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Length", mod);
     if (!handler) {
         throw Base::RuntimeError("No geometry handler available for submitted element type");
     }

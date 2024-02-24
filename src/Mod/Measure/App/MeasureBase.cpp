@@ -110,7 +110,6 @@ void MeasureBase::parseSelection(const App::MeasureSelection& selection) {
     
     // Initialize the measurement
     initialize();
-    return;
 }
 
 

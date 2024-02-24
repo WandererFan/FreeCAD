@@ -36,9 +36,7 @@
 
 #include "MeasureArea.h"
 
-namespace Measure{
-static MeasureBaseExtendable<MeasureAreaInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureAreaInfo>::HandlerMap();
-}
+
 using namespace Measure;
 
 PROPERTY_SOURCE(Measure::MeasureArea, Measure::MeasureBase)
@@ -73,7 +71,7 @@ bool MeasureArea::isValidSelection(const App::MeasureSelection& selection){
         const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
         std::string mod = ob->getClassTypeId().getModuleName(className);
 
-        if (!hasGeometryHandler(mod)) {
+        if (!hasGeometryHandler("Area", mod)) {
             return false;
         }
 
@@ -133,7 +131,7 @@ void MeasureArea::recalculateArea()
         // Get the Geometry handler based on the module
         const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
         const std::string& mod = object->getClassTypeId().getModuleName(className);
-        auto handler = getGeometryHandlerCB(mod);
+        auto handler = getGeometryHandlerCB("Area", mod);
         if (!handler) {
             throw Base::RuntimeError("No geometry handler available for submitted element type");
         }
@@ -174,7 +172,7 @@ Base::Placement MeasureArea::getPlacement() {
     const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
     const std::string& mod = object->getClassTypeId().getModuleName(className);
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Angle", mod);
     if (!handler) {
         throw Base::RuntimeError("No geometry handler available for submitted element type");
     }

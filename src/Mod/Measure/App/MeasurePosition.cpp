@@ -31,10 +31,6 @@
 #include "MeasurePosition.h"
 
 
-namespace Measure{
-static MeasureBaseExtendable<MeasurePositionInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasurePositionInfo>::HandlerMap();
-}
-
 using namespace Measure;
 
 
@@ -71,7 +67,7 @@ bool MeasurePosition::isValidSelection(const App::MeasureSelection& selection){
         const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
         std::string mod = ob->getClassTypeId().getModuleName(className);
 
-        if (!hasGeometryHandler(mod)) {
+        if (!hasGeometryHandler("Position", mod)) {
             return false;
         }
 
@@ -127,7 +123,7 @@ void MeasurePosition::recalculatePosition()
     // Get the Geometry handler based on the module
     const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
     const std::string& mod = object->getClassTypeId().getModuleName(className);
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Position", mod);
     if (!handler) {
         throw Base::RuntimeError("No geometry handler available for submitted element type");
     }

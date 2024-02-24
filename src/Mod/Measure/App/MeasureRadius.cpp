@@ -39,10 +39,6 @@
 
 #include "MeasureRadius.h"
 
-namespace Measure{
-static MeasureBaseExtendable<MeasureRadiusInfo>::HandlerMap* m_mapLink = new MeasureBaseExtendable<MeasureRadiusInfo>::HandlerMap();
-}
-
 using namespace Measure;
 
 
@@ -80,7 +76,7 @@ bool MeasureRadius::isValidSelection(const App::MeasureSelection& selection){
     const char* className = ob->getSubObject(subName.c_str())->getTypeId().getName();
     std::string mod = ob->getClassTypeId().getModuleName(className);
 
-    if (!hasGeometryHandler(mod)) {
+    if (!hasGeometryHandler("Radius", mod)) {
         return false;
     }
 
@@ -207,7 +203,7 @@ MeasureRadiusInfo MeasureRadius::getMeasureInfoFirst() const
     const char* className = object->getSubObject(subElement.c_str())->getTypeId().getName();
     const std::string& mod = object->getClassTypeId().getModuleName(className);
 
-    auto handler = getGeometryHandlerCB(mod);
+    auto handler = getGeometryHandlerCB("Radius", mod);
     if (!handler) {
         throw Base::RuntimeError("No geometry handler available for submitted element type");
     }

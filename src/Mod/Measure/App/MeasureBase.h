@@ -35,9 +35,10 @@
 #include <Base/Placement.h>
 #include <QString>
 #include <Base/Interpreter.h>
-#include <App/FeaturePython.h>
 
 #include "MeasureInfo.h"
+#include "MapKeeper.h"
+#include "HandlerTable.h"
 
 namespace Measure
 {
@@ -72,75 +73,47 @@ public:
     // Return the objects that are measured
     virtual std::vector<App::DocumentObject*> getSubject() const;
 
-private:
-    Py::Object getProxyObject() const;
-
 protected:
     void onDocumentRestored() override;
     void initialize();
+
+private:
+
+    Py::Object getProxyObject() const;
+
 };
 
 // Create a scriptable object based on MeasureBase
 using MeasurePython = App::FeaturePythonT<MeasureBase>;
 
+// using GeometryHandlerCB = std::function<MeasureInfo* (std::string*, std::string*)>;
+
 template <class T>
 class MeasureExport MeasureBaseExtendable : public MeasureBase
 {
 public:
-    using GeometryHandlerCB = std::function<MeasureInfo* (std::string*, std::string*)>;
-    using HandlerMap = std::map<std::string, GeometryHandlerCB>;
-    using HandlerMapPtr = HandlerMap*;
-
     //! create or replace the callback for a module
-    static void addGeometryHandlerCB(const std::string& module, GeometryHandlerCB callback) {
-        (*MeasureBaseExtendable<T>::Map()) [module] = callback;
+    static void addGeometryHandlerCB(const std::string& measureType, const std::string& module, GeometryHandlerCB callback) {
+        Measure::MapKeeper::addCallback(measureType, module, callback);
     }
 
     //! assign many modules to the same callback
-    static void addGeometryHandlerCBs(const std::vector<std::string>& modules, GeometryHandlerCB callback){
+    static void addGeometryHandlerCBs(const std::string& measureType, const std::vector<std::string>& modules, GeometryHandlerCB callback){
         // TODO: this will replace a callback with a later one.  Should we check that there isn't already a
         // handler defined for this module?
-        for (auto& mod : modules) {
-            (*Map())[mod] = callback;
-        }
+        Measure::MapKeeper::addCallbacks(measureType, modules, callback);
     }
 
     //! get the address of callback std::function
-    static GeometryHandlerCB getGeometryHandlerCB(const std::string& module) {
-        if (!hasGeometryHandler(module)) {
-            return {};
-        }
-
-        return (*Map()) [module];
+    static GeometryHandlerCB getGeometryHandlerCB(const std::string& measureType, const std::string& module) {
+        return Measure::MapKeeper::getCallback(measureType, module);
     }
 
-    static bool hasGeometryHandler(const std::string& module) {
-        return ((*Map()).count(module) > 0);
+    static bool hasGeometryHandler(const std::string& measureType, const std::string& module) {
+        return Measure::MapKeeper::hasCallback(measureType, module);
     }
 
-    static MeasureBaseExtendable<T>::HandlerMap* m_mapLink;
-
-    static MeasureBaseExtendable<T>::HandlerMap* Map() {
-    if (MeasureBaseExtendable<T>::m_mapLink) {
-        return MeasureBaseExtendable<T>::m_mapLink;
-    }
-
-    MeasureBaseExtendable<T>::m_mapLink = new MeasureBaseExtendable<T>::HandlerMap();
-    return MeasureBaseExtendable<T>::m_mapLink;
-}
-
-
-private:
-    // static HandlerMap _mGeometryHandlers;
-    // static HandlerMap* m_mapLink;
 };
-
-//  instantiates the static member
-template <class T> typename MeasureBaseExtendable<T>::HandlerMap* MeasureBaseExtendable<T>::m_mapLink;
-
-//template MeasureBaseExtendable<
-// template <typename T>
-// typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers;
 
 
 } //namespace Measure
