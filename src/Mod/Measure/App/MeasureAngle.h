@@ -38,6 +38,7 @@
 #include <App/PropertyUnits.h>
 #include <Base/Vector3D.h>
 
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure

@@ -38,6 +38,7 @@
 #include <App/PropertyLinks.h>
 #include <App/PropertyUnits.h>
 
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure

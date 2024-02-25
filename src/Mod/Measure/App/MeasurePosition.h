@@ -35,6 +35,7 @@
 #include <QTextStream>
 
 #include <Mod/Measure/MeasureGlobal.h>
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure

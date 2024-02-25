@@ -55,6 +55,16 @@
 #include <Mod/Measure/App/MeasurePosition.h>
 #include <Mod/Measure/App/MeasureArea.h>
 #include <Mod/Measure/App/MeasureRadius.h>
+namespace Measure {
+// explicit template instantiation
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureAngleInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureLengthInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureAreaInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureDistanceInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<Base::Vector3d>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureRadiusInfo>;
+}
+
 
 #include "VectorAdapter.h"
 #include "PartFeature.h"
