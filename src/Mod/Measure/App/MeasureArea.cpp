@@ -39,10 +39,6 @@
 
 using namespace Measure;
 
-namespace Measure {
-// explicit template instantiation
-template class MeasureExport MeasureBaseExtendable<MeasureAreaInfo>;
-}
 
 PROPERTY_SOURCE(Measure::MeasureArea, Measure::MeasureBase)
 
@@ -196,4 +192,8 @@ std::vector<App::DocumentObject*> MeasureArea::getSubject() const
     return Elements.getValues();
 }
 
+namespace Measure {
+// explicit template instantiation
+template class MeasureExport MeasureBaseExtendable<MeasureAreaInfo>;
+}
 

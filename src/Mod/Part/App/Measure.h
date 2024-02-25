@@ -27,7 +27,12 @@
 #include <functional>
 #include <string>
 
-
+#include <Mod/Measure/App/MeasureAngle.h>
+#include <Mod/Measure/App/MeasureDistance.h>
+#include <Mod/Measure/App/MeasurePosition.h>
+#include <Mod/Measure/App/MeasureLength.h>
+#include <Mod/Measure/App/MeasureArea.h>
+#include <Mod/Measure/App/MeasureRadius.h>
 #include <Mod/Measure/App/MeasureInfo.h>
 
 namespace Part

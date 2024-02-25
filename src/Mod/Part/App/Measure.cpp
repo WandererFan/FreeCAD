@@ -61,6 +61,17 @@
 
 #include "Measure.h"
 
+namespace Measure {
+// explicit template instantiation
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureAngleInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureLengthInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureAreaInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureDistanceInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasurePositionInfo>;
+extern template class FREECAD_DECL_IMPORT MeasureBaseExtendable<MeasureRadiusInfo>;
+}
+
+
 // From: https://github.com/Celemation/FreeCAD/blob/joel_selection_summary_demo/src/Gui/SelectionSummary.cpp
 
 // Should work with edges and wires
