@@ -97,13 +97,14 @@ class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
 #endif
 {
 
-public: 
+public:
 
-    static void addGeometryHandler(const std::string& module, GeometryHandler callback) {
+    // static functions are private to the file and you can not export it.
+    inline static void addGeometryHandler(const std::string& module, GeometryHandler callback) {
         _mGeometryHandlers[module] = callback;
     }
 
-    static GeometryHandler getGeometryHandler(const std::string& module) {
+    inline static GeometryHandler getGeometryHandler(const std::string& module) {
 
         if (!hasGeometryHandler(module)) {
             return {};
@@ -112,7 +113,7 @@ public:
         return _mGeometryHandlers[module];
     }
 
-    static void addGeometryHandlers(const std::vector<std::string>& modules, GeometryHandler callback){
+    inline static void addGeometryHandlers(const std::vector<std::string>& modules, GeometryHandler callback){
         // TODO: this will replace a callback with a later one.  Should we check that there isn't already a
         // handler defined for this module?
         for (auto& mod : modules) {
@@ -121,11 +122,11 @@ public:
     }
 
 
-    static bool hasGeometryHandler(const std::string& module) {
+    inline static bool hasGeometryHandler(const std::string& module) {
         return (_mGeometryHandlers.count(module) > 0);
     }
 
-    static void loadCallbacks( CallbackTable& tableIn)
+    inline static void loadCallbacks( CallbackTable& tableIn)
 {
     for (auto& item : tableIn) {
         // map[moduleName] = callback;
