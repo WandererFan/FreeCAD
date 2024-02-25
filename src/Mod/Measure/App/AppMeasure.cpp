@@ -150,7 +150,7 @@ PyMOD_INIT_FUNC(Measure)
             MeasureRadius::isValidSelection,
             MeasureRadius::isPrioritizedSelection
         );
-    using GeometryHandler = std::function<MeasureInfo* (std::string*, std::string*)>;
+    //using GeometryHandler = std::function<MeasureInfo* (std::string*, std::string*)>;
     // using HandlerMap = std::map<std::string, GeometryHandler>;
 
     Part::CallbackTable  lengthcb = Part::Measure::reportLengthCallbacks();
