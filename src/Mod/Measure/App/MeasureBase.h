@@ -134,7 +134,13 @@ public:
 }
 
 private:
+
+#ifdef BuildingBase
     inline static HandlerMap _mGeometryHandlers = HandlerMap();
+#else
+    inline static HandlerMap _mGeometryHandlers;
+#endif
+
 };
 
 
