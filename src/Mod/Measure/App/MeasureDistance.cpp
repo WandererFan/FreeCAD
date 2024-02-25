@@ -153,11 +153,12 @@ bool MeasureDistance::getShape(App::PropertyLinkSub* prop, TopoDS_Shape& rShape)
     std::string obName = static_cast<std::string>(ob->getNameInDocument());
 
     auto info = handler(&obName, &subName);
-    if (!info.valid) {
+    if (!info->valid) {
         return false;
     }
 
-    rShape = info.shape;
+    auto distanceInfo = static_cast<MeasureDistanceInfo*>(info);
+    rShape = distanceInfo->shape;
     return true;
 }
 

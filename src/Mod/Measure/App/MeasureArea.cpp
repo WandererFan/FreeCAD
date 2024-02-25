@@ -39,6 +39,11 @@
 
 using namespace Measure;
 
+namespace Measure {
+// explicit template instantiation
+template class MeasureExport MeasureBaseExtendable<MeasureAreaInfo>;
+}
+
 PROPERTY_SOURCE(Measure::MeasureArea, Measure::MeasureBase)
 
 MeasureArea::MeasureArea()
@@ -137,7 +142,9 @@ void MeasureArea::recalculateArea()
         }
 
         std::string obName = object->getNameInDocument();
-        result += handler(&obName, &subElement).area;
+        auto info = handler(&obName, &subElement);
+        auto areaInfo = static_cast<MeasureAreaInfo*>(info);
+        result += areaInfo->area;
     }
 
     Area.setValue(result);
@@ -176,7 +183,9 @@ Base::Placement MeasureArea::getPlacement() {
     }
 
     std::string obName = object->getNameInDocument();
-    return handler(&obName, &subElement).placement;
+    auto info = handler(&obName, &subElement);
+    auto areaInfo = static_cast<MeasureAreaInfo*>(info);
+    return areaInfo->placement;
 }
 
 
@@ -187,7 +196,4 @@ std::vector<App::DocumentObject*> MeasureArea::getSubject() const
     return Elements.getValues();
 }
 
-namespace Measure {
-// explicit template instantiation
-template class MeasureExport MeasureBaseExtendable<MeasureAreaInfo>;
-}
+

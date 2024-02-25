@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: LGPL-2.0-or-later
+
 /***************************************************************************
- *   Copyright (c) 2023 David Friedli <david[at]friedli-be.ch>             *
+ *   Copyright (c) 2024 wandererfan <wandererfan at gmail dot com>         *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -20,37 +22,25 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef PART_MEASURE_H
-#define PART_MEASURE_H
+//! MeasureInfo.h
+//! ancestor class for the various flavours of MeasureXXXXXInfo.
 
-#include <Mod/Part/PartGlobal.h>
-#include <functional>
-#include <string>
+#ifndef MEASURE_HANDLERMANAGER_H
+#define MEASURE_HANDLERMANAGER_H
 
+#include <Mod/Measure/MeasureGlobal.h>
 
-#include <Mod/Measure/App/MeasureInfo.h>
+namespace Measure {
 
-namespace Part
-{
-
-using GeometryHandler = std::function<Measure::MeasureInfo* (std::string*, std::string*)>;
-using CallbackEntry = std::pair<std::string, GeometryHandler>;
-using CallbackTable = std::vector<CallbackEntry>;
-
-class PartExport Measure
-{
+class MeasureExport MeasureInfo {
 public:
+    MeasureInfo() = default;
+    MeasureInfo(bool val) { valid = val; };
+    virtual ~MeasureInfo() = default;
 
-    static void initialize();
-    static Part::CallbackTable  reportLengthCallbacks();
-    static Part::CallbackTable  reportAngleCallbacks();
-    static Part::CallbackTable  reportAreaCallbacks();
-    static Part::CallbackTable  reportDistanceCallbacks();
-    static Part::CallbackTable  reportPositionCallbacks();
-    static Part::CallbackTable  reportRadiusCallbacks();
+    bool valid{false};
 };
 
-
-} //namespace Part
+}  //end namespace Measure
 
 #endif

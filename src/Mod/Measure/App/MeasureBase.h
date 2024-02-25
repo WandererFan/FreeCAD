@@ -37,6 +37,7 @@
 #include <Base/Interpreter.h>
 #include <App/FeaturePython.h>
 
+#include "MeasureInfo.h"
 
 namespace Measure
 {
@@ -82,17 +83,19 @@ protected:
 // Create a scriptable object based on MeasureBase
 using MeasurePython = App::FeaturePythonT<MeasureBase>;
 
-template <typename T>
+using GeometryHandler = std::function<MeasureInfo* (std::string*, std::string*)>;
+using HandlerMap = std::map<std::string, GeometryHandler>;
+using HandlerMapPtr = HandlerMap*;
+using CallbackEntry = std::pair<std::string, GeometryHandler>;
+using CallbackTable = std::vector<CallbackEntry>;
+
+template <class T>
 #ifdef BuildingBase
 class FREECAD_DECL_EXPORT MeasureBaseExtendable : public MeasureBase
 #else
 class FREECAD_DECL_IMPORT MeasureBaseExtendable : public MeasureBase
 #endif
 {
-
-    using GeometryHandler = std::function<T (std::string*, std::string*)>;
-    using HandlerMap = std::map<std::string, GeometryHandler>;
-
 
 public: 
 
@@ -122,12 +125,18 @@ public:
         return (_mGeometryHandlers.count(module) > 0);
     }
 
+    static void loadCallbacks( CallbackTable& tableIn)
+{
+    for (auto& item : tableIn) {
+        // map[moduleName] = callback;
+        _mGeometryHandlers [item.first] = item.second;
+    }
+}
+
 private:
     inline static HandlerMap _mGeometryHandlers = HandlerMap();
 };
 
-// template <typename T>
-// typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers;
 
 
 } //namespace Measure

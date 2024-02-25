@@ -40,19 +40,24 @@
 
 #define BuildingBase on
 #include "MeasureBase.h"
+#include "MeasureInfo.h"
 
 namespace Measure
 {
 
 
-struct MeasureAngleInfo {
-    bool valid;
-    Base::Vector3d orientation;
-    Base::Vector3d position;
+class MeasureExport MeasureAngleInfo : public MeasureInfo {
+public:
+    MeasureAngleInfo() = default;
+    MeasureAngleInfo(bool val, Base::Vector3d orient, Base::Vector3d pos) { valid = val; orientation = orient; position = pos;};
+    ~MeasureAngleInfo() = default;
+
+    Base::Vector3d orientation{0.0, 0.0, 0.0};
+    Base::Vector3d position{0.0, 0.0, 0.0};
 };
 
 
-class MeasureExport MeasureAngle : public Measure::MeasureBaseExtendable<MeasureAngleInfo>
+class MeasureExport MeasureAngle : public MeasureBaseExtendable<MeasureAngleInfo>
 {
     PROPERTY_HEADER_WITH_OVERRIDE(Measure::MeasureAngle);
 

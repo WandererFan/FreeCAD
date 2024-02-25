@@ -210,7 +210,9 @@ MeasureRadiusInfo MeasureRadius::getMeasureInfoFirst() const
     }
 
     std::string obName = object->getNameInDocument();
-    return handler(&obName, &subElement);
+    auto info = handler(&obName, &subElement);
+    auto radiusInfo = static_cast<MeasureRadiusInfo*>(info);
+    return *radiusInfo;
 }
 
 //! Return the object we are measuring

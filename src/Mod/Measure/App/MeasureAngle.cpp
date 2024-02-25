@@ -148,9 +148,10 @@ bool MeasureAngle::getVec(App::DocumentObject& ob, std::string& subName, Base::V
     auto handler = getGeometryHandler(mod);
 
     std::string obName = static_cast<std::string>(ob.getNameInDocument());
-    Measure::MeasureAngleInfo info = handler(&obName, &subName);
+    auto info = handler(&obName, &subName);
+    auto angleInfo = static_cast<MeasureAngleInfo*>(info);
 
-    vecOut = info.orientation;
+    vecOut = angleInfo->orientation;
     return true;
 }
 
@@ -164,9 +165,10 @@ Base::Vector3d MeasureAngle::getLoc(App::DocumentObject& ob, std::string& subNam
 
     auto handler = getGeometryHandler(mod);
     std::string obName = static_cast<std::string>(ob.getNameInDocument());
-    MeasureAngleInfo info = handler(&obName, &subName);
+    auto info = handler(&obName, &subName);
+    auto angleInfo = static_cast<MeasureAngleInfo*>(info);
 
-    return info.position;
+    return angleInfo->position;
 }
 
 gp_Vec MeasureAngle::vector1() {
@@ -174,7 +176,7 @@ gp_Vec MeasureAngle::vector1() {
     App::DocumentObject* ob = Element1.getValue();
     std::vector<std::string> subs = Element1.getSubValues();
 
-    if (!ob || !ob->isValid() || subs.size() < 1 ) {
+    if (!ob || !ob->isValid() || subs.empty()) {
         return gp_Vec();
     }
 
@@ -201,7 +203,7 @@ gp_Vec MeasureAngle::location1() {
     App::DocumentObject* ob = Element1.getValue();
     std::vector<std::string> subs = Element1.getSubValues();
 
-    if (!ob || !ob->isValid() || subs.size() < 1 ) {
+    if (!ob || !ob->isValid() || subs.empty() ) {
         return {};
     }
     auto temp = getLoc(*ob, subs.at(0));
@@ -211,7 +213,7 @@ gp_Vec MeasureAngle::location2() {
     App::DocumentObject* ob = Element2.getValue();
     std::vector<std::string> subs = Element2.getSubValues();
 
-    if (!ob || !ob->isValid() || subs.size() < 1 ) {
+    if (!ob || !ob->isValid() || subs.empty() ) {
         return {};
     }
 
@@ -232,7 +234,7 @@ App::DocumentObjectExecReturn *MeasureAngle::execute()
         return new App::DocumentObjectExecReturn("Submitted object(s) is not valid");
     }
 
-    if (subs1.size() < 1 || subs2.size() < 1) {
+    if (subs1.empty() || subs2.empty()) {
         return new App::DocumentObjectExecReturn("No geometry element picked");
     }
 

@@ -25,6 +25,8 @@
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 
+#include <Mod/Part/App/Measure.h>
+
 #include "Measurement.h"
 #include "MeasurementPy.h"
 
@@ -38,6 +40,17 @@
 #include "MeasureLength.h"
 #include "MeasureArea.h"
 #include "MeasureRadius.h"
+#include "MeasureInfo.h"
+
+namespace Measure {
+// explicit template instantiation
+template class MeasureExport MeasureBaseExtendable<MeasureAngleInfo>;
+}
+
+namespace Measure {
+// explicit template instantiation
+template class MeasureExport MeasureBaseExtendable<MeasureLengthInfo>;
+}
 
 namespace Measure {
 class Module : public Py::ExtensionModule<Module>
@@ -137,6 +150,21 @@ PyMOD_INIT_FUNC(Measure)
             MeasureRadius::isValidSelection,
             MeasureRadius::isPrioritizedSelection
         );
+    using GeometryHandler = std::function<MeasureInfo* (std::string*, std::string*)>;
+    // using HandlerMap = std::map<std::string, GeometryHandler>;
+
+    Part::CallbackTable  lengthcb = Part::Measure::reportLengthCallbacks();
+    MeasureLength::loadCallbacks(lengthcb);
+    Part::CallbackTable  anglecb  = Part::Measure::reportAngleCallbacks();
+    MeasureAngle::loadCallbacks(anglecb);
+    Part::CallbackTable  areacb   = Part::Measure::reportAreaCallbacks();
+    MeasureArea::loadCallbacks(areacb);
+    Part::CallbackTable  distancecb = Part::Measure::reportDistanceCallbacks();
+    MeasureDistance::loadCallbacks(distancecb);
+    Part::CallbackTable  positioncb = Part::Measure::reportPositionCallbacks();
+    MeasurePosition::loadCallbacks(positioncb);
+    Part::CallbackTable  radiuscb = Part::Measure::reportRadiusCallbacks();
+    MeasureRadius::loadCallbacks(radiuscb);
 
     Base::Console().Log("Loading Measure module... done\n");
     PyMOD_Return(mod);
