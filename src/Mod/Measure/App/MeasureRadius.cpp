@@ -219,3 +219,8 @@ std::vector<App::DocumentObject*> MeasureRadius::getSubject() const
 {
     return {Element.getValue()};
 }
+
+namespace Measure {
+// explicit template instantiation
+template class FREECAD_DECL_EXPORT MeasureBaseExtendable<MeasureRadiusInfo>;
+}

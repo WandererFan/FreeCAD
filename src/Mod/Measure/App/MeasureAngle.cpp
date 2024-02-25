@@ -260,3 +260,9 @@ std::vector<App::DocumentObject*> MeasureAngle::getSubject() const
 {
     return {Element1.getValue()};
 }
+
+namespace Measure {
+// explicit template instantiation
+template class FREECAD_DECL_EXPORT MeasureBaseExtendable<MeasureAngleInfo>;
+}
+

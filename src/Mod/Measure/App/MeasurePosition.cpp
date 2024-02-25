@@ -185,3 +185,9 @@ std::vector<App::DocumentObject*> MeasurePosition::getSubject() const
 {
     return {Element.getValue()};
 }
+
+
+namespace Measure {
+// explicit template instantiation
+template class FREECAD_DECL_EXPORT MeasureBaseExtendable<Base::Vector3d>;
+}

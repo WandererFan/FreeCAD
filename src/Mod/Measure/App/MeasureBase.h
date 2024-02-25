@@ -35,8 +35,6 @@
 #include <Base/Placement.h>
 #include <QString>
 #include <Base/Interpreter.h>
-#include <App/FeaturePython.h>
-
 
 namespace Measure
 {

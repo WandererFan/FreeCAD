@@ -189,3 +189,8 @@ std::vector<App::DocumentObject*> MeasureLength::getSubject() const
     return Elements.getValues();
 }
 
+namespace Measure {
+// explicit template instantiation
+template class FREECAD_DECL_EXPORT MeasureBaseExtendable<MeasureLengthInfo>;
+}
+

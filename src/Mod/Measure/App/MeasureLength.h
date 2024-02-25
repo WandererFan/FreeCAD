@@ -43,6 +43,7 @@
 
 #include <Mod/Part/App/TopoShape.h>
 
+#define BuildingBase on
 #include "MeasureBase.h"
 
 namespace Measure
