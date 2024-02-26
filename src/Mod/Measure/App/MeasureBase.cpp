@@ -33,6 +33,8 @@
 
 using namespace Measure;
 
+// template <typename T>
+// typename MeasureBaseExtendable<T>::HandlerMap MeasureBaseExtendable<T>::_mGeometryHandlers = MeasureBaseExtendable<T>::HandlerMap();
 
 PROPERTY_SOURCE(Measure::MeasureBase, App::DocumentObject)
 
