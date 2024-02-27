@@ -218,3 +218,8 @@ std::vector<App::DocumentObject*> MeasureRadius::getSubject() const
 {
     return {Element.getValue()};
 }
+
+namespace Measure {
+// explicit template instantiation
+MeasureExport template class MeasureBaseExtendable<MeasureRadiusInfo>;
+}

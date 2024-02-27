@@ -180,3 +180,9 @@ std::vector<App::DocumentObject*> MeasureArea::getSubject() const
 {
     return Elements.getValues();
 }
+
+
+namespace Measure {
+// explicit template instantiation
+MeasureExport template class MeasureBaseExtendable<MeasureAreaInfo>;
+}

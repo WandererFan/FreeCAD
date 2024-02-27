@@ -260,3 +260,8 @@ std::vector<App::DocumentObject*> MeasureAngle::getSubject() const
 {
     return {Element1.getValue()};
 }
+
+namespace Measure {
+// explicit template instantiation
+MeasureExport template class MeasureBaseExtendable<MeasureAngleInfo>;
+}

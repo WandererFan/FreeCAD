@@ -183,3 +183,7 @@ std::vector<App::DocumentObject*> MeasureLength::getSubject() const
     return Elements.getValues();
 }
 
+namespace Measure {
+// explicit template instantiation
+MeasureExport template class MeasureBaseExtendable<MeasureLengthInfo>;
+}

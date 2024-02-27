@@ -184,3 +184,8 @@ std::vector<App::DocumentObject*> MeasurePosition::getSubject() const
 {
     return {Element.getValue()};
 }
+
+namespace Measure {
+// explicit template instantiation
+MeasureExport template class MeasureBaseExtendable<Base::Vector3d>;
+}
