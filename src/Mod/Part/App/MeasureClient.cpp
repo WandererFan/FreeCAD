@@ -59,7 +59,7 @@
 #include "VectorAdapter.h"
 #include "PartFeature.h"
 
-#include "Measure.h"
+#include "MeasureClient.h"
 
 // From: https://github.com/Celemation/FreeCAD/blob/joel_selection_summary_demo/src/Gui/SelectionSummary.cpp
 
@@ -414,7 +414,7 @@ Measure::MeasureDistanceInfo MeasureDistanceHandler(std::string* objectName, std
 
 using namespace Measure;
 
-void Part::Measure::initialize() {
+void Part::MeasureClient::initialize() {
 
     App::Application& app = App::GetApplication();
     app.addMeasureHandler("Part", PartMeasureTypeCb);

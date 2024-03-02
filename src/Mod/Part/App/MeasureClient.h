@@ -31,7 +31,7 @@ namespace Part
 {
 
 
-class PartExport Measure
+class PartExport MeasureClient
 {
 public:
 
