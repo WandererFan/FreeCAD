@@ -541,7 +541,7 @@ SET(Part_SRCS
     edgecluster.cpp
     edgecluster.h
     MeasureClient.cpp
-    Measureclient.h
+    MeasureClient.h
     MeasureInfo.h
     modelRefine.cpp
     modelRefine.h

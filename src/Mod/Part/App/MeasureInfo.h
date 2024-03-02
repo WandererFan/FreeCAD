@@ -30,16 +30,19 @@
 
 #include <Mod/Part/PartGlobal.h>
 
-#include <TopoDS_Shape.hxx>
+// #include <TopoDS_Shape.hxx>
 
-#include <Base/Vector3d.h>
-#include <Base::Placement.h>
+#include <Base/Vector3D.h>
+#include <Base/Placement.h>
 
+class TopoDS_Shape;
 
 namespace Part {
 
 class PartExport MeasureInfo {
 public:
+    // making the destructor virtual so MeasureInfo is polymorphic
+    virtual ~MeasureInfo() = default;
     bool valid{false};
 };
 
@@ -67,10 +70,15 @@ public:
 class PartExport MeasureDistanceInfo : public MeasureInfo {
 public:
     MeasureDistanceInfo() = default;
-    MeasureDistanceInfo(bool val, TopoDS_Shape shp) { valid = val; shape = shp;};
+    MeasureDistanceInfo(bool val, const TopoDS_Shape* shp) { valid = val; shape = shp;};
     ~MeasureDistanceInfo() = default;
 
-    TopoDS_Shape shape{};
+    // problematic as Gui can not see OCC
+    // TopoDS_Shape shape{};
+    const TopoDS_Shape* getShape() { return shape; }
+
+private:
+    const TopoDS_Shape* shape{nullptr};
 };
 
 class PartExport MeasureLengthInfo : public MeasureInfo {
@@ -104,7 +112,7 @@ public:
 };
 
 //! callback registrations
-    using GeometryHandler = std::function<MeasureInfo* (std::string*, std::string*)>;
+    using GeometryHandler = std::function<Part::MeasureInfo* (std::string*, std::string*)>;
     
 class PartExport CallbackRegistrationRecord
 {
