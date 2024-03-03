@@ -749,7 +749,7 @@ void PartGui::goDimensionAngularRoot()
 {
   PartGui::ensure3dDimensionVisible();
 
-  VectorAdapter adapter1, adapter2;
+  Part::VectorAdapter adapter1, adapter2;
   if(PartGui::evaluateAngularPreSelection(adapter1, adapter2))
     goDimensionAngularNoTask(adapter1, adapter2);
   else
@@ -771,7 +771,7 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
   if (selections.size() > 4 || selections.size() < 2)
     return false;
   std::vector<Gui::SelectionSingleton::SelObj>::iterator it;
-  std::vector<VectorAdapter> adapters;
+  std::vector<Part::VectorAdapter> adapters;
   std::vector<DimSelections> sels;
   TopoDS_Vertex lastVertex;
   for (it = selections.begin(); it != selections.end(); ++it)
@@ -1528,7 +1528,7 @@ void PartGui::TaskMeasureAngular::selectionClearDelayedSlot()
   this->blockSelection(false);
 }
 
-VectorAdapter PartGui::TaskMeasureAngular::buildAdapter(const PartGui::DimSelections& selection)
+Part::VectorAdapter PartGui::TaskMeasureAngular::buildAdapter(const PartGui::DimSelections& selection)
 {
   Base::Matrix4D mat;
   assert(selection.selections.size() > 0 && selection.selections.size() < 3);
@@ -1539,13 +1539,13 @@ VectorAdapter PartGui::TaskMeasureAngular::buildAdapter(const PartGui::DimSelect
     {
       TopoDS_Shape edgeShape;
       if (!getShapeFromStrings(edgeShape, current.documentName, current.objectName, current.subObjectName,&mat))
-        return {};
+        return Part::VectorAdapter();
       TopoDS_Edge edge = TopoDS::Edge(edgeShape);
       // make edge orientation so that end of edge closest to pick is head of vector.
       TopoDS_Vertex firstVertex = TopExp::FirstVertex(edge, Standard_True);
       TopoDS_Vertex lastVertex = TopExp::LastVertex(edge, Standard_True);
       if (firstVertex.IsNull() || lastVertex.IsNull())
-        return {};
+        return Part::VectorAdapter();
       gp_Vec firstPoint = PartGui::convert(firstVertex);
       gp_Vec lastPoint = PartGui::convert(lastVertex);
       Base::Vector3d v(current.x,current.y,current.z);
@@ -1560,19 +1560,19 @@ VectorAdapter PartGui::TaskMeasureAngular::buildAdapter(const PartGui::DimSelect
         else
           edge.Orientation(TopAbs_FORWARD);
       }
-      return VectorAdapter(edge, pickPoint);
+      return Part::VectorAdapter(edge, pickPoint);
     }
     if (current.shapeType == DimSelections::Face)
     {
       TopoDS_Shape faceShape;
       if (!getShapeFromStrings(faceShape, current.documentName, current.objectName, current.subObjectName,&mat))
-        return {};
+        return Part::VectorAdapter();
 
       TopoDS_Face face = TopoDS::Face(faceShape);
       Base::Vector3d v(current.x,current.y,current.z);
       v = mat*v;
       gp_Vec pickPoint(v.x, v.y, v.z);
-      return VectorAdapter(face, pickPoint);
+      return Part::VectorAdapter(face, pickPoint);
     }
   }
   //selection size == 2.
@@ -1600,8 +1600,8 @@ void PartGui::TaskMeasureAngular::buildDimension() {
 void PartGui::TaskMeasureAngular::buildDimension(const DimSelections &sel1, const DimSelections &sel2)
 {
   //build adapters.
-  VectorAdapter adapt1 = buildAdapter(sel1);
-  VectorAdapter adapt2 = buildAdapter(sel2);
+  Part::VectorAdapter adapt1 = buildAdapter(sel1);
+  Part::VectorAdapter adapt2 = buildAdapter(sel2);
 
   if (!adapt1.isValid() || !adapt2.isValid())
   {
