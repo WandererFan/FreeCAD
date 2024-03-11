@@ -77,7 +77,8 @@ public Q_SLOTS:
     void onTrackerFinished(std::vector<QPointF> pts, TechDrawGui::QGIView* qgParent);
 
 protected:
-    void scenePointsToDeltas(std::vector<QPointF> pts);
+    // void scenePointsToDeltas(std::vector<QPointF> pts);
+    std::vector<Base::Vector3d> scenePointsToDeltas(std::vector<QPointF> pts);
     void changeEvent(QEvent *event) override;
     void startTracker();
     void removeTracker();

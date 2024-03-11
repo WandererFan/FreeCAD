@@ -82,7 +82,7 @@ QGILeaderLine::QGILeaderLine()
     m_line->setAcceptHoverEvents(false);
     m_line->setPos(0.0, 0.0);
 
-    m_editPath = new QGEPath(this);
+    m_editPath = new QGEPath();
     addToGroup(m_editPath);
     m_editPath->setPos(0.0, 0.0);
     m_editPath->setFlag(QGraphicsItem::ItemIsSelectable, false);

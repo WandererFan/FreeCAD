@@ -641,7 +641,7 @@ void TaskLeaderLine::onTrackerFinished(std::vector<QPointF> trackerScenePoints, 
         double scale = m_qgParent->getScale();
         QPointF mapped = m_qgParent->mapFromScene(trackerScenePoints.front()) / scale;
         m_attachPoint = Base::Vector3d(mapped.x(), mapped.y(), 0.0);
-        scenePointsToDeltas(trackerScenePoints);
+        m_sceneDeltas = scenePointsToDeltas(trackerScenePoints);
     } else {
         Base::Console().Message("TTL::onTrackerFinished - can't find parent graphic!\n");
         //blow up!?
@@ -727,13 +727,14 @@ void TaskLeaderLine::setEditCursor(QCursor cursor)
 }
 
 //from scene QPointF to zero origin (delta from p0) Vector3d points
-void TaskLeaderLine::scenePointsToDeltas(std::vector<QPointF> scenePoints)
+std::vector<Base::Vector3d> TaskLeaderLine::scenePointsToDeltas(std::vector<QPointF> scenePoints)
 {
 //    Base::Console().Message("TTL::scenePointsToDeltas(%d)\n", pts.size());
-    m_sceneDeltas.clear();
+    std::vector<Base::Vector3d> result;
+    result.reserve(scenePoints.size());
     for (auto& point: scenePoints) {
         QPointF delta = point - scenePoints.front();
-        m_sceneDeltas.push_back(DU::toVector3d(delta));
+        result.push_back(DU::toVector3d(delta));
     }
 }
 
