@@ -92,6 +92,7 @@
 
 #include "OCCError.h"
 #include "PartPyCXX.h"
+#include "ShapeMapHasher.h"
 
 
 using namespace Part;
@@ -1306,7 +1307,7 @@ PyObject*  TopoShapePy::ancestorsOfType(PyObject *args)
         TopTools_ListIteratorOfListOfShape it(ancestors);
         for (; it.More(); it.Next()) {
             // make sure to avoid duplicates
-            Standard_Integer code = it.Value().HashCode(INT_MAX);
+            Standard_Integer code = ShapeMapHasher{}(it.Value());
             if (hashes.find(code) == hashes.end()) {
                 list.append(shape2pyshape(it.Value()));
                 hashes.insert(code);
@@ -1928,7 +1929,7 @@ PyObject* TopoShapePy::hashCode(PyObject *args)
     if (!PyArg_ParseTuple(args, "|i",&upper))
         return nullptr;
 
-    int hc = getTopoShapePtr()->getShape().HashCode(upper);
+    int hc = ShapeMapHasher{}(getTopoShapePtr()->getShape());
     return Py_BuildValue("i", hc);
 }
 
@@ -2059,7 +2060,7 @@ PyObject* TopoShapePy::reflectLines(PyObject *args, PyObject *kwds)
     static const std::array<const char *, 7> kwlist{"ViewDir", "ViewPos", "UpDir", "EdgeType", "Visible", "OnShape",
                                                     nullptr};
 
-    char* type="OutLine";
+    const char* type="OutLine";
     PyObject* vis = Py_True;
     PyObject* in3d = Py_False;
     PyObject* pPos = nullptr;

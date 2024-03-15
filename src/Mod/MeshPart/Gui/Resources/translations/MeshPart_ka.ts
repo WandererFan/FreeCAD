@@ -579,7 +579,7 @@ Select a different shape, please.</source>
     <name>MeshPart_CreateFlatMesh</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="49"/>
-      <source>Unwrap Mesh</source>
+      <source>Unwrap mesh</source>
       <translation>ბადის განშლა</translation>
     </message>
     <message>
@@ -592,8 +592,8 @@ Select a different shape, please.</source>
     <name>MeshPart_CreateFlatFace</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="88"/>
-      <source>Unwrap Face</source>
-      <translation>სიბრტყის განშლა</translation>
+      <source>Unwrap face</source>
+      <translation>ზედაპირის განშლა</translation>
     </message>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="91"/>

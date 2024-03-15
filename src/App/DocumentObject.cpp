@@ -214,6 +214,28 @@ void DocumentObject::touch(bool noRecompute)
 }
 
 /**
+ * @brief Set this document object freezed.
+ * A freezed document object does not recompute ever.
+ */
+void DocumentObject::freeze()
+{
+    StatusBits.set(ObjectStatus::Freeze);
+    // use the signalTouchedObject to refresh the Gui
+    if (_pDoc)
+        _pDoc->signalTouchedObject(*this);
+}
+
+/**
+ * @brief Set this document object unfreezed.
+ * A freezed document object does not recompute ever.
+ */
+void DocumentObject::unfreeze(bool noRecompute)
+{
+    StatusBits.set(ObjectStatus::Freeze, false);
+    touch(noRecompute);
+}
+
+/**
  * @brief Check whether the document object is touched or not.
  * @return true if document object is touched, false if not.
  */
@@ -240,6 +262,9 @@ void DocumentObject::enforceRecompute()
  */
 bool DocumentObject::mustRecompute() const
 {
+    if (StatusBits.test(ObjectStatus::Freeze))
+        return false;
+
     if (StatusBits.test(ObjectStatus::Enforce))
         return true;
 
@@ -274,7 +299,7 @@ const char* DocumentObject::getStatusString() const
 }
 
 std::string DocumentObject::getFullName() const {
-    if(!getDocument() || !pcNameInDocument)
+    if(!getDocument() || !isAttachedToDocument())
         return "?";
     std::string name(getDocument()->getName());
     name += '#';
@@ -292,6 +317,15 @@ std::string DocumentObject::getFullLabel() const {
     return name;
 }
 
+const char* DocumentObject::getDagKey() const
+{
+    if(!pcNameInDocument)
+    {
+        return nullptr;
+    }
+    return pcNameInDocument->c_str();
+}
+
 const char *DocumentObject::getNameInDocument() const
 {
     // Note: It can happen that we query the internal name of an object even if it is not
@@ -305,13 +339,13 @@ const char *DocumentObject::getNameInDocument() const
 }
 
 int DocumentObject::isExporting() const {
-    if(!getDocument() || !getNameInDocument())
+    if(!getDocument() || !isAttachedToDocument())
         return 0;
     return getDocument()->isExporting(this);
 }
 
 std::string DocumentObject::getExportName(bool forced) const {
-    if(!pcNameInDocument)
+    if(!isAttachedToDocument())
         return {};
 
     if(!forced && !isExporting())
@@ -441,7 +475,7 @@ void DocumentObject::getInListEx(std::set<App::DocumentObject*> &inSet,
     // outLists first here.
     for(auto doc : GetApplication().getDocuments()) {
         for(auto obj : doc->getObjects()) {
-            if(!obj || !obj->getNameInDocument() || obj==this)
+            if(!obj || !obj->isAttachedToDocument() || obj==this)
                 continue;
             const auto &outList = obj->getOutList();
             outLists[obj].insert(outList.begin(),outList.end());
@@ -481,7 +515,7 @@ void DocumentObject::getInListEx(std::set<App::DocumentObject*> &inSet,
         auto obj = pendings.top();
         pendings.pop();
         for(auto o : obj->getInList()) {
-            if(o && o->getNameInDocument() && inSet.insert(o).second) {
+            if(o && o->isAttachedToDocument() && inSet.insert(o).second) {
                 pendings.push(o);
                 if(inList)
                     inList->push_back(o);
@@ -714,9 +748,33 @@ void DocumentObject::onBeforeChange(const Property* prop)
     signalBeforeChange(*this,*prop);
 }
 
+void DocumentObject::onEarlyChange(const Property *prop)
+{
+    if(GetApplication().isClosingAll())
+        return;
+
+    if(!GetApplication().isRestoring() &&
+        !prop->testStatus(Property::PartialTrigger) &&
+        getDocument() &&
+        getDocument()->testStatus(Document::PartialDoc))
+    {
+        static App::Document *warnedDoc;
+        if(warnedDoc != getDocument()) {
+            warnedDoc = getDocument();
+            FC_WARN("Changes to partial loaded document will not be saved: "
+                    << getFullName() << '.' << prop->getName());
+        }
+    }
+
+    signalEarlyChanged(*this, *prop);
+}
+
 /// get called by the container when a Property was changed
 void DocumentObject::onChanged(const Property* prop)
 {
+    if (isFreezed())
+        return;
+
     if(GetApplication().isClosingAll())
         return;
 
@@ -808,7 +866,7 @@ DocumentObject *DocumentObject::getSubObject(const char *subname,
         if(outList.size()!=_outListMap.size()) {
             _outListMap.clear();
             for(auto obj : outList)
-                _outListMap[obj->getNameInDocument()] = obj;
+                _outListMap[obj->getDagKey()] = obj;
         }
         auto it = _outListMap.find(name.c_str());
         if(it != _outListMap.end())
@@ -839,7 +897,7 @@ std::vector<DocumentObject*> DocumentObject::getSubObjectList(const char *subnam
         char c = sub[pos+1];
         sub[pos+1] = 0;
         auto sobj = getSubObject(sub.c_str());
-        if(!sobj || !sobj->getNameInDocument())
+        if(!sobj || !sobj->isAttachedToDocument())
             break;
         res.push_back(sobj);
         sub[pos+1] = c;
@@ -859,14 +917,14 @@ std::vector<std::string> DocumentObject::getSubObjects(int reason) const {
 
 std::vector<std::pair<App::DocumentObject *,std::string>> DocumentObject::getParents(int depth) const {
     std::vector<std::pair<App::DocumentObject *, std::string>> ret;
-    if (!getNameInDocument() || !GetApplication().checkLinkDepth(depth, MessageOption::Throw)) {
+    if (!isAttachedToDocument() || !GetApplication().checkLinkDepth(depth, MessageOption::Throw)) {
         return ret;
     }
 
     std::string name(getNameInDocument());
     name += ".";
     for (auto parent : getInList()) {
-        if (!parent || !parent->getNameInDocument()) {
+        if (!parent || !parent->isAttachedToDocument()) {
             continue;
         }
 
@@ -927,7 +985,7 @@ DocumentObject *DocumentObject::getLinkedObject(
 
 void DocumentObject::Save (Base::Writer &writer) const
 {
-    if (this->getNameInDocument())
+    if (this->isAttachedToDocument())
         writer.ObjectName = this->getNameInDocument();
     App::ExtensionContainer::Save(writer);
 }
@@ -1164,7 +1222,7 @@ DocumentObject *DocumentObject::resolve(const char *subname,
 DocumentObject *DocumentObject::resolveRelativeLink(std::string &subname,
         DocumentObject *&link, std::string &linkSub) const
 {
-    if(!link || !link->getNameInDocument() || !getNameInDocument())
+    if(!link || !link->isAttachedToDocument() || !isAttachedToDocument())
         return nullptr;
     auto ret = const_cast<DocumentObject*>(this);
     if(link != ret) {
@@ -1268,6 +1326,6 @@ bool DocumentObject::redirectSubName(std::ostringstream &, DocumentObject *, Doc
 
 void DocumentObject::onPropertyStatusChanged(const Property &prop, unsigned long oldStatus) {
     (void)oldStatus;
-    if(!Document::isAnyRestoring() && getNameInDocument() && getDocument())
+    if(!Document::isAnyRestoring() && isAttachedToDocument() && getDocument())
         getDocument()->signalChangePropertyEditor(*getDocument(),prop);
 }

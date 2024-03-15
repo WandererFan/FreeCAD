@@ -76,6 +76,8 @@
 #include "SelectionObject.h"
 #include "SoAxisCrossKit.h"
 #include "SoFCOffscreenRenderer.h"
+#include "SoFCUnifiedSelection.h"
+#include "TaskMeasure.h"
 #include "TextureMapping.h"
 #include "Tools.h"
 #include "Tree.h"
@@ -2805,7 +2807,7 @@ static std::vector<std::string> getBoxSelection(
 {
     std::vector<std::string> ret;
     auto obj = vp->getObject();
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return ret;
 
     // DO NOT check this view object Visibility, let the caller do this. Because
@@ -3179,7 +3181,7 @@ bool StdCmdTreeSelectAllInstances::isActive()
     if(sels.empty())
         return false;
     auto obj = sels[0].getObject();
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return false;
     return dynamic_cast<ViewProviderDocumentObject*>(
             Application::Instance->getViewProvider(obj)) != nullptr;
@@ -3192,7 +3194,7 @@ void StdCmdTreeSelectAllInstances::activated(int iMsg)
     if(sels.empty())
         return;
     auto obj = sels[0].getObject();
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return;
     auto vpd = dynamic_cast<ViewProviderDocumentObject*>(
             Application::Instance->getViewProvider(obj));
@@ -3294,6 +3296,38 @@ bool StdCmdMeasureDistance::isActive()
     }
 
     return false;
+}
+
+//===========================================================================
+// Std_Measure
+// this is the Unified Measurement Facility Measure command
+//===========================================================================
+
+
+DEF_STD_CMD_A(StdCmdMeasure)
+
+StdCmdMeasure::StdCmdMeasure()
+  :Command("Std_Measure")
+{
+    sGroup        = "Measure";
+    sMenuText     = QT_TR_NOOP("&Measure");
+    sToolTipText  = QT_TR_NOOP("Measure a feature (UMF)");
+    sWhatsThis    = "Std_Measure";
+    sStatusTip    = QT_TR_NOOP("Measure a feature");
+    sPixmap       = "umf-measurement";
+}
+
+void StdCmdMeasure::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+
+    TaskMeasure *task = new TaskMeasure();
+    Gui::Control().showDialog(task);
+}
+
+
+bool StdCmdMeasure::isActive(){
+    return true;
 }
 
 //===========================================================================
@@ -4224,6 +4258,7 @@ void CreateViewStdCommands()
     rcCmdMgr.addCommand(new StdCmdTreeCollapse());
     rcCmdMgr.addCommand(new StdCmdTreeSelectAllInstances());
     rcCmdMgr.addCommand(new StdCmdMeasureDistance());
+    rcCmdMgr.addCommand(new StdCmdMeasure());
     rcCmdMgr.addCommand(new StdCmdSceneInspector());
     rcCmdMgr.addCommand(new StdCmdTextureMapping());
     rcCmdMgr.addCommand(new StdCmdDemoMode());

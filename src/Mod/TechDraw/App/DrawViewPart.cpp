@@ -184,7 +184,7 @@ TopoDS_Shape DrawViewPart::getSourceShape(bool fuse) const
 //! version of the shape?  Should we have a getShapeForSection?
 TopoDS_Shape DrawViewPart::getShapeForDetail() const
 {
-    return ShapeUtils::rotateShape(getSourceShape(true), getProjectionCS(), Rotation.getValue());
+    return ShapeUtils::rotateShape(getSourceShape(false), getProjectionCS(), Rotation.getValue());
 }
 
 //! combine the regular links and xlinks into a single list
@@ -201,15 +201,12 @@ std::vector<App::DocumentObject*> DrawViewPart::getAllSources() const
     return result;
 }
 
-//! pick supported 2d shapes out of the Source properties and
+//! pick vertex objects out of the Source properties and
 //! add them directly to the geometry without going through HLR
-//! NOTE: this is for loose 2d shapes such as Part line or circle and is
-//! not meant to include complex 2d shapes such as Sketches.
-void DrawViewPart::addShapes2d(void)
+void DrawViewPart::addPoints(void)
 {
-//    Base::Console().Message("DVP::addShapes2d()\n");
-    // get all the 2d shapes in the sources, then pick through them for loose edges
-    // or vertices.
+//    Base::Console().Message("DVP::addPoints()\n");
+    // get all the 2d shapes in the sources, then pick through them for vertices.
     std::vector<TopoDS_Shape> shapes = ShapeExtractor::getShapes2d(getAllSources());
     for (auto& s : shapes) {
         if (s.ShapeType() == TopAbs_VERTEX) {
@@ -220,22 +217,6 @@ void DrawViewPart::addShapes2d(void)
             Base::Vector3d projected = projectPoint(vp * getScale());
             TechDraw::VertexPtr v1(std::make_shared<TechDraw::Vertex>(projected));
             geometryObject->addVertex(v1);
-        }
-        else if (s.ShapeType() == TopAbs_EDGE) {
-            Base::Console().Message("DVP::add2dShapes - found loose edge - isNull: %d\n", s.IsNull());
-            TopoDS_Shape sTrans = ShapeUtils::moveShape(s,
-                                                      m_saveCentroid * -1.0);
-            TopoDS_Shape sScale = ShapeUtils::scaleShape(sTrans,
-                                                       getScale());
-            TopoDS_Shape sMirror = ShapeUtils::mirrorShape(sScale);
-            TopoDS_Edge edge = TopoDS::Edge(sMirror);
-            BaseGeomPtr bg = projectEdge(edge);
-
-            geometryObject->addEdge(bg);
-
-        } else {
-            // message for developers.
-            //Base::Console().Message("DEVEL: DVP::addShapes2d - shape is not a vertex or edge\n");
         }
     }
 }
@@ -449,7 +430,7 @@ void DrawViewPart::postHlrTasks(void)
     addCosmeticVertexesToGeom();
     addCosmeticEdgesToGeom();
     addReferencesToGeom();
-    addShapes2d();
+    addPoints();
 
     //balloons need to be recomputed here because their
     //references will be invalid until the geometry exists
@@ -1296,7 +1277,6 @@ Base::Vector3d DrawViewPart::getXDirection() const
 Base::Vector3d DrawViewPart::getLegacyX(const Base::Vector3d& pt, const Base::Vector3d& axis,
                                         const bool flip) const
 {
-    //    Base::Console().Message("DVP::getLegacyX() - %s\n", Label.getValue());
     gp_Ax2 viewAxis = ShapeUtils::legacyViewAxis1(pt, axis, flip);
     gp_Dir gXDir = viewAxis.XDirection();
     return Base::Vector3d(gXDir.X(), gXDir.Y(), gXDir.Z());
@@ -1317,7 +1297,6 @@ void DrawViewPart::updateReferenceVert(std::string tag, Base::Vector3d loc2d)
 
 void DrawViewPart::addReferencesToGeom()
 {
-    //    Base::Console().Message("DVP::addReferencesToGeom() - %s\n", getNameInDocument());
     std::vector<TechDraw::VertexPtr> gVerts = getVertexGeometry();
     gVerts.insert(gVerts.end(), m_referenceVerts.begin(), m_referenceVerts.end());
     getGeometryObject()->setVertexGeometry(gVerts);
@@ -1327,11 +1306,7 @@ void DrawViewPart::addReferencesToGeom()
 //ex. LandmarkDimension as a reference
 std::string DrawViewPart::addReferenceVertex(Base::Vector3d v)
 {
-    //    Base::Console().Message("DVP::addReferenceVertex(%s) - %s\n",
-    //                            DrawUtil::formatVector(v).c_str(), getNameInDocument());
     std::string refTag;
-    //    Base::Vector3d scaledV = v * getScale();
-    //    TechDraw::Vertex* ref = new TechDraw::Vertex(scaledV);
     Base::Vector3d scaledV = v;
     TechDraw::VertexPtr ref(std::make_shared<TechDraw::Vertex>(scaledV));
     ref->isReference(true);

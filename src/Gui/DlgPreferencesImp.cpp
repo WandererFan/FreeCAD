@@ -39,6 +39,7 @@
 # include <QToolTip>
 # include <QProcess>
 # include <QPushButton>
+# include <QWindow>
 #endif
 
 #include <App/Application.h>
@@ -53,10 +54,32 @@
 #include "Tools.h"
 #include "WidgetFactory.h"
 
-
 using namespace Gui::Dialog;
 
-QWidget* PreferencesPageItem::getWidget() const {
+bool isParentOf(const QModelIndex& parent, const QModelIndex& child)
+{
+    for (auto it = child; it.isValid(); it = it.parent()) {
+        if (it == parent) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+QModelIndex findRootIndex(const QModelIndex& index)
+{
+    auto root = index;
+
+    while (root.parent().isValid()) {
+        root = root.parent();
+    }
+
+    return root;
+}
+
+QWidget* PreferencesPageItem::getWidget() const
+{
     return _widget;
 }
 
@@ -70,6 +93,17 @@ void PreferencesPageItem::setWidget(QWidget* widget)
     _widget->setProperty(PropertyName, QVariant::fromValue(this));
 }
 
+bool PreferencesPageItem::isExpanded() const
+{
+    return _expanded;
+}
+
+void PreferencesPageItem::setExpanded(bool expanded)
+{
+    _expanded = expanded;
+}
+
+// NOLINTBEGIN
 Q_DECLARE_METATYPE(PreferencesPageItem*);
 
 const int DlgPreferencesImp::GroupNameRole = Qt::UserRole + 1;
@@ -81,6 +115,7 @@ std::list<DlgPreferencesImp::TGroupPages> DlgPreferencesImp::_pages;
 std::map<std::string, DlgPreferencesImp::Group> DlgPreferencesImp::_groupMap;
 
 DlgPreferencesImp* DlgPreferencesImp::_activeDialog = nullptr;
+// NOLINTEND
 
 /**
  *  Constructs a DlgPreferencesImp which is a child of 'parent', with
@@ -98,25 +133,10 @@ DlgPreferencesImp::DlgPreferencesImp(QWidget* parent, Qt::WindowFlags fl)
     // remove unused help button
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-    connect(ui->buttonBox,
-            &QDialogButtonBox::clicked,
-            this,
-            &DlgPreferencesImp::onButtonBoxClicked);
-    connect(ui->buttonBox,
-            &QDialogButtonBox::helpRequested,
-            getMainWindow(),
-            &MainWindow::whatsThis);
-    connect(ui->groupsTreeView,
-            &QTreeView::clicked,
-            this,
-            &DlgPreferencesImp::onPageSelected);
-    connect(ui->buttonReset,
-            &QPushButton::clicked,
-            this,
-            &DlgPreferencesImp::showResetOptions);
+    setupConnections();
 
     ui->groupsTreeView->setModel(&_model);
-    
+
     setupPages();
 
     // Maintain a static pointer to the current active dialog (if there is one) so that
@@ -135,6 +155,38 @@ DlgPreferencesImp::~DlgPreferencesImp()
     }
 }
 
+void DlgPreferencesImp::setupConnections()
+{
+    connect(ui->buttonBox,
+            &QDialogButtonBox::clicked,
+            this,
+            &DlgPreferencesImp::onButtonBoxClicked);
+    connect(ui->buttonBox,
+            &QDialogButtonBox::helpRequested,
+            getMainWindow(),
+            &MainWindow::whatsThis);
+    connect(ui->groupsTreeView,
+            &QTreeView::clicked,
+            this,
+            &DlgPreferencesImp::onPageSelected);
+    connect(ui->groupsTreeView,
+            &QTreeView::expanded,
+            this,
+            &DlgPreferencesImp::onGroupExpanded);
+    connect(ui->groupsTreeView,
+            &QTreeView::collapsed,
+            this,
+            &DlgPreferencesImp::onGroupCollapsed);
+    connect(ui->buttonReset,
+            &QPushButton::clicked,
+            this,
+            &DlgPreferencesImp::showResetOptions);
+    connect(ui->groupWidgetStack,
+            &QStackedWidget::currentChanged,
+            this,
+            &DlgPreferencesImp::onStackWidgetChange);
+}
+
 void DlgPreferencesImp::setupPages()
 {
     // make sure that pages are ready to create
@@ -148,28 +200,34 @@ void DlgPreferencesImp::setupPages()
         }
     }
 
-    updatePageDependentLabels();
+    updatePageDependentWidgets();
 }
 
 QPixmap DlgPreferencesImp::loadIconForGroup(const std::string &name) const
 {
-    std::string fileName = name;
-
     // normalize file name
-    for (auto& ch : fileName) {
-        ch = ch == ' ' ? '_' : tolower(ch);
-    }
+    auto normalizeName = [](std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(),
+                       [](unsigned char ch) {
+            return ch == ' ' ? '_' : std::tolower(ch);
+        });
+        return str;
+    };
 
+    std::string fileName = normalizeName(name);
     fileName = std::string("preferences-") + fileName;
-    QPixmap icon = Gui::BitmapFactory().pixmapFromSvg(fileName.c_str(), QSize(24, 24));
+
+    const int px = 24;
+    QSize iconSize(px, px);
+    QPixmap icon = Gui::BitmapFactory().pixmapFromSvg(fileName.c_str(), iconSize);
 
     if (icon.isNull()) {
         icon = Gui::BitmapFactory().pixmap(fileName.c_str());
         if (icon.isNull()) {
             qWarning() << "No group icon found for " << fileName.c_str();
         }
-        else if (icon.size() != QSize(24, 24)) {
-            icon = icon.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        else if (icon.size() != iconSize) {
+            icon = icon.scaled(iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
     }
 
@@ -193,6 +251,15 @@ PreferencesPageItem* DlgPreferencesImp::createGroup(const std::string &groupName
     auto groupPages = new QStackedWidget;
     groupPages->setProperty(GroupNameProperty, QVariant(groupNameQString));
 
+    connect(groupPages,
+            &QStackedWidget::currentChanged,
+            this,
+            &DlgPreferencesImp::onStackWidgetChange);
+
+
+    if (ui->groupWidgetStack->count() > 0) {
+        groupPages->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    }
     ui->groupWidgetStack->addWidget(groupPages);
 
     auto item = new PreferencesPageItem;
@@ -204,6 +271,7 @@ PreferencesPageItem* DlgPreferencesImp::createGroup(const std::string &groupName
     item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
     item->setWidget(groupPages);
+    item->setSelectable(false);
 
     _model.invisibleRootItem()->appendRow(item);
 
@@ -255,7 +323,13 @@ void DlgPreferencesImp::createPageInGroup(PreferencesPageItem *groupItem, const 
         page->loadSettings();
 
         auto pages = qobject_cast<QStackedWidget*>(groupItem->getWidget());
+
+        if (pages->count() > 0) {
+            page->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+        }
+
         pages->addWidget(page);
+        addSizeHint(page);
     }
     catch (const Base::Exception& e) {
         Base::Console().Error("Base exception thrown for '%s'\n", pageName.c_str());
@@ -266,11 +340,39 @@ void DlgPreferencesImp::createPageInGroup(PreferencesPageItem *groupItem, const 
     }
 }
 
-void DlgPreferencesImp::updatePageDependentLabels()
+void DlgPreferencesImp::addSizeHint(QWidget* page)
+{
+    _sizeHintOfPages = _sizeHintOfPages.expandedTo(page->minimumSizeHint());
+}
+
+int DlgPreferencesImp::minimumPageWidth() const
+{
+    return _sizeHintOfPages.width();
+}
+
+int DlgPreferencesImp::minimumDialogWidth(int pageWidth) const
+{
+    QSize size = ui->groupWidgetStack->sizeHint();
+    int diff = pageWidth - size.width();
+    int dw = width();
+    if (diff > 0) {
+        const int offset = 2;
+        dw += diff + offset;
+    }
+
+    return dw;
+}
+
+void DlgPreferencesImp::updatePageDependentWidgets()
 {
     auto currentPageItem = getCurrentPage();
 
+    // update header of the page
     ui->headerLabel->setText(currentPageItem->text());
+
+    // reset scroll area to start position
+    ui->scrollArea->horizontalScrollBar()->setValue(0);
+    ui->scrollArea->verticalScrollBar()->setValue(0);
 }
 
 /**
@@ -315,16 +417,15 @@ void DlgPreferencesImp::removePage(const std::string& className, const std::stri
                 _pages.erase(it);
                 return;
             }
-            else {
-                std::list<std::string>& p = it->second;
-                for (auto jt = p.begin(); jt != p.end(); ++jt) {
-                    if (*jt == className) {
-                        p.erase(jt);
-                        if (p.empty()) {
-                            _pages.erase(it);
-                        }
-                        return;
+
+            std::list<std::string>& p = it->second;
+            for (auto jt = p.begin(); jt != p.end(); ++jt) {
+                if (*jt == className) {
+                    p.erase(jt);
+                    if (p.empty()) {
+                        _pages.erase(it);
                     }
+                    return;
                 }
             }
         }
@@ -380,7 +481,7 @@ void DlgPreferencesImp::activateGroupPage(const QString& group, int index)
             ui->groupWidgetStack->setCurrentWidget(pageStackWidget);
             pageStackWidget->setCurrentIndex(index);
 
-            updatePageDependentLabels();
+            updatePageDependentWidgets();
             
             return;
         }
@@ -455,7 +556,8 @@ void DlgPreferencesImp::showResetOptions()
 
     connect(&menu, &QMenu::hovered, [&menu](QAction* hover) {
         QPoint pos = menu.pos();
-        pos.rx() += menu.width() + 10;
+        const int pad = 10;
+        pos.rx() += menu.width() + pad;
         QToolTip::showText(pos, hover->toolTip());
     });
 
@@ -624,12 +726,14 @@ void DlgPreferencesImp::restartIfRequired()
 
         if (exec == QMessageBox::Ok) {
             //restart FreeCAD after a delay to give time to this dialog to close
-            QTimer::singleShot(1000, []() 
+            const int ms = 1000;
+            QTimer::singleShot(ms, []()
             {
                 QStringList args = QApplication::arguments();
                 args.pop_front();
-                if (getMainWindow()->close())
+                if (getMainWindow()->close()) {
                     QProcess::startDetached(QApplication::applicationFilePath(), args);
+                }
             });
         }
     }
@@ -637,35 +741,129 @@ void DlgPreferencesImp::restartIfRequired()
 
 void DlgPreferencesImp::showEvent(QShowEvent* ev)
 {
-    this->adjustSize();
     QDialog::showEvent(ev);
+
+    auto screen = windowHandle()->screen();
+    auto availableSize = screen->availableSize();
+
+    // leave at least 100 px of height so preferences window does not take
+    // entire screen height. User will still be able to resize the window,
+    // but it should never start too tall.
+    auto maxStartHeight = availableSize.height() - 100;
+
+    if (height() > maxStartHeight) {
+        auto heightDifference = availableSize.height() - maxStartHeight;
+
+        // resize and reposition window so it is fully visible
+        resize(width(), maxStartHeight);
+        move(x(), heightDifference / 2);
+    }
+
+    expandToMinimumDialogWidth();
 }
 
-QModelIndex findRootIndex(const QModelIndex& index)
+void DlgPreferencesImp::expandToMinimumDialogWidth()
 {
-    auto root = index;
+    auto screen = windowHandle()->screen();
+    auto availableSize = screen->availableSize();
 
-    while (root.parent().isValid()) {
-        root = root.parent();
+    // if the expanded dialog occupies less than 50% of the screen
+    int mw = minimumDialogWidth(minimumPageWidth());
+    if (availableSize.width() > 2 * mw) {
+        resize(mw, height());
     }
-    
-    return root;
 }
 
 void DlgPreferencesImp::onPageSelected(const QModelIndex& index)
 {
-    auto root = findRootIndex(index);
+    auto* currentItem = static_cast<PreferencesPageItem*>(_model.itemFromIndex(index));
 
-    auto* groupItem = static_cast<PreferencesPageItem*>(_model.itemFromIndex(root));
+    if (currentItem->hasChildren()) {
+        auto pageIndex = currentItem->child(0)->index();
+
+        ui->groupsTreeView->selectionModel()->select(pageIndex, QItemSelectionModel::ClearAndSelect);
+
+        onPageSelected(pageIndex);
+
+        return;
+    }
+
+    auto groupIndex = findRootIndex(index);
+
+    auto* groupItem = static_cast<PreferencesPageItem*>(_model.itemFromIndex(groupIndex));
     auto* pagesStackWidget = static_cast<QStackedWidget*>(groupItem->getWidget());
 
     ui->groupWidgetStack->setCurrentWidget(groupItem->getWidget());
 
-    if (index != root) {
+    if (index != groupIndex) {
         pagesStackWidget->setCurrentIndex(index.row());
     }
 
-    updatePageDependentLabels();
+    updatePageDependentWidgets();
+}
+
+void DlgPreferencesImp::onGroupExpanded(const QModelIndex& index)
+{
+    auto root = findRootIndex(index);
+
+    auto* groupItem = static_cast<PreferencesPageItem*>(_model.itemFromIndex(root));
+
+    groupItem->setExpanded(true);
+}
+
+void DlgPreferencesImp::onGroupCollapsed(const QModelIndex& index)
+{
+    auto root = findRootIndex(index);
+
+    auto* groupItem = static_cast<PreferencesPageItem*>(_model.itemFromIndex(root));
+
+    groupItem->setExpanded(false);
+}
+
+void DlgPreferencesImp::onStackWidgetChange(int index)
+{
+    auto stack = qobject_cast<QStackedWidget*>(sender());
+
+    for (int i = 0; i < stack->count(); i++) {
+        auto current = stack->widget(i);
+        current->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    }
+
+    if (auto selected = stack->widget(index)) {
+        selected->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    }
+
+    auto currentItem = getCurrentPage();
+
+    if (!currentItem) {
+        return;
+    }
+
+    auto currentIndex = currentItem->index();
+
+    auto root = _model.invisibleRootItem();
+    for (int i = 0; i < root->rowCount(); i++) {
+        auto currentGroup = static_cast<PreferencesPageItem*>(root->child(i));
+        auto currentGroupIndex = currentGroup->index();
+
+        // don't do anything to group of selected item
+        if (isParentOf(currentGroupIndex, currentIndex)) {
+            continue;
+        }
+
+        if (!currentGroup->isExpanded()) {
+            ui->groupsTreeView->collapse(currentGroupIndex);
+        }
+    }
+
+    auto parentItem = currentItem;
+    while ((parentItem = static_cast<PreferencesPageItem*>(parentItem->parent()))) {
+        bool wasExpanded = parentItem->isExpanded();
+        ui->groupsTreeView->expand(parentItem->index());
+        parentItem->setExpanded(wasExpanded);
+    }
+    
+    ui->groupsTreeView->selectionModel()->select(currentIndex, QItemSelectionModel::ClearAndSelect);
 }
 
 void DlgPreferencesImp::changeEvent(QEvent *e)
@@ -688,8 +886,10 @@ void DlgPreferencesImp::changeEvent(QEvent *e)
             }
         }
 
-        updatePageDependentLabels();
-    } else {
+        expandToMinimumDialogWidth();
+        updatePageDependentWidgets();
+    }
+    else {
         QWidget::changeEvent(e);
     }
 }
@@ -723,9 +923,13 @@ void DlgPreferencesImp::restorePageDefaults(PreferencesPageItem* item)
     }
     else {
         auto* page = qobject_cast<PreferencePage*>(item->getWidget());
-        auto prefs = page->findChildren<QObject*>();
 
         page->resetSettingsToDefaults();
+        /**
+         * Let's save the restart request before the page object is deleted and replaced with
+         * the newPage object (wich has restartRequired initialized to false)
+         */
+        restartRequired = restartRequired || page->isRestartRequired();
         
         std::string pageName = page->property(PageNameProperty).toString().toStdString();
         std::string groupName = page->property(GroupNameProperty).toString().toStdString();

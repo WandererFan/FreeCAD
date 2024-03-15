@@ -63,9 +63,10 @@ public:
 
     void onDragFinished() override;
 
+    void setLinePen(QPen isoPen);
+
 protected:
     QColor getHighlightColor();
-    Qt::PenStyle getHighlightStyle();
     void makeHighlight();
     void makeReference();
     void setTools();

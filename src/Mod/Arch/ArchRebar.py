@@ -25,6 +25,8 @@ import Draft
 import ArchComponent
 import DraftVecUtils
 import ArchCommands
+from draftutils import params
+
 if FreeCAD.GuiUp:
     import FreeCADGui
     from draftutils.translate import translate
@@ -58,20 +60,19 @@ def makeRebar(baseobj=None,sketch=None,diameter=None,amount=1,offset=None,name=N
     if not FreeCAD.ActiveDocument:
         FreeCAD.Console.PrintError("No active document. Aborting\n")
         return
-    p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch")
     obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Rebar")
     obj.Label = name if name else translate("Arch","Rebar")
     _Rebar(obj)
     if FreeCAD.GuiUp:
         _ViewProviderRebar(obj.ViewObject)
     if baseobj and sketch:
-        if hasattr(sketch,"Support"):
-            if sketch.Support:
-                if isinstance(sketch.Support,tuple):
-                    if sketch.Support[0] == baseobj:
-                        sketch.Support = None
-                elif sketch.Support == baseobj:
-                    sketch.Support = None
+        if hasattr(sketch,"AttachmentSupport"):
+            if sketch.AttachmentSupport:
+                if isinstance(sketch.AttachmentSupport,tuple):
+                    if sketch.AttachmentSupport[0] == baseobj:
+                        sketch.AttachmentSupport = None
+                elif sketch.AttachmentSupport == baseobj:
+                    sketch.AttachmentSupport = None
         obj.Base = sketch
         if FreeCAD.GuiUp:
             sketch.ViewObject.hide()
@@ -87,15 +88,15 @@ def makeRebar(baseobj=None,sketch=None,diameter=None,amount=1,offset=None,name=N
     if diameter:
         obj.Diameter = diameter
     else:
-        obj.Diameter = p.GetFloat("RebarDiameter",6)
+        obj.Diameter = params.get_param_arch("RebarDiameter")
     obj.Amount = amount
     obj.Document.recompute()
     if offset is not None:
         obj.OffsetStart = offset
         obj.OffsetEnd = offset
     else:
-        obj.OffsetStart = p.GetFloat("RebarOffset",30)
-        obj.OffsetEnd = p.GetFloat("RebarOffset",30)
+        obj.OffsetStart = params.get_param_arch("RebarOffset")
+        obj.OffsetEnd = params.get_param_arch("RebarOffset")
     obj.Mark = obj.Label
     return obj
 
@@ -144,10 +145,10 @@ class _CommandRebar:
                 if len(obj.Shape.Wires) == 1:
                     # we have only a wire: extract its support object, if available, and make the rebar
                     support = "None"
-                    if hasattr(obj,"Support"):
-                        if obj.Support:
-                            if len(obj.Support) != 0:
-                                support = "FreeCAD.ActiveDocument."+obj.Support[0][0].Name
+                    if hasattr(obj,"AttachmentSupport"):
+                        if obj.AttachmentSupport:
+                            if len(obj.AttachmentSupport) != 0:
+                                support = "FreeCAD.ActiveDocument."+obj.AttachmentSupport[0][0].Name
                     FreeCAD.ActiveDocument.openTransaction(translate("Arch","Create Rebar"))
                     FreeCADGui.addModule("Arch")
                     FreeCADGui.doCommand("Arch.makeRebar("+support+",FreeCAD.ActiveDocument."+obj.Name+")")

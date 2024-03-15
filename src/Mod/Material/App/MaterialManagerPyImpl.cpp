@@ -54,7 +54,7 @@ int MaterialManagerPy::PyInit(PyObject* /*args*/, PyObject* /*kwd*/)
 
 PyObject* MaterialManagerPy::getMaterial(PyObject* args)
 {
-    char* uuid;
+    char* uuid {};
     if (!PyArg_ParseTuple(args, "s", &uuid)) {
         return nullptr;
     }
@@ -72,16 +72,19 @@ PyObject* MaterialManagerPy::getMaterial(PyObject* args)
 PyObject* MaterialManagerPy::getMaterialByPath(PyObject* args)
 {
     char* path;
-    char* lib = "";
-    if (!PyArg_ParseTuple(args, "s|s", &path, &lib)) {
+    const char* lib = "";
+    if (!PyArg_ParseTuple(args, "et|s", "utf-8", &path, &lib)) {
         return nullptr;
     }
+
+    std::string utf8Path = std::string(path);
+    PyMem_Free(path);
 
     QString libPath(QString::fromStdString(lib));
     if (!libPath.isEmpty()) {
         try {
             auto material =
-                getMaterialManagerPtr()->getMaterialByPath(QString::fromStdString(path), libPath);
+                getMaterialManagerPtr()->getMaterialByPath(QString::fromUtf8(utf8Path.c_str()), libPath);
             return new MaterialPy(new Material(*material));
         }
         catch (const MaterialNotFound&) {
@@ -95,7 +98,7 @@ PyObject* MaterialManagerPy::getMaterialByPath(PyObject* args)
     }
 
     try {
-        auto material = getMaterialManagerPtr()->getMaterialByPath(QString::fromStdString(path));
+        auto material = getMaterialManagerPtr()->getMaterialByPath(QString::fromUtf8(utf8Path.c_str()));
         return new MaterialPy(new Material(*material));
     }
     catch (const MaterialNotFound&) {
@@ -152,7 +155,7 @@ int MaterialManagerPy::setCustomAttributes(const char* /*attr*/, PyObject* /*obj
 
 PyObject* MaterialManagerPy::materialsWithModel(PyObject* args)
 {
-    char* uuid;
+    char* uuid {};
     if (!PyArg_ParseTuple(args, "s", &uuid)) {
         return nullptr;
     }
@@ -173,7 +176,7 @@ PyObject* MaterialManagerPy::materialsWithModel(PyObject* args)
 
 PyObject* MaterialManagerPy::materialsWithModelComplete(PyObject* args)
 {
-    char* uuid;
+    char* uuid {};
     if (!PyArg_ParseTuple(args, "s", &uuid)) {
         return nullptr;
     }

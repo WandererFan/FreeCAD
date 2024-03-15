@@ -36,13 +36,13 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import Draft_rc
 import DraftVecUtils
-import draftutils.utils as utils
-import draftguitools.gui_base_original as gui_base_original
-import draftguitools.gui_tool_utils as gui_tool_utils
-import draftguitools.gui_trackers as trackers
-
+from draftguitools import gui_base_original
+from draftguitools import gui_tool_utils
+from draftguitools import gui_trackers as trackers
+from draftutils import params
+from draftutils import utils
+from draftutils.messages import _err, _toolmsg
 from draftutils.translate import translate
-from draftutils.messages import _toolmsg, _err
 
 # The module is used to prevent complaints from code checkers (flake8)
 True if Draft_rc.__name__ else False
@@ -79,10 +79,11 @@ class Ellipse(gui_base_original.Creator):
             Restart (continue) the command if `True`, or if `None` and
             `ui.continueMode` is `True`.
         """
-        super().finish(self)
+        self.end_callbacks(self.call)
         if self.ui:
             self.rect.off()
             self.rect.finalize()
+        super().finish()
         if cont or (cont is None and self.ui and self.ui.continueMode):
             self.Activated()
 
@@ -111,7 +112,7 @@ class Ellipse(gui_base_original.Creator):
                 rot2 = rot2.Rotation
                 rot = str((rot1.multiply(rot2)).Q)
             Gui.addModule("Draft")
-            if utils.getParam("UsePartPrimitives", False):
+            if params.get_param("UsePartPrimitives"):
                 # Insert a Part::Primitive object
                 _cmd = 'FreeCAD.ActiveDocument.'
                 _cmd += 'addObject("Part::Ellipse", "Ellipse")'
@@ -123,6 +124,7 @@ class Ellipse(gui_base_original.Creator):
                              'pl.Base = ' + DraftVecUtils.toString(center),
                              'ellipse.Placement = pl',
                              'Draft.autogroup(ellipse)',
+                             'Draft.select(ellipse)',
                              'FreeCAD.ActiveDocument.recompute()']
                 self.commit(translate("draft", "Create Ellipse"),
                             _cmd_list)

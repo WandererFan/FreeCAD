@@ -94,7 +94,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="label1">
             <property name="text">
              <string>Find in files:</string>
             </property>
@@ -338,6 +338,9 @@
          <widget class="Gui::FileChooser" name="fileChooser">
           <property name="focusPolicy">
            <enum>Qt::StrongFocus</enum>
+          </property>
+          <property name="mode">
+           <enum>Gui::FileChooser::Directory</enum>
           </property>
          </widget>
         </item>

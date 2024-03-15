@@ -578,7 +578,7 @@ Select a different shape, please.</source>
     <name>MeshPart_CreateFlatMesh</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="49"/>
-      <source>Unwrap Mesh</source>
+      <source>Unwrap mesh</source>
       <translation>Разгарнуць паліганальную сетку</translation>
     </message>
     <message>
@@ -591,7 +591,7 @@ Select a different shape, please.</source>
     <name>MeshPart_CreateFlatFace</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="88"/>
-      <source>Unwrap Face</source>
+      <source>Unwrap face</source>
       <translation>Разгарнуць грань</translation>
     </message>
     <message>

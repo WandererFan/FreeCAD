@@ -37,6 +37,7 @@
 #include <cassert>
 #include <ctime>
 #include <cfloat>
+#include <chrono>
 #ifdef FC_OS_WIN32
 #define _USE_MATH_DEFINES
 #endif  // FC_OS_WIN32
@@ -73,6 +74,7 @@
 #include <stack>
 #include <queue>
 #include <memory>
+#include <mutex>
 #include <bitset>
 
 // streams
@@ -130,8 +132,6 @@
 #include <QWriteLocker>
 #include <QReadLocker>
 #include <QReadWriteLock>
-#include <QMutex>
-#include <QMutexLocker>
 #include <QTime>
 #include <QUuid>
 

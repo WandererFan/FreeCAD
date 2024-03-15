@@ -48,6 +48,7 @@
 # include <Mod/TechDraw/App/DrawViewPart.h>
 # include <Mod/TechDraw/App/Preferences.h>
 
+#include "DlgTemplateField.h"
 #include "DrawGuiUtil.h"
 #include "TaskCustomizeFormat.h"
 #include "TaskSelectLineAttributes.h"
@@ -99,11 +100,33 @@ namespace TechDrawGui {
 // TechDraw_ExtensionInsertDiameter
 //===========================================================================
 
-void execInsertPrefixChar(Gui::Command* cmd, std::string prefixChar) {
+void execInsertPrefixChar(Gui::Command* cmd, std::string prefixFormat, const QAction *action = nullptr) {
     // insert a prefix character into the format specifier
     std::vector<Gui::SelectionObject> selection;
     if (!_checkSelection(cmd, selection, QT_TRANSLATE_NOOP("Command","TechDraw Insert Prefix"))) {
         return;
+    }
+
+    std::string prefixText(prefixFormat);
+    if (prefixFormat.find("%s") != std::string::npos) {
+        DlgTemplateField ui;
+        const int MAX_PREFIX_LENGTH = 31;
+
+        if (action) {
+            if (action->objectName() == QString::fromUtf8("TechDraw_ExtensionInsertRepetition")) {
+                ui.setFieldName(QT_TR_NOOP("Repeat Count"));
+            }
+        }
+
+        ui.setFieldLength(MAX_PREFIX_LENGTH);
+        ui.setFieldContent("");
+        if (ui.exec() != QDialog::Accepted) {
+            return;
+        }
+
+        char prefixData[(MAX_PREFIX_LENGTH + 1)*4];
+        snprintf(prefixData, sizeof(prefixData), prefixFormat.c_str(), ui.getFieldContent().toUtf8().constData());
+        prefixText = prefixData;
     }
 
     Gui::Command::openCommand(QT_TRANSLATE_NOOP("Command", "Insert Prefix"));
@@ -112,7 +135,7 @@ void execInsertPrefixChar(Gui::Command* cmd, std::string prefixChar) {
         if (object->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
             auto dim = static_cast<TechDraw::DrawViewDimension*>(selected.getObject());
             std::string formatSpec = dim->FormatSpec.getStrValue();
-            formatSpec = prefixChar + formatSpec;
+            formatSpec = prefixText + formatSpec;
             dim->FormatSpec.setValue(formatSpec);
         }
     }
@@ -175,6 +198,40 @@ void CmdTechDrawExtensionInsertSquare::activated(int iMsg)
 }
 
 bool CmdTechDrawExtensionInsertSquare::isActive()
+{
+    bool havePage = DrawGuiUtil::needPage(this);
+    bool haveView = DrawGuiUtil::needView(this);
+    return (havePage && haveView);
+}
+
+//===========================================================================
+// TechDraw_ExtensionInsertRepetition
+//===========================================================================
+
+DEF_STD_CMD_A(CmdTechDrawExtensionInsertRepetition)
+
+CmdTechDrawExtensionInsertRepetition::CmdTechDrawExtensionInsertRepetition()
+    : Command("TechDraw_ExtensionInsertRepetition")
+{
+    sAppModule      = "TechDraw";
+    sGroup          = QT_TR_NOOP("TechDraw");
+    sMenuText       = QT_TR_NOOP("Insert 'n×' Prefix");
+    sToolTipText    = QT_TR_NOOP("Insert repeated feature count at the beginning of the dimension text:<br>\
+- Select one or more dimensions<br>\
+- Click this tool");
+    sWhatsThis      = "TechDraw_ExtensionInsertRepetition";
+    sStatusTip      = sMenuText;
+    sPixmap         = "TechDraw_ExtensionInsertRepetition";
+}
+
+void CmdTechDrawExtensionInsertRepetition::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+
+    execInsertPrefixChar(this, "%s× ", this->getAction()->action()); //× Multiplication sign U+00D7
+}
+
+bool CmdTechDrawExtensionInsertRepetition::isActive()
 {
     bool havePage = DrawGuiUtil::needPage(this);
     bool haveView = DrawGuiUtil::needView(this);
@@ -277,7 +334,10 @@ void CmdTechDrawExtensionInsertPrefixGroup::activated(int iMsg)
     case 1:                 //insert "□" as prefix
         execInsertPrefixChar(this, "□");
         break;
-    case 2:                 //remove prefix characters
+    case 2:                 //insert "n×" as prefix
+        execInsertPrefixChar(this, "%s× ", pcAction->actions().at(iMsg));
+        break;
+    case 3:                 //remove prefix characters
         execRemovePrefixChar(this);
         break;
     default:
@@ -300,9 +360,13 @@ Gui::Action* CmdTechDrawExtensionInsertPrefixGroup::createAction()
     p2->setObjectName(QString::fromLatin1("TechDraw_ExtensionInsertSquare"));
     p2->setWhatsThis(QString::fromLatin1("TechDraw_ExtensionInsertSquare"));
     QAction* p3 = pcAction->addAction(QString());
-    p3->setIcon(Gui::BitmapFactory().iconFromTheme("TechDraw_ExtensionRemovePrefixChar"));
-    p3->setObjectName(QString::fromLatin1("TechDraw_ExtensionRemovePrefixChar"));
-    p3->setWhatsThis(QString::fromLatin1("TechDraw_ExtensionRemovePrefixChar"));
+    p3->setIcon(Gui::BitmapFactory().iconFromTheme("TechDraw_ExtensionInsertRepetition"));
+    p3->setObjectName(QString::fromLatin1("TechDraw_ExtensionInsertRepetition"));
+    p3->setWhatsThis(QString::fromLatin1("TechDraw_ExtensionInsertRepetition"));
+    QAction* p4 = pcAction->addAction(QString());
+    p4->setIcon(Gui::BitmapFactory().iconFromTheme("TechDraw_ExtensionRemovePrefixChar"));
+    p4->setObjectName(QString::fromLatin1("TechDraw_ExtensionRemovePrefixChar"));
+    p4->setWhatsThis(QString::fromLatin1("TechDraw_ExtensionRemovePrefixChar"));
 
     _pcAction = pcAction;
     languageChange();
@@ -338,12 +402,19 @@ void CmdTechDrawExtensionInsertPrefixGroup::languageChange()
 - Click this tool"));
     arc2->setStatusTip(arc2->text());
     QAction* arc3 = a[2];
-    arc3->setText(QApplication::translate("TechDraw_ExtensionremovePrefixChar", "Remove Prefix"));
-    arc3->setToolTip(QApplication::translate("TechDraw_ExtensionremovePrefixChar",
-"Remove prefix symbols at the beginning of the dimension text:<br>\
+    arc3->setText(QApplication::translate("CmdTechDrawExtensionInsertRepetition", "Insert 'n×' Prefix"));
+    arc3->setToolTip(QApplication::translate("CmdTechDrawExtensionInsertRepetition",
+"Insert repeated feature count at the beginning of the dimension text:<br>\
 - Select one or more dimensions<br>\
 - Click this tool"));
     arc3->setStatusTip(arc3->text());
+    QAction* arc4 = a[3];
+    arc4->setText(QApplication::translate("TechDraw_ExtensionremovePrefixChar", "Remove Prefix"));
+    arc4->setToolTip(QApplication::translate("TechDraw_ExtensionremovePrefixChar",
+"Remove prefix symbols at the beginning of the dimension text:<br>\
+- Select one or more dimensions<br>\
+- Click this tool"));
+    arc4->setStatusTip(arc4->text());
 }
 
 bool CmdTechDrawExtensionInsertPrefixGroup::isActive()
@@ -1349,7 +1420,8 @@ void execCreateObliqueChainDimension(Gui::Command* cmd) {
             nextPoint.y = -nextPoint.y;
             oldVertex.point.y = -oldVertex.point.y;
             if ((oldVertex.point - nextPoint).Length() > 0.01) {
-                std::string vertTag = objFeat->addCosmeticVertex(nextPoint / scale);
+                Base::Vector3d cvPoint = CosmeticVertex::makeCanonicalPoint(objFeat, nextPoint);
+                std::string vertTag = objFeat->addCosmeticVertex(cvPoint);
                 int vertNumber = objFeat->add1CVToGV(vertTag);
                 std::stringstream ss;
                 ss << "Vertex" << vertNumber;
@@ -1360,6 +1432,7 @@ void execCreateObliqueChainDimension(Gui::Command* cmd) {
                 std::string edgeTag = objFeat->addCosmeticEdge(oldVertex.point / scale, nextPoint / scale);
                 auto edge = objFeat->getCosmeticEdge(edgeTag);
                 edge->m_format.m_style = 1;
+                edge->m_format.m_lineNumber = 1;
                 edge->m_format.m_weight = 0.15;
                 edge->m_format.m_color = App::Color(0.0f, 0.0f, 0.0f);
             }
@@ -1703,7 +1776,8 @@ void execCreateObliqueCoordDimension(Gui::Command* cmd) {
             nextPoint.y = -nextPoint.y;
             oldVertex.point.y = -oldVertex.point.y;
             if ((oldVertex.point - nextPoint).Length() > 0.01) {
-                std::string vertTag = objFeat->addCosmeticVertex(nextPoint / scale);
+                Base::Vector3d cvPoint = CosmeticVertex::makeCanonicalPoint(objFeat, nextPoint);
+                std::string vertTag = objFeat->addCosmeticVertex(cvPoint);
                 int vertNumber = objFeat->add1CVToGV(vertTag);
                 std::stringstream ss;
                 ss << "Vertex" << vertNumber;
@@ -1714,6 +1788,7 @@ void execCreateObliqueCoordDimension(Gui::Command* cmd) {
                 std::string edgeTag = objFeat->addCosmeticEdge(oldVertex.point / scale, nextPoint / scale);
                 auto edge = objFeat->getCosmeticEdge(edgeTag);
                 edge->m_format.m_style = 1;
+                edge->m_format.m_lineNumber = 1;
                 edge->m_format.m_weight = 0.15;
                 edge->m_format.m_color = App::Color(0.0f, 0.0f, 0.0f);
             }
@@ -2180,10 +2255,12 @@ void CmdTechDrawExtensionCreateLengthArc::activated(int iMsg) {
         endPt.y = -endPt.y;
         std::stringstream startName, endName, formatSpec;
         double scale = objFeat->getScale();
-        std::string startVertTag = objFeat->addCosmeticVertex(startPt / scale);
+        Base::Vector3d cvPoint = CosmeticVertex::makeCanonicalPoint(objFeat, startPt);
+        std::string startVertTag = objFeat->addCosmeticVertex(cvPoint);
         int startVertNumber = objFeat->add1CVToGV(startVertTag);
         startName << "Vertex" << startVertNumber;
-        std::string endVertTag = objFeat->addCosmeticVertex(endPt / scale);
+        cvPoint = CosmeticVertex::makeCanonicalPoint(objFeat, endPt);
+        std::string endVertTag = objFeat->addCosmeticVertex(cvPoint);
         int endVertNumber = objFeat->add1CVToGV(endVertTag);
         endName << "Vertex" << endVertNumber;
         TechDraw::DrawViewDimension* dim;
@@ -2334,10 +2411,10 @@ namespace TechDrawGui {
             throw Base::TypeError("CmdTechDrawExtensionCreateLinDimension - dim not found\n");
         dim->References2D.setValues(objs, subs);
         cmd->doCommand(cmd->Doc, "App.activeDocument().%s.addView(App.activeDocument().%s)", PageName.c_str(), FeatName.c_str());
+
+        // Touch the parent feature so the dimension in tree view appears as a child
+        objFeat->touch();
         dim->recomputeFeature();
-        //Horrible hack to force Tree update
-        double x = objFeat->X.getValue();
-        objFeat->X.setValue(x);
         return dim;
     }
 
@@ -2385,6 +2462,7 @@ void CreateTechDrawCommandsExtensionDims()
     rcCmdMgr.addCommand(new CmdTechDrawExtensionInsertPrefixGroup());
     rcCmdMgr.addCommand(new CmdTechDrawExtensionInsertDiameter());
     rcCmdMgr.addCommand(new CmdTechDrawExtensionInsertSquare());
+    rcCmdMgr.addCommand(new CmdTechDrawExtensionInsertRepetition());
     rcCmdMgr.addCommand(new CmdTechDrawExtensionRemovePrefixChar());
     rcCmdMgr.addCommand(new CmdTechDrawExtensionIncreaseDecreaseGroup());
     rcCmdMgr.addCommand(new CmdTechDrawExtensionIncreaseDecimal());

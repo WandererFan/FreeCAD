@@ -351,6 +351,37 @@ void DlgSettingsWorkbenchesImp::loadSettings()
     }
 }
 
+void DlgSettingsWorkbenchesImp::resetSettingsToDefaults()
+{
+    ParameterGrp::handle hGrp;
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Workbenches");
+    //reset "Ordered" parameter
+    hGrp->RemoveASCII("Ordered");
+    //reset "Disabled" parameter
+    hGrp->RemoveASCII("Disabled");
+
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+    //reset "BackgroundAutoloadModules" parameter
+    hGrp->RemoveASCII("BackgroundAutoloadModules");
+    //reset "AutoloadModule" parameter
+    hGrp->RemoveASCII("AutoloadModule");
+
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
+    //reset "WSPosition" parameter
+    hGrp->RemoveASCII("WSPosition");
+    if  (ui->WorkbenchSelectorPosition->currentIndex() != WorkbenchSwitcher::getIndex()) {
+        requireRestart();
+    }
+
+    //finally reset all the parameters associated to Gui::Pref* widgets
+    PreferencePage::resetSettingsToDefaults();
+
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    if  (ui->CheckBox_WbByTab->isChecked() != hGrp->GetBool("SaveWBbyTab", 0)) {
+        requireRestart();
+    }
+}
+
 /**
 Build the list of unloaded workbenches.
 */
@@ -434,7 +465,7 @@ QStringList DlgSettingsWorkbenchesImp::getDisabledWorkbenches()
     ParameterGrp::handle hGrp;
 
     hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Workbenches");
-    disabled_wbs = QString::fromStdString(hGrp->GetASCII("Disabled", "NoneWorkbench,TestWorkbench,AssemblyWorkbench"));
+    disabled_wbs = QString::fromStdString(hGrp->GetASCII("Disabled", "NoneWorkbench,TestWorkbench"));
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     unfiltered_disabled_wbs_list = disabled_wbs.split(QLatin1String(","), Qt::SkipEmptyParts);
 #else
@@ -590,7 +621,16 @@ void DlgSettingsWorkbenchesImp::onStartWbChanged(int index)
 void DlgSettingsWorkbenchesImp::onWbSelectorChanged(int index)
 {
     Q_UNUSED(index);
-    requireRestart();
+    /**
+     * TODO: move the following code somewhere else so that the restart request isn't asked
+     * everytime the WorkbenchSwitcher is changed but only when the value that will be saved in
+     * the parameter is actually different from the current one.
+     * The code, as is now, will request the restart even if the use selects again the same value
+     * that is already saved in the parameters
+     */
+    if (ui->WorkbenchSelectorPosition->currentIndex() != WorkbenchSwitcher::getIndex()) {
+        requireRestart();
+    }
 }
 
 void DlgSettingsWorkbenchesImp::onWbByTabToggled(bool val)

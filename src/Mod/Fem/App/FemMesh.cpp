@@ -910,7 +910,8 @@ std::set<int> FemMesh::getNodesBySolid(const TopoDS_Solid& solid) const
     }
 
 #pragma omp parallel for schedule(dynamic)
-    for (auto aNode : nodes) {
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const SMDS_MeshNode* aNode = nodes[i];
         double xyz[3];
         aNode->GetXYZ(xyz);
         Base::Vector3d vec(xyz[0], xyz[1], xyz[2]);
@@ -962,7 +963,8 @@ std::set<int> FemMesh::getNodesByFace(const TopoDS_Face& face) const
     }
 
 #pragma omp parallel for schedule(dynamic)
-    for (auto aNode : nodes) {
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const SMDS_MeshNode* aNode = nodes[i];
         double xyz[3];
         aNode->GetXYZ(xyz);
         Base::Vector3d vec(xyz[0], xyz[1], xyz[2]);
@@ -1012,7 +1014,8 @@ std::set<int> FemMesh::getNodesByEdge(const TopoDS_Edge& edge) const
     }
 
 #pragma omp parallel for schedule(dynamic)
-    for (auto aNode : nodes) {
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const SMDS_MeshNode* aNode = nodes[i];
         double xyz[3];
         aNode->GetXYZ(xyz);
         Base::Vector3d vec(xyz[0], xyz[1], xyz[2]);
@@ -1061,7 +1064,8 @@ std::set<int> FemMesh::getNodesByVertex(const TopoDS_Vertex& vertex) const
     }
 
 #pragma omp parallel for schedule(dynamic)
-    for (auto aNode : nodes) {
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const SMDS_MeshNode* aNode = nodes[i];
         double xyz[3];
         aNode->GetXYZ(xyz);
         Base::Vector3d vec(xyz[0], xyz[1], xyz[2]);
@@ -1617,7 +1621,7 @@ class CHEXA2Element: public NastranElement
 
 void FemMesh::readNastran(const std::string& Filename)
 {
-    Base::TimeInfo Start;
+    Base::TimeElapsed Start;
     Base::Console().Log("Start: FemMesh::readNastran() =================================\n");
 
     _Mtrx = Base::Matrix4D();
@@ -1695,7 +1699,7 @@ void FemMesh::readNastran(const std::string& Filename)
     inputfile.close();
 
     Base::Console().Log("    %f: File read, start building mesh\n",
-                        Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 
     // Now fill the SMESH datastructure
     SMESHDS_Mesh* meshds = this->myMesh->GetMeshDS();
@@ -1705,12 +1709,13 @@ void FemMesh::readNastran(const std::string& Filename)
         it->addToMesh(meshds);
     }
 
-    Base::Console().Log("    %f: Done \n", Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+    Base::Console().Log("    %f: Done \n",
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 }
 
 void FemMesh::readNastran95(const std::string& Filename)
 {
-    Base::TimeInfo Start;
+    Base::TimeElapsed Start;
     Base::Console().Log("Start: FemMesh::readNastran95() =================================\n");
 
     _Mtrx = Base::Matrix4D();
@@ -1821,7 +1826,7 @@ void FemMesh::readNastran95(const std::string& Filename)
     inputfile.close();
 
     Base::Console().Log("    %f: File read, start building mesh\n",
-                        Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 
     // Now fill the SMESH datastructure
     SMESHDS_Mesh* meshds = this->myMesh->GetMeshDS();
@@ -1835,12 +1840,13 @@ void FemMesh::readNastran95(const std::string& Filename)
         it->addToMesh(meshds);
     }
 
-    Base::Console().Log("    %f: Done \n", Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+    Base::Console().Log("    %f: Done \n",
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 }
 
 void FemMesh::readAbaqus(const std::string& FileName)
 {
-    Base::TimeInfo Start;
+    Base::TimeElapsed Start;
     Base::Console().Log("Start: FemMesh::readAbaqus() =================================\n");
 
     /*
@@ -1874,12 +1880,13 @@ void FemMesh::readAbaqus(const std::string& FileName)
     catch (Py::Exception& e) {
         e.clear();
     }
-    Base::Console().Log("    %f: Done \n", Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+    Base::Console().Log("    %f: Done \n",
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 }
 
 void FemMesh::readZ88(const std::string& FileName)
 {
-    Base::TimeInfo Start;
+    Base::TimeElapsed Start;
     Base::Console().Log("Start: FemMesh::readZ88() =================================\n");
 
     /*
@@ -1913,7 +1920,8 @@ void FemMesh::readZ88(const std::string& FileName)
     catch (Py::Exception& e) {
         e.clear();
     }
-    Base::Console().Log("    %f: Done \n", Base::TimeInfo::diffTimeF(Start, Base::TimeInfo()));
+    Base::Console().Log("    %f: Done \n",
+                        Base::TimeElapsed::diffTimeF(Start, Base::TimeElapsed()));
 }
 
 void FemMesh::read(const char* FileName)
@@ -2412,7 +2420,7 @@ void FemMesh::writeABAQUS(const std::string& Filename, int elemParam, bool group
 
 void FemMesh::writeZ88(const std::string& FileName) const
 {
-    Base::TimeInfo Start;
+    Base::TimeElapsed Start;
     Base::Console().Log("Start: FemMesh::writeZ88() =================================\n");
 
     /*
@@ -2540,25 +2548,25 @@ void FemMesh::Restore(Base::XMLReader& reader)
         reader.addFile(file.c_str(), this);
     }
     if (reader.hasAttribute("a11")) {
-        _Mtrx[0][0] = (float)reader.getAttributeAsFloat("a11");
-        _Mtrx[0][1] = (float)reader.getAttributeAsFloat("a12");
-        _Mtrx[0][2] = (float)reader.getAttributeAsFloat("a13");
-        _Mtrx[0][3] = (float)reader.getAttributeAsFloat("a14");
+        _Mtrx[0][0] = reader.getAttributeAsFloat("a11");
+        _Mtrx[0][1] = reader.getAttributeAsFloat("a12");
+        _Mtrx[0][2] = reader.getAttributeAsFloat("a13");
+        _Mtrx[0][3] = reader.getAttributeAsFloat("a14");
 
-        _Mtrx[1][0] = (float)reader.getAttributeAsFloat("a21");
-        _Mtrx[1][1] = (float)reader.getAttributeAsFloat("a22");
-        _Mtrx[1][2] = (float)reader.getAttributeAsFloat("a23");
-        _Mtrx[1][3] = (float)reader.getAttributeAsFloat("a24");
+        _Mtrx[1][0] = reader.getAttributeAsFloat("a21");
+        _Mtrx[1][1] = reader.getAttributeAsFloat("a22");
+        _Mtrx[1][2] = reader.getAttributeAsFloat("a23");
+        _Mtrx[1][3] = reader.getAttributeAsFloat("a24");
 
-        _Mtrx[2][0] = (float)reader.getAttributeAsFloat("a31");
-        _Mtrx[2][1] = (float)reader.getAttributeAsFloat("a32");
-        _Mtrx[2][2] = (float)reader.getAttributeAsFloat("a33");
-        _Mtrx[2][3] = (float)reader.getAttributeAsFloat("a34");
+        _Mtrx[2][0] = reader.getAttributeAsFloat("a31");
+        _Mtrx[2][1] = reader.getAttributeAsFloat("a32");
+        _Mtrx[2][2] = reader.getAttributeAsFloat("a33");
+        _Mtrx[2][3] = reader.getAttributeAsFloat("a34");
 
-        _Mtrx[3][0] = (float)reader.getAttributeAsFloat("a41");
-        _Mtrx[3][1] = (float)reader.getAttributeAsFloat("a42");
-        _Mtrx[3][2] = (float)reader.getAttributeAsFloat("a43");
-        _Mtrx[3][3] = (float)reader.getAttributeAsFloat("a44");
+        _Mtrx[3][0] = reader.getAttributeAsFloat("a41");
+        _Mtrx[3][1] = reader.getAttributeAsFloat("a42");
+        _Mtrx[3][2] = reader.getAttributeAsFloat("a43");
+        _Mtrx[3][3] = reader.getAttributeAsFloat("a44");
     }
 }
 
@@ -2707,25 +2715,7 @@ struct Fem::FemMesh::FemMeshInfo FemMesh::getInfo() const
 
     return rtrn;
 }
-//    for (unsigned int i = 0; i < all_elements.size(); i++)
-//        {
-//                // an consistent data structure is only possible
-//                // if the elements are added in the right order
-//                // thus the order is very important
-//                meshds->AddVolumeWithID(
-//                meshds->FindNode(all_elements[i][0]),
-//                meshds->FindNode(all_elements[i][2]),
-//                meshds->FindNode(all_elements[i][1]),
-//                meshds->FindNode(all_elements[i][3]),
-//                meshds->FindNode(all_elements[i][6]),
-//                meshds->FindNode(all_elements[i][5]),
-//                meshds->FindNode(all_elements[i][4]),
-//                meshds->FindNode(all_elements[i][9]),
-//                meshds->FindNode(all_elements[i][7]),
-//                meshds->FindNode(all_elements[i][8]),
-//                element_id[i]
-//            );
-//        }
+
 
 Base::Quantity FemMesh::getVolume() const
 {

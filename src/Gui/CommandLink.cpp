@@ -33,6 +33,7 @@
 #include <App/DocumentObject.h>
 #include <App/Link.h>
 #include <Base/Exception.h>
+#include <Base/Tools.h>
 
 #include "Action.h"
 #include "Application.h"
@@ -50,8 +51,9 @@ FC_LOG_LEVEL_INIT("CommandLink", true, true)
 using namespace Gui;
 
 static void setLinkLabel(App::DocumentObject *obj, const char *doc, const char *name) {
-    const char *label = obj->Label.getValue();
-    Command::doCommand(Command::Doc,"App.getDocument('%s').getObject('%s').Label='%s'",doc,name,label);
+    std::string label = obj->Label.getValue();
+    label = Base::Tools::escapeEncodeString(label);
+    Command::doCommand(Command::Doc,"App.getDocument('%s').getObject('%s').Label='%s'",doc,name,label.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +131,7 @@ void StdCmdLinkMakeGroup::activated(int option) {
     }
 
     for(auto &sel : Selection().getCompleteSelection()) {
-        if(sel.pObject && sel.pObject->getNameInDocument() &&
+        if(sel.pObject && sel.pObject->isAttachedToDocument() &&
            objset.insert(sel.pObject).second)
             objs.push_back(sel.pObject);
     }
@@ -195,7 +197,7 @@ void StdCmdLinkMakeGroup::activated(int option) {
         Command::abortCommand();
         e.ReportException();
     }
-}
+} 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -206,12 +208,9 @@ StdCmdLinkMake::StdCmdLinkMake()
 {
     sGroup        = "Link";
     sMenuText     = QT_TR_NOOP("Make link");
-    static std::string toolTip = std::string("<p>")
-        + QT_TR_NOOP("A Link is an object that references or links to another object in the same "
-        "document, or in another document.Unlike Clones, Links reference the original Shape directly, "
-        " making them more memory efficient which helps with the creation of complex assemblies.")
-        + "</p>";
-    sToolTipText = toolTip.c_str();
+    sToolTipText  = QT_TR_NOOP("A Link is an object that references or links to another object in the same document, "
+                               "or in another document. Unlike Clones, Links reference the original Shape directly, "
+                               "making them more memory-efficient, which helps with the creation of complex assemblies.");
     sWhatsThis    = "Std_LinkMake";
     sStatusTip    = sToolTipText;
     eType         = AlterDoc;
@@ -231,7 +230,7 @@ void StdCmdLinkMake::activated(int) {
 
     std::set<App::DocumentObject*> objs;
     for(auto &sel : Selection().getCompleteSelection()) {
-        if(sel.pObject && sel.pObject->getNameInDocument())
+        if(sel.pObject && sel.pObject->isAttachedToDocument())
            objs.insert(sel.pObject);
     }
 
@@ -296,7 +295,7 @@ void StdCmdLinkMakeRelative::activated(int) {
         std::map<std::pair<App::DocumentObject*,std::string>,
                  std::pair<App::DocumentObject*, std::vector<std::string> > > linkInfo;
         for(auto &sel : Selection().getCompleteSelection(ResolveMode::NoResolve)) {
-            if(!sel.pObject || !sel.pObject->getNameInDocument())
+            if(!sel.pObject || !sel.pObject->isAttachedToDocument())
                 continue;
             auto key = std::make_pair(sel.pObject,
                     Data::noElementName(sel.SubName));
@@ -375,7 +374,7 @@ static void linkConvert(bool unlink) {
         info.inited = true;
         if(unlink) {
             auto linked = obj->getLinkedObject(false);
-            if(!linked || !linked->getNameInDocument() || linked == obj) {
+            if(!linked || !linked->isAttachedToDocument() || linked == obj) {
                 FC_WARN("skip non link");
                 continue;
             }
@@ -410,7 +409,7 @@ static void linkConvert(bool unlink) {
             App::DocumentObject *replaceObj;
             if(unlink) {
                 replaceObj = obj->getLinkedObject(false);
-                if(!replaceObj || !replaceObj->getNameInDocument() || replaceObj == obj)
+                if(!replaceObj || !replaceObj->isAttachedToDocument() || replaceObj == obj)
                     continue;
             }else{
                 auto name = doc->getUniqueObjectName("Link");
@@ -555,10 +554,10 @@ static std::map<App::Document*, std::vector<App::DocumentObject*> > getLinkImpor
     std::map<App::Document*, std::vector<App::DocumentObject*> > objMap;
     for(auto &sel : Selection().getCompleteSelection(ResolveMode::NoResolve)) {
         auto obj = sel.pObject->resolve(sel.SubName);
-        if(!obj || !obj->getNameInDocument())
+        if(!obj || !obj->isAttachedToDocument())
             continue;
         for(auto o : obj->getOutList()) {
-            if(o && o->getNameInDocument() && o->getDocument()!=obj->getDocument()) {
+            if(o && o->isAttachedToDocument() && o->getDocument()!=obj->getDocument()) {
                 objMap[obj->getDocument()].push_back(obj);
                 break;
             }
@@ -693,7 +692,7 @@ static App::DocumentObject *getSelectedLink(bool finalLink, std::string *subname
         return nullptr;
 
     auto linked = linkedVp->getObject();
-    if(!linked || !linked->getNameInDocument())
+    if(!linked || !linked->isAttachedToDocument())
         return nullptr;
 
     if(subname && sels[0].pObject!=sobj && sels[0].SubName) {

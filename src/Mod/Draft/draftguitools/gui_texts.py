@@ -62,7 +62,7 @@ class Text(gui_base_original.Creator):
 
     def Activated(self):
         """Execute when the command is called."""
-        super(Text, self).Activated(name="Text")
+        super().Activated(name="Text")
         if self.ui:
             self.text = ''
             self.ui.sourceCmd = self
@@ -84,7 +84,8 @@ class Text(gui_base_original.Creator):
             Restart (continue) the command if `True`, or if `None` and
             `ui.continueMode` is `True`.
         """
-        super(Text, self).finish(self)
+        self.end_callbacks(self.call)
+        super().finish(self)
         if cont or (cont is None and self.ui and self.ui.continueMode):
             self.Activated()
 
@@ -113,7 +114,8 @@ class Text(gui_base_original.Creator):
         _cmd = 'Draft.make_text'
         _cmd += '('
         _cmd += string + ', '
-        _cmd += 'placement=pl'
+        _cmd += 'placement=pl, '
+        _cmd += 'screen=None, height=None, line_spacing=None'
         _cmd += ')'
         _cmd_list = ['pl = FreeCAD.Placement()',
                      'pl.Rotation.Q = ' + rot,

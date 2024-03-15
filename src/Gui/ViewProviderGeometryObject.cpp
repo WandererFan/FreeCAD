@@ -68,13 +68,13 @@ ViewProviderGeometryObject::ViewProviderGeometryObject()
         b = (float)rand() / fMax;
     }
     else {
-        unsigned long shcol = hGrp->GetUnsigned("DefaultShapeColor", 3435973887UL); // light gray (204,204,204)
+        unsigned long shcol = hGrp->GetUnsigned("DefaultShapeColor", 3435980543UL);
         r = ((shcol >> 24) & 0xff) / 255.0;
         g = ((shcol >> 16) & 0xff) / 255.0;
         b = ((shcol >> 8) & 0xff) / 255.0;
     }
 
-    int initialTransparency = hGrp->GetInt("DefaultShapeTransparency", 0); 
+    int initialTransparency = hGrp->GetInt("DefaultShapeTransparency", 0);
 
     static const char *dogroup = "Display Options";
     static const char *sgroup = "Selection";
@@ -84,6 +84,7 @@ ViewProviderGeometryObject::ViewProviderGeometryObject()
     ADD_PROPERTY_TYPE(Transparency, (initialTransparency), osgroup, App::Prop_None, "Set object transparency");
     Transparency.setConstraints(&intPercent);
     App::Material mat(App::Material::DEFAULT);
+    mat.transparency = (float)initialTransparency / 100.0f;
     ADD_PROPERTY_TYPE(ShapeMaterial,(mat), osgroup, App::Prop_None, "Shape material");
     ADD_PROPERTY_TYPE(BoundingBox, (false), dogroup, App::Prop_None, "Display object bounding box");
     ADD_PROPERTY_TYPE(Selectable, (true), sgroup, App::Prop_None, "Set if the object is selectable in the 3d view");

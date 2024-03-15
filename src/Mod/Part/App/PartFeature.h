@@ -64,6 +64,9 @@ public:
 
     PyObject* getPyObject() override;
 
+    std::pair<std::string,std::string> getElementName(
+            const char *name, ElementNameType type=Normal) const override;
+
     TopLoc_Location getLocation() const;
 
     DocumentObject *getSubObject(const char *subname, PyObject **pyObj,
@@ -106,6 +109,9 @@ public:
         auto owner = getShapeOwner(obj,subname);
         return owner && owner->isDerivedFrom(getClassTypeId());
     }
+
+    static Feature*
+    create(const TopoShape& shape, const char* name = nullptr, App::Document* document = nullptr);
 
 protected:
     /// recompute only this object

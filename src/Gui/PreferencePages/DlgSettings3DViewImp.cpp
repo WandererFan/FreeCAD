@@ -85,6 +85,7 @@ void DlgSettings3DViewImp::saveSettings()
     ui->FloatSpinBox_EyeDistance->onSave();
     ui->checkBoxBacklight->onSave();
     ui->backlightColor->onSave();
+    ui->axisLetterColor->onSave();
     ui->sliderIntensity->onSave();
     ui->radioPerspective->onSave();
     ui->radioOrthographic->onSave();
@@ -101,6 +102,7 @@ void DlgSettings3DViewImp::loadSettings()
     ui->FloatSpinBox_EyeDistance->onRestore();
     ui->checkBoxBacklight->onRestore();
     ui->backlightColor->onRestore();
+    ui->axisLetterColor->onRestore();
     ui->sliderIntensity->onRestore();
     ui->radioPerspective->onRestore();
     ui->radioOrthographic->onRestore();
@@ -133,6 +135,21 @@ void DlgSettings3DViewImp::loadSettings()
     index = ui->boxMarkerSize->findData(QVariant(current));
     if (index < 0) index = 2;
     ui->boxMarkerSize->setCurrentIndex(index);
+}
+
+void DlgSettings3DViewImp::resetSettingsToDefaults()
+{
+    ParameterGrp::handle hGrp;
+    hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    //reset "AntiAliasing" parameter
+    hGrp->RemoveInt("AntiAliasing");
+    //reset "RenderCache" parameter
+    hGrp->RemoveInt("RenderCache");
+    //reset "MarkerSize" parameter
+    hGrp->RemoveInt("MarkerSize");
+
+    //finally reset all the parameters associated to Gui::Pref* widgets
+    PreferencePage::resetSettingsToDefaults();
 }
 
 /**

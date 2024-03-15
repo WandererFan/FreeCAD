@@ -123,9 +123,11 @@ public:
     void setViewer(View3DInventorViewer*);
 
     void setAnimationEnabled(const SbBool enable);
+    void setSpinningAnimationEnabled(const SbBool enable);
     SbBool isAnimationEnabled() const;
-
+    SbBool isSpinningAnimationEnabled() const;
     SbBool isAnimating() const;
+    SbBool isSpinning() const;
     void startAnimating(const std::shared_ptr<NavigationAnimation>& animation, bool wait = false) const;
     void stopAnimating() const;
 
@@ -146,8 +148,6 @@ public:
     RotationCenterModes getRotationCenterMode() const;
     void setRotationCenter(const SbVec3f& cnt);
     SbVec3f getFocalPoint() const;
-
-    void redraw();
 
     SoCamera* getCamera() const;
     void setCameraOrientation(const SbRotation& orientation, SbBool moveToCenter = false);
@@ -242,6 +242,7 @@ protected:
 
     View3DInventorViewer* viewer{nullptr};
     NavigationAnimator* animator;
+    SbBool animationEnabled;
     ViewerMode currentmode;
     SoMouseButtonEvent mouseDownConsumedEvent;
     SbVec2f lastmouseposition;
@@ -256,6 +257,9 @@ protected:
     SbBool invertZoom;
     SbBool zoomAtCursor;
     float zoomStep;
+    SbBool hasDragged;
+    SbBool hasPanned;
+    SbBool hasZoomed;
 
     /** @name Mouse model */
     //@{
@@ -266,7 +270,7 @@ protected:
 
     /** @name Spinning data */
     //@{
-    SbBool spinanimatingallowed;
+    SbBool spinningAnimationEnabled;
     int spinsamplecounter;
     SbRotation spinincrement;
     SbSphereSheetProjector * spinprojector;

@@ -28,6 +28,7 @@
 #include <array>
 #endif
 
+#include <Base/Tools.h>
 #include "Quantity.h"
 #include "Exception.h"
 #include "UnitsApi.h"
@@ -255,6 +256,8 @@ QString Quantity::getSafeUserString() const
             retString = QStringLiteral("%1 %2").arg(this->myValue).arg(this->getUnit().getString());
         }
     }
+    retString =
+        QString::fromStdString(Base::Tools::escapeQuotesFromString(retString.toStdString()));
     return retString;
 }
 
@@ -491,7 +494,7 @@ double num_change(char* yytext, char dez_delim, char grp_delim)
 #endif
 
 // error func
-void Quantity_yyerror(char* errorinfo)
+void Quantity_yyerror(const char* errorinfo)
 {
     throw Base::ParserError(errorinfo);
 }

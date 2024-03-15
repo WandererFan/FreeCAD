@@ -221,7 +221,7 @@
       <location filename="../../Command.cpp" line="1524"/>
       <location filename="../../Command.cpp" line="1526"/>
       <source>Fill holes of the mesh</source>
-      <translation>Riempie i buchi della mesh</translation>
+      <translation>Riempi i buchi della mesh</translation>
     </message>
   </context>
   <context>
@@ -473,7 +473,7 @@
     <message>
       <location filename="../../Command.cpp" line="1136"/>
       <source>Remove components...</source>
-      <translation>Rimuovi componente...</translation>
+      <translation>Rimuovi componenti...</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1137"/>

@@ -51,7 +51,6 @@ public:
     void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = nullptr ) override;
     QPainterPath shape() const override { return path(); }
 
-    void setHighlighted(bool state);
     virtual void setPrettyNormal();
     virtual void setPrettyPre();
     virtual void setPrettySel();
@@ -73,6 +72,8 @@ public:
     void setFillColor(QColor c);
     QColor getFillColor() { return m_colDefFill; }
     void setFillOverride(bool b) { m_fillOverride = b; }
+
+    virtual void setCurrentPen();
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;

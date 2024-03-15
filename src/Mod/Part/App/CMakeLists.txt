@@ -216,6 +216,8 @@ SET(Features_SRCS
     AttachExtension.cpp
     PrismExtension.cpp
     PrismExtension.h
+    VectorAdapter.cpp
+    VectorAdapter.h
 )
 SOURCE_GROUP("Features" FILES ${Features_SRCS})
 
@@ -500,6 +502,8 @@ SET(Part_SRCS
     Attacher.h
     AppPart.cpp
     AppPartPy.cpp
+    BRepMesh.cpp
+    BRepMesh.h
     BRepOffsetAPI_MakeOffsetFix.cpp
     BRepOffsetAPI_MakeOffsetFix.h
     BSplineCurveBiArcs.cpp
@@ -530,9 +534,17 @@ SET(Part_SRCS
     ProgressIndicator.h
     TopoShape.cpp
     TopoShape.h
+    TopoShapeCache.cpp
+    TopoShapeCache.h
+    TopoShapeExpansion.cpp
+    TopoShapeMapper.h
+    TopoShapeMapper.cpp
     TopoShapeOpCode.h
     edgecluster.cpp
     edgecluster.h
+    MeasureClient.cpp
+    MeasureClient.h
+    MeasureInfo.h
     modelRefine.cpp
     modelRefine.h
     Tools.cpp

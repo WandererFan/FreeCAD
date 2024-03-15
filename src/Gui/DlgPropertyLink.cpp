@@ -143,7 +143,7 @@ QList<App::SubObjectT> DlgPropertyLink::getLinksFromProperty(const App::Property
 
 QString DlgPropertyLink::formatObject(App::Document *ownerDoc, App::DocumentObject *obj, const char *sub)
 {
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return QLatin1String("?");
 
     const char *objName = obj->getNameInDocument();
@@ -241,7 +241,7 @@ void DlgPropertyLink::init(const App::DocumentObjectT &prop, bool tryFilter) {
 
     objProp  = prop;
     auto owner = objProp.getObject();
-    if(!owner || !owner->getNameInDocument())
+    if(!owner || !owner->isAttachedToDocument())
         return;
 
     ui->searchBox->setDocumentObject(owner);
@@ -525,7 +525,14 @@ void DlgPropertyLink::onItemSelectionChanged()
             auto vp = Base::freecad_dynamic_cast<Gui::ViewProviderDocumentObject>(
                     doc->getViewProvider(obj));
             if(vp) {
-                doc->setActiveView(vp, Gui::View3DInventor::getClassTypeId());
+                // If the view provider uses a special window for rendering, switch to it
+                MDIView *view = vp->getMDIView();
+                if (view) {
+                    doc->setActiveWindow(view);
+                }
+                else {
+                    doc->setActiveView(vp, Gui::View3DInventor::getClassTypeId());
+                }
             }
         }
     }
@@ -567,7 +574,7 @@ QTreeWidgetItem *DlgPropertyLink::findItem(
     if(pfound)
         *pfound = false;
 
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return nullptr;
 
     std::vector<App::DocumentObject *> sobjs;
@@ -887,7 +894,7 @@ void DlgPropertyLink::itemSearch(const QString &text, bool select) {
 QTreeWidgetItem *DlgPropertyLink::createItem(
         App::DocumentObject *obj, QTreeWidgetItem *parent)
 {
-    if(!obj || !obj->getNameInDocument())
+    if(!obj || !obj->isAttachedToDocument())
         return nullptr;
 
     if(inList.find(obj)!=inList.end())

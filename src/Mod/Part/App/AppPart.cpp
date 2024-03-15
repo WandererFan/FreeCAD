@@ -184,6 +184,8 @@
 #include <ShapeUpgrade/UnifySameDomainPy.h>
 
 #include <OCAF/ImportExportSettings.h>
+#include "MeasureClient.h"
+
 
 namespace Part {
 extern PyObject* initModule();
@@ -398,6 +400,7 @@ PyMOD_INIT_FUNC(Part)
     Part::PropertyGeometryList  ::init();
     Part::PropertyShapeHistory  ::init();
     Part::PropertyFilletEdges   ::init();
+    Part::PropertyShapeCache    ::init();
     Part::PropertyTopoShapeList ::init();
 
     Part::FaceMaker             ::init();
@@ -541,10 +544,12 @@ PyMOD_INIT_FUNC(Part)
     Part::Geom2dOffsetCurve       ::init();
     Part::Geom2dTrimmedCurve      ::init();
 
+
     IGESControl_Controller::Init();
     STEPControl_Controller::Init();
 
     OCAF::ImportExportSettings::initialize();
-
+    Part::MeasureClient::initialize();
+    
     PyMOD_Return(partModule);
 }

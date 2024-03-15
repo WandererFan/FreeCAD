@@ -579,7 +579,7 @@ Proszę wybrać inny kształt.</translation>
     <name>MeshPart_CreateFlatMesh</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="49"/>
-      <source>Unwrap Mesh</source>
+      <source>Unwrap mesh</source>
       <translation>Rozwiń siatkę</translation>
     </message>
     <message>
@@ -592,7 +592,7 @@ Proszę wybrać inny kształt.</translation>
     <name>MeshPart_CreateFlatFace</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="88"/>
-      <source>Unwrap Face</source>
+      <source>Unwrap face</source>
       <translation>Rozwiń ścianę</translation>
     </message>
     <message>

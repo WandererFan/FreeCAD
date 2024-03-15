@@ -242,8 +242,9 @@ int DrawPage::addView(App::DocumentObject* docObj)
     }
     DrawView* view = static_cast<DrawView*>(docObj);
 
-    //position all new views in center of Page (exceptDVDimension)
-    if (!docObj->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())
+    //position all new views without owners in center of Page (exceptDVDimension)
+    if (!view->claimParent()
+        && !docObj->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())
         && !docObj->isDerivedFrom(TechDraw::DrawViewBalloon::getClassTypeId())) {
         view->X.setValue(getPageWidth() / 2.0);
         view->Y.setValue(getPageHeight() / 2.0);
@@ -279,8 +280,7 @@ int DrawPage::removeView(App::DocumentObject* docObj)
         return -1;
     }
 
-    const char* name = docObj->getNameInDocument();
-    if (!name) {
+    if (!docObj->isAttachedToDocument()) {
         return -1;
     }
     const std::vector<App::DocumentObject*> currViews = Views.getValues();
@@ -292,7 +292,7 @@ int DrawPage::removeView(App::DocumentObject* docObj)
             continue;
         }
 
-        std::string viewName = name;
+        std::string viewName = docObj->getNameInDocument();
         if (viewName.compare((*it)->getNameInDocument()) != 0) {
             newViews.push_back((*it));
         }
@@ -381,7 +381,7 @@ void DrawPage::unsetupObject()
         const std::vector<App::DocumentObject*> currViews = Views.getValues();
         for (auto& v : currViews) {
             //NOTE: the order of objects in Page.Views does not reflect the object hierarchy
-            //      this means that a ProjGroup could be deleted before it's child ProjGroupItems.
+            //      this means that a ProjGroup could be deleted before its child ProjGroupItems.
             //      this causes problems when removing objects from document
             if (v->isAttachedToDocument()) {
                 std::string viewName = v->getNameInDocument();

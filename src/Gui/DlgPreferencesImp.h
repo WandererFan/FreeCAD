@@ -28,6 +28,7 @@
 
 #include <QDialog>
 #include <QStandardItemModel>
+#include <QStackedWidget>
 #include <memory>
 #include <FCGlobal.h>
 
@@ -45,10 +46,14 @@ public:
     QWidget* getWidget() const;
     void setWidget(QWidget* widget);
 
+    bool isExpanded() const;
+    void setExpanded(bool expanded);
+
     static constexpr char const* PropertyName = "SettingsPageItem";
 
 private:
-    QWidget *_widget = nullptr;
+    QWidget* _widget = nullptr;
+    bool _expanded = false;
 };
 
 /**
@@ -150,10 +155,15 @@ protected:
 protected Q_SLOTS:
     void onButtonBoxClicked(QAbstractButton*);
     void onPageSelected(const QModelIndex &index);
+    void onStackWidgetChange(int index);
+
+    void onGroupExpanded(const QModelIndex &index);
+    void onGroupCollapsed(const QModelIndex &index);
 
 private:
     /** @name for internal use only */
     //@{
+    void setupConnections();
     void setupPages();
     void reloadPages();
 
@@ -168,9 +178,14 @@ private:
     void restorePageDefaults(PreferencesPageItem* item);
     void restartIfRequired();
 
-    void updatePageDependentLabels();
+    void updatePageDependentWidgets();
 
     QPixmap loadIconForGroup(const std::string& name) const;
+
+    void addSizeHint(QWidget*);
+    int minimumPageWidth() const;
+    int minimumDialogWidth(int) const;
+    void expandToMinimumDialogWidth();
     //@}
 
 private:
@@ -179,6 +194,7 @@ private:
     static std::list<TGroupPages> _pages; /**< Name of all registered preference pages */
 
     QStandardItemModel _model;
+    QSize _sizeHintOfPages;
 
     struct Group {
         std::string iconName;

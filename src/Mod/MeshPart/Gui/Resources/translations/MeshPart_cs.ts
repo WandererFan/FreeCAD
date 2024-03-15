@@ -579,8 +579,8 @@ Vyberte jiný tvar, prosím.</translation>
     <name>MeshPart_CreateFlatMesh</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="49"/>
-      <source>Unwrap Mesh</source>
-      <translation>Rozbalte síť</translation>
+      <source>Unwrap mesh</source>
+      <translation>Rozbalit síť</translation>
     </message>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="52"/>
@@ -592,8 +592,8 @@ Vyberte jiný tvar, prosím.</translation>
     <name>MeshPart_CreateFlatFace</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="88"/>
-      <source>Unwrap Face</source>
-      <translation>Rozbalit obličej</translation>
+      <source>Unwrap face</source>
+      <translation>Rozbalit plochu</translation>
     </message>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="91"/>

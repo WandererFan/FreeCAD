@@ -43,6 +43,7 @@ using namespace TechDrawGui;
     qApp->translate("Workbench", "Stacking");
     qApp->translate("Workbench", "Add Lines");
     qApp->translate("Workbench", "Add Vertices");
+    qApp->translate("Workbench", "Page");
     qApp->translate("Workbench", "TechDraw");
     // Translations for View > Toolbars
     qApp->translate("Workbench", "TechDraw Annotation");
@@ -57,8 +58,11 @@ using namespace TechDrawGui;
     qApp->translate("Workbench", "TechDraw Stacking");
     qApp->translate("Workbench", "TechDraw Tool Attributes");
     qApp->translate("Workbench", "TechDraw Views");
+    qApp->translate("Workbench", "Views From Other Workbenches");
+    qApp->translate("Workbench", "Clipped Views");
+    qApp->translate("Workbench", "Hatching");
+    qApp->translate("Workbench", "Symbols");
     qApp->translate("Workbench", "Views");
-    qApp->translate("Workbench", "Extensions: Centerlines/Threading");
 #endif
 
 TYPESYSTEM_SOURCE(TechDrawGui::Workbench, Gui::StdWorkbench)
@@ -112,6 +116,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *toolattrib << "TechDraw_ExtensionCascadeObliqueDimension";
     *toolattrib << "Separator";
     *toolattrib << "TechDraw_ExtensionAreaAnnotation";
+    *toolattrib << "TechDraw_ExtensionArcLengthAnnotation";
     *toolattrib << "TechDraw_ExtensionCustomizeFormat";
 
     // extension: centerlines and threading
@@ -126,6 +131,8 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *toolcenter << "TechDraw_ExtensionThreadBoltBottom";
     *toolcenter << "Separator";
     *toolcenter << "TechDraw_ExtensionVertexAtIntersection";
+    *toolcenter << "TechDraw_CommandAddOffsetVertex";
+    *toolcenter << "Separator";
     *toolcenter << "TechDraw_ExtensionDrawCosmCircle";
     *toolcenter << "TechDraw_ExtensionDrawCosmArc";
     *toolcenter << "TechDraw_ExtensionDrawCosmCircle3Points";
@@ -147,6 +154,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     *tooldimensions << "Separator";
     *tooldimensions << "TechDraw_ExtensionInsertDiameter";
     *tooldimensions << "TechDraw_ExtensionInsertSquare";
+    *tooldimensions << "TechDraw_ExtensionInsertRepetition";
     *tooldimensions << "TechDraw_ExtensionRemovePrefixChar";
     *tooldimensions << "Separator";
     *tooldimensions << "TechDraw_ExtensionIncreaseDecimal";
@@ -193,6 +201,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     pages->setCommand("Page");
     *pages << "TechDraw_PageDefault";
     *pages << "TechDraw_PageTemplate";
+    *pages << "TechDraw_FillTemplateFields";
     *pages << "TechDraw_RedrawPage";
     *pages << "TechDraw_PrintAll";
     *pages << "Separator";
@@ -284,6 +293,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     pages->setCommand("TechDraw Pages");
     *pages << "TechDraw_PageDefault";
     *pages << "TechDraw_PageTemplate";
+    *pages << "TechDraw_FillTemplateFields";
     *pages << "TechDraw_RedrawPage";
     *pages << "TechDraw_PrintAll";
 
@@ -337,13 +347,15 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     *extattribs << "TechDraw_ExtensionPosChainDimensionGroup";
     *extattribs << "TechDraw_ExtensionCascadeDimensionGroup";
     *extattribs << "TechDraw_ExtensionAreaAnnotation";
+    *extattribs << "TechDraw_ExtensionArcLengthAnnotation";
     *extattribs << "TechDraw_ExtensionCustomizeFormat";
 
     Gui::ToolBarItem* extcenter = new Gui::ToolBarItem(root);
     extcenter->setCommand("TechDraw Centerlines");
     *extcenter << "TechDraw_ExtensionCircleCenterLinesGroup";
     *extcenter << "TechDraw_ExtensionThreadsGroup";
-    *extcenter << "TechDraw_ExtensionVertexAtIntersection";
+    *extcenter << "TechDraw_CommandVertexCreationGroup";
+    //*extcenter << "TechDraw_ExtensionVertexAtIntersection";
     *extcenter << "TechDraw_ExtensionDrawCirclesGroup";
     *extcenter << "TechDraw_ExtensionLinePPGroup";
 
@@ -394,6 +406,7 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     pages->setCommand("TechDraw Pages");
     *pages << "TechDraw_PageDefault";
     *pages << "TechDraw_PageTemplate";
+    *pages << "TechDraw_FillTemplateFields";
     *pages << "TechDraw_RedrawPage";
     *pages << "TechDraw_PrintAll";
 
@@ -447,13 +460,15 @@ Gui::ToolBarItem* Workbench::setupCommandBars() const
     *extattribs << "TechDraw_ExtensionPosChainDimensionGroup";
     *extattribs << "TechDraw_ExtensionCascadeDimensionGroup";
     *extattribs << "TechDraw_ExtensionAreaAnnotation";
+    *extattribs << "TechDraw_ExtensionArcLengthAnnotation";
     *extattribs << "TechDraw_ExtensionCustomizeFormat";
 
     Gui::ToolBarItem* extcenter = new Gui::ToolBarItem(root);
     extcenter->setCommand("TechDraw Centerlines");
     *extcenter << "TechDraw_ExtensionCircleCenterLinesGroup";
     *extcenter << "TechDraw_ExtensionThreadsGroup";
-    *extcenter << "TechDraw_ExtensionVertexAtIntersection";
+    *extcenter << "TechDraw_CommandVertexCreationGroup";
+    //*extcenter << "TechDraw_ExtensionVertexAtIntersection";
     *extcenter << "TechDraw_ExtensionDrawCirclesGroup";
     *extcenter << "TechDraw_ExtensionLinePPGroup";
 

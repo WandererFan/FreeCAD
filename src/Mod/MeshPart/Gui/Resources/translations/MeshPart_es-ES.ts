@@ -49,7 +49,7 @@ Este comando solo funciona con un objeto 'malla'.</translation>
     <message>
       <location filename="../../Command.cpp" line="59"/>
       <source>Create mesh from shape...</source>
-      <translation>Crear malla de forma ...</translation>
+      <translation>Crear malla desde forma...</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="60"/>
@@ -579,8 +579,8 @@ Seleccione una forma diferente, por favor.</translation>
     <name>MeshPart_CreateFlatMesh</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="49"/>
-      <source>Unwrap Mesh</source>
-      <translation>Desenvolver Malla</translation>
+      <source>Unwrap mesh</source>
+      <translation>Desenvolver malla</translation>
     </message>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="52"/>
@@ -592,8 +592,8 @@ Seleccione una forma diferente, por favor.</translation>
     <name>MeshPart_CreateFlatFace</name>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="88"/>
-      <source>Unwrap Face</source>
-      <translation>Desenvolver Cara</translation>
+      <source>Unwrap face</source>
+      <translation>Desenvolver cara</translation>
     </message>
     <message>
       <location filename="../../MeshFlatteningCommand.py" line="91"/>

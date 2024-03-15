@@ -102,7 +102,9 @@ public:
     virtual void isVisible(bool state);
     virtual bool isVisible();
 
+    virtual bool getGroupSelection();
     virtual void setGroupSelection(bool isSelected);
+    virtual void setGroupSelection(bool isSelected, const std::vector<std::string> &subNames);
 
     virtual void draw();
     virtual void drawCaption();
@@ -153,16 +155,13 @@ public:
     static int exactFontSize(std::string fontFamily, double nominalSize);
 
     virtual void removeChild(QGIView* child);
-
     virtual void addArbitraryItem(QGraphicsItem* qgi);
+    virtual void switchParentItem(QGIView *targetParent);
 
     // Mouse handling
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
-
-public Q_SLOTS:
-    virtual void onSourceChange(TechDraw::DrawView* newParent);
 
 protected:
     QGIView* getQGIVByName(std::string name);

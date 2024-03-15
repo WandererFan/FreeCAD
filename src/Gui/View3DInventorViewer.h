@@ -41,6 +41,8 @@
 
 #include "Namespace.h"
 #include "Selection.h"
+
+#include "CornerCrossLetters.h"
 #include "View3DInventorSelection.h"
 #include "Quarter/SoQTQuarterAdaptor.h"
 
@@ -159,16 +161,18 @@ public:
     bool searchNode(SoNode*) const;
 
     void setAnimationEnabled(bool enable);
+    void setSpinningAnimationEnabled(bool enable);
     bool isAnimationEnabled() const;
-
-    void setPopupMenuEnabled(bool on);
-    bool isPopupMenuEnabled() const;
-
+    bool isSpinningAnimationEnabled() const;
+    bool isAnimating() const;
+    bool isSpinning() const;
     void startAnimation(const SbRotation& orientation, const SbVec3f& rotationCenter,
                         const SbVec3f& translation, int duration = -1, bool wait = false);
     void startSpinningAnimation(const SbVec3f& axis, float velocity);
     void stopAnimating();
-    bool isAnimating() const;
+
+    void setPopupMenuEnabled(bool on);
+    bool isPopupMenuEnabled() const;
 
     void setFeedbackVisibility(bool enable);
     bool isFeedbackVisible() const;
@@ -314,6 +318,12 @@ public:
     /** Returns the 3d point on the focal plane to the given 2d point. */
     SbVec3f getPointOnFocalPlane(const SbVec2s&) const;
 
+    /** Returns the 3d point on a line to the given 2d point. */
+    SbVec3f getPointOnLine(const SbVec2s&, const SbVec3f& axisCenter, const SbVec3f& axis) const;
+
+    /** Returns the 3d point on the XY plane of a placement to the given 2d point. */
+    SbVec3f getPointOnXYPlaneOfPlacement(const SbVec2s&, Base::Placement&) const;
+
     /** Returns the 2d coordinates on the viewport to the given 3d point. */
     SbVec2s getPointOnViewport(const SbVec3f&) const;
 
@@ -412,10 +422,12 @@ public:
                                     const SbColor& midColor);
     void setNavigationType(Base::Type);
 
+    void setAxisLetterColor(const SbColor& color);
     void setAxisCross(bool on);
     bool hasAxisCross();
 
     void showRotationCenter(bool show);
+    void changeRotationCenterPosition(const SbVec3f& newCenter);
 
     void setEnabledFPSCounter(bool on);
     void setEnabledNaviCube(bool on);
@@ -533,7 +545,11 @@ private:
 
     ViewerEventFilter* viewerEventFilter;
 
-    PyObject *_viewerPy;
+    PyObject* _viewerPy;
+
+    static unsigned char XPM_pixel_data[YPM_WIDTH * YPM_HEIGHT * YPM_BYTES_PER_PIXEL + 1];
+    static unsigned char YPM_pixel_data[YPM_WIDTH * YPM_HEIGHT * YPM_BYTES_PER_PIXEL + 1];
+    static unsigned char ZPM_pixel_data[ZPM_WIDTH * ZPM_HEIGHT * ZPM_BYTES_PER_PIXEL + 1];
 
     // friends
     friend class NavigationStyle;

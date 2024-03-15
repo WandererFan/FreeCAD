@@ -180,15 +180,19 @@ PyMethodDef Application::Methods[] = {
      "There is an active sequencer during document restore and recomputation. User may\n"
      "abort the operation by pressing the ESC key. Once detected, this function will\n"
      "trigger a Base.FreeCADAbort exception."},
+    {"addMeasureType",  (PyCFunction) Application::sAddMeasureType, METH_VARARGS,
+     "Register a measure type"},
+     {"getMeasureTypes",  (PyCFunction) Application::sGetMeasureTypes, METH_VARARGS,
+     "Get all measure types"},
     {nullptr, nullptr, 0, nullptr} /* Sentinel */
 };
 
 
 PyObject* Application::sLoadFile(PyObject * /*self*/, PyObject *args)
 {
-    char *path;
-    char *doc="";
-    char *mod="";
+    const char *path;
+    const char *doc="";
+    const char *mod="";
     if (!PyArg_ParseTuple(args, "s|ss", &path, &doc, &mod))
         return nullptr;
     try {
@@ -398,7 +402,7 @@ PyObject* Application::sGetParam(PyObject * /*self*/, PyObject *args)
 
 PyObject* Application::sSaveParameter(PyObject * /*self*/, PyObject *args)
 {
-    char *pstr = "User parameter";
+    const char *pstr = "User parameter";
     if (!PyArg_ParseTuple(args, "|s", &pstr))
         return nullptr;
 
@@ -968,3 +972,35 @@ PyObject *Application::sCheckAbort(PyObject * /*self*/, PyObject *args)
         Py_Return;
     }PY_CATCH
 }
+
+PyObject* Application::sAddMeasureType(PyObject * /*self*/, PyObject *args)
+{
+    PyObject *pyobj = Py_None;
+    char *id, *label;
+
+    if (!PyArg_ParseTuple(args, "ssO", &id, &label, &pyobj))
+        return nullptr;
+
+    GetApplication().addMeasureType(
+        new App::MeasureType{id, label, "", nullptr, nullptr, true, pyobj}
+    );
+
+    Py_Return;
+}
+
+PyObject* Application::sGetMeasureTypes(PyObject * /*self*/, PyObject *args)
+{
+    Py::List types;
+    for (auto & it : GetApplication().getMeasureTypes()) {
+        Py::Tuple type(3);
+        type.setItem(0, Py::String(it->identifier));
+        type.setItem(1, Py::String(it->label));
+        type.setItem(2, Py::Object(it->pythonClass));
+
+        types.append(type);
+        }
+
+    return Py::new_reference_to(types);
+}
+
+

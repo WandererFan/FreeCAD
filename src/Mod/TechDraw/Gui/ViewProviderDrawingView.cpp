@@ -85,11 +85,10 @@ void ViewProviderDrawingView::attach(App::DocumentObject *pcFeat)
     //NOLINTEND
     auto feature = getViewObject();
     if (feature) {
-        const char* temp = feature->getNameInDocument();
-        if (temp) {
+        if (feature->isAttachedToDocument()) {
             // it could happen that feature is not completely in the document yet and getNameInDocument returns
             // nullptr, so we only update m_myName if we got a valid string.
-            m_myName = temp;
+            m_myName = feature->getNameInDocument();
         }
         connectGuiRepaint = feature->signalGuiPaint.connect(bnd);
         connectProgressMessage = feature->signalProgressMessage.connect(bndProgressMessage);
@@ -221,12 +220,45 @@ void ViewProviderDrawingView::finishRestoring()
 
 void ViewProviderDrawingView::updateData(const App::Property* prop)
 {
+    TechDraw::DrawView *obj = getViewObject();
+    App::PropertyLink *ownerProp = obj->getOwnerProperty();
+
     //only move the view on X, Y change
-    if (prop == &(getViewObject()->X)  ||
-        prop == &(getViewObject()->Y) ){
+    if (prop == &obj->X
+        || prop == &obj->Y) {
         QGIView* qgiv = getQView();
         if (qgiv) {
             qgiv->QGIView::updateView(true);
+
+            // Update also the owner/parent view, if there is any
+            if (ownerProp) {
+                auto owner = dynamic_cast<TechDraw::DrawView *>(ownerProp->getValue());
+                if (owner) {
+                    auto page = dynamic_cast<QGSPage *>(qgiv->scene());
+                    if (page) {
+                        QGIView *ownerView = page->getQGIVByName(owner->getNameInDocument());
+                        if (ownerView) {
+                            ownerView->updateView();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else if (ownerProp && prop == ownerProp) {
+        QGIView* qgiv = getQView();
+        if (qgiv) {
+            QGIView *ownerView = nullptr;
+            auto owner = dynamic_cast<TechDraw::DrawView *>(ownerProp->getValue());
+            if (owner) {
+                auto page = dynamic_cast<QGSPage *>(qgiv->scene());
+                if (page) {
+                    ownerView = page->getQGIVByName(owner->getNameInDocument());
+                }
+            }
+
+            qgiv->switchParentItem(ownerView);
+            qgiv->updateView();
         }
     }
 

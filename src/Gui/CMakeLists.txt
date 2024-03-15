@@ -91,6 +91,7 @@ include_directories(
     ${QtSvgWidgets_INCLUDE_DIRS}
     ${QtNetwork_INCLUDE_DIRS}
     ${QtUiTools_INCLUDE_DIRS}
+    ${QtXml_INCLUDE_DIRS}
 )
 list(APPEND FreeCADGui_LIBS
     ${QtCore_LIBRARIES}
@@ -435,6 +436,7 @@ SET(Dialog_CPP_SRCS
     DownloadManager.cpp
     DocumentRecovery.cpp
     TaskElementColors.cpp
+    TaskMeasure.cpp
     DlgObjectSelection.cpp
     DlgAddProperty.cpp
     VectorListEditor.cpp
@@ -475,6 +477,7 @@ SET(Dialog_HPP_SRCS
     DownloadManager.h
     DocumentRecovery.h
     TaskElementColors.h
+    TaskMeasure.h
     DlgObjectSelection.h
     DlgAddProperty.h
     VectorListEditor.h
@@ -531,7 +534,6 @@ SET(Dialog_Customize_CPP_SRCS
     DlgCustomizeSpNavSettings.cpp
     DlgKeyboardImp.cpp
     DlgToolbarsImp.cpp
-    QListWidgetCustom.cpp
     ListWidgetDragBugFix.cpp
 )
 SET(Dialog_Customize_HPP_SRCS
@@ -541,7 +543,6 @@ SET(Dialog_Customize_HPP_SRCS
     DlgCustomizeSpNavSettings.h
     DlgKeyboardImp.h
     DlgToolbarsImp.h
-    QListWidgetCustom.h
     ListWidgetDragBugFix.h
 )
 SET(Dialog_Customize_SRCS
@@ -635,7 +636,6 @@ SET(Dock_Windows_CPP_SRCS
     ToolBox.cpp
     Tree.cpp
     TreeView.cpp
-    ProjectView.cpp
     DAGView/DAGView.cpp
     DAGView/DAGModel.cpp
     DAGView/DAGRectItem.cpp
@@ -651,7 +651,6 @@ SET(Dock_Windows_HPP_SRCS
     ToolBox.h
     Tree.h
     TreeView.h
-    ProjectView.h
     DAGView/DAGView.h
     DAGView/DAGModel.h
     DAGView/DAGRectItem.h
@@ -830,7 +829,6 @@ SET(View3D_CPP_SRCS
     SplitView3DInventor.cpp
     View.cpp
     View3DInventor.cpp
-    View3DInventorExamples.cpp
     View3DInventorSelection.cpp
     View3DInventorViewer.cpp
     View3DInventorRiftViewer.cpp
@@ -854,7 +852,6 @@ SET(View3D_SRCS
     SplitView3DInventor.h
     View.h
     View3DInventor.h
-    View3DInventorExamples.h
     View3DInventorSelection.h
     View3DInventorViewer.h
     View3DPy.h
@@ -900,6 +897,7 @@ SET(Viewprovider_CPP_SRCS
     ViewProviderGroupExtension.cpp
     ViewProviderGeoFeatureGroupExtension.cpp
     ViewProviderOriginGroupExtension.cpp
+    ViewProviderSuppressibleExtension.cpp
     ViewProviderAnnotation.cpp
     ViewProviderDocumentObject.cpp
     ViewProviderDocumentObjectGroup.cpp
@@ -928,6 +926,7 @@ SET(Viewprovider_CPP_SRCS
     ViewProviderLink.cpp
     LinkViewPyImp.cpp
     ViewProviderLinkPyImp.cpp
+    ViewProviderVarSet.cpp
     AxisOriginPyImp.cpp
     AxisOrigin.cpp
 )
@@ -962,6 +961,7 @@ SET(Viewprovider_SRCS
     ViewProviderMaterialObject.h
     ViewProviderTextDocument.h
     ViewProviderLink.h
+    ViewProviderVarSet.h
     AxisOrigin.h
 )
 SOURCE_GROUP("View3D\\Viewprovider" FILES ${Viewprovider_SRCS})
@@ -987,13 +987,13 @@ SET(Inventor_CPP_SRCS
     SoFCSelectionAction.cpp
     SoFCVectorizeSVGAction.cpp
     SoFCVectorizeU3DAction.cpp
-    SoNavigationDragger.cpp
     SoAxisCrossKit.cpp
     SoTextLabel.cpp
     SoDatumLabel.cpp
     SoTouchEvents.cpp
     SoMouseWheelEvent.cpp
     SoFCCSysDragger.cpp
+    ArcEngine.cpp
 )
 SET(Inventor_SRCS
     ${Inventor_CPP_SRCS}
@@ -1016,13 +1016,13 @@ SET(Inventor_SRCS
     SoFCSelectionAction.h
     SoFCVectorizeSVGAction.h
     SoFCVectorizeU3DAction.h
-    SoNavigationDragger.h
     SoAxisCrossKit.h
     SoTextLabel.h
     SoDatumLabel.h
     SoTouchEvents.h
     SoMouseWheelEvent.h
     SoFCCSysDragger.h
+    ArcEngine.h
 )
 SOURCE_GROUP("View3D\\Inventor" FILES ${Inventor_SRCS})
 
@@ -1195,6 +1195,7 @@ SET(FreeCADGui_CPP_SRCS
     Utilities.cpp
     WaitCursor.cpp
     ManualAlignment.cpp
+    StartupProcess.cpp
     TransactionObject.cpp
     UserSettings.cpp
 )
@@ -1232,6 +1233,7 @@ SET(FreeCADGui_SRCS
     Utilities.h
     WaitCursor.h
     ManualAlignment.h
+    StartupProcess.h
     TransactionObject.h
     UserSettings.h
     ${FreeCADGui_SDK_MOC_HDRS}
@@ -1314,7 +1316,6 @@ if (EIGEN3_NO_DEPRECATED_COPY)
         Inventor/SoAutoZoomTranslation.cpp
         SoFCOffscreenRenderer.cpp
         SoFCSelectionAction.cpp
-        SoNavigationDragger.cpp
         SoFCCSysDragger.cpp
         Quarter/QuarterWidget.cpp
         View3DInventorViewer.cpp

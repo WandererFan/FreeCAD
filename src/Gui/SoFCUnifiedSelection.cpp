@@ -493,7 +493,7 @@ bool SoFCUnifiedSelection::setHighlight(SoFullPath *path, const SoDetail *det,
 
     bool highlighted = false;
     if(path && path->getLength() &&
-       vpd && vpd->getObject() && vpd->getObject()->getNameInDocument())
+       vpd && vpd->getObject() && vpd->getObject()->isAttachedToDocument())
     {
         const char *docname = vpd->getObject()->getDocument()->getName();
         const char *objname = vpd->getObject()->getNameInDocument();
@@ -566,9 +566,9 @@ bool SoFCUnifiedSelection::setSelection(const std::vector<PickedInfo> &infos, bo
     auto vpd = info.vpd;
     if(!vpd)
         return false;
-    const char *objname = vpd->getObject()->getNameInDocument();
-    if(!objname)
+    if(!vpd->getObject()->isAttachedToDocument())
         return false;
+    const char *objname = vpd->getObject()->getNameInDocument();
     const char *docname = vpd->getObject()->getDocument()->getName();
 
     bool hasNext = false;
@@ -782,6 +782,7 @@ void SoHighlightElementAction::initClass()
     SO_ACTION_INIT_CLASS(SoHighlightElementAction,SoAction);
 
     SO_ENABLE(SoHighlightElementAction, SoSwitchElement);
+    SO_ENABLE(SoHighlightElementAction, SoModelMatrixElement);
 
     SO_ACTION_ADD_METHOD(SoNode,nullAction);
 
@@ -849,6 +850,7 @@ void SoSelectionElementAction::initClass()
     SO_ACTION_INIT_CLASS(SoSelectionElementAction,SoAction);
 
     SO_ENABLE(SoSelectionElementAction, SoSwitchElement);
+    SO_ENABLE(SoSelectionElementAction, SoModelMatrixElement);
 
     SO_ACTION_ADD_METHOD(SoNode,nullAction);
 

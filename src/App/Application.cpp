@@ -99,12 +99,15 @@
 #include "InventorObject.h"
 #include "Link.h"
 #include "LinkBaseExtensionPy.h"
+#include "VarSet.h"
 #include "MaterialObject.h"
 #include "MeasureDistance.h"
 #include "Origin.h"
 #include "OriginFeature.h"
 #include "OriginGroupExtension.h"
 #include "OriginGroupExtensionPy.h"
+#include "SuppressibleExtension.h"
+#include "SuppressibleExtensionPy.h"
 #include "Part.h"
 #include "PartPy.h"
 #include "Placement.h"
@@ -1215,7 +1218,7 @@ std::set<DocumentObject *> Application::getLinksTo(
     } else {
         std::set<Document*> docs;
         for(auto o : obj->getInList()) {
-            if(o && o->getNameInDocument() && docs.insert(o->getDocument()).second) {
+            if(o && o->isAttachedToDocument() && docs.insert(o->getDocument()).second) {
                 o->getDocument()->getLinksTo(links,obj,options,maxCount);
                 if(maxCount && (int)links.size()>=maxCount)
                     break;
@@ -1540,6 +1543,124 @@ std::map<std::string, std::string> Application::getExportFilters() const
 }
 
 //**************************************************************************
+// measure
+
+void Application::addMeasureHandler(const char* module, MeasureTypeMethod typeCb) {
+    auto item = new MeasureHandler{module, typeCb};
+    _mMeasureHandlers.push_back(*item);
+}
+
+bool Application::hasMeasureHandler(const char* module) {
+    for(MeasureHandler& handler : _mMeasureHandlers) {
+        if (strcmp(handler.module.c_str(), module) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+MeasureHandler Application::getMeasureHandler(const char* module) {
+    for(MeasureHandler handler : _mMeasureHandlers) {
+        if (!strcmp(handler.module.c_str(), module)) {
+            return handler;
+        }
+    }
+
+    MeasureHandler empty;
+    return empty;
+}
+
+void Application::addMeasureType(MeasureType* measureType) {
+    _mMeasureTypes.push_back(measureType);
+}
+
+void Application::addMeasureType(std::string id, std::string label, std::string measureObj, MeasureValidateMethod validatorCb, MeasurePrioritizeMethod prioritizeCb) {
+    MeasureType* mType = new MeasureType{id, label, measureObj, validatorCb, prioritizeCb, false, nullptr};
+    _mMeasureTypes.push_back(mType);
+}
+
+void Application::addMeasureType(const char* id, const char* label, const char* measureObj, MeasureValidateMethod validatorCb, MeasurePrioritizeMethod prioritizeCb) {
+    addMeasureType(std::string(id), std::string(label), std::string(measureObj), validatorCb, prioritizeCb);
+}
+
+const std::vector<MeasureType*> Application::getMeasureTypes() {
+    return _mMeasureTypes;
+}
+
+
+std::vector<MeasureType*> Application::getValidMeasureTypes(App::MeasureSelection selection, std::string mode) {
+    Base::PyGILStateLocker lock;
+
+    // Convert selection to python list
+    Py::Tuple selectionPy(selection.size());
+
+    int i = 0;
+    for (auto it : selection) {
+        Py::Tuple sel(2);
+        sel.setItem(0, Py::String(std::get<0>(it)));
+        sel.setItem(1, Py::String(std::get<1>(it)));
+
+
+        // selectionPy.append(sel);
+        selectionPy.setItem(i, sel);
+
+        i++;
+    }
+
+    // Store valid measure types
+    std::vector<MeasureType*> validTypes;
+    std::pair<int, MeasureType>();
+
+
+    // Loop through measure types and check if they work with given selection
+    for (App::MeasureType* mType : App::GetApplication().getMeasureTypes()){
+
+        if (mode != "" && mType->label != mode) {
+            continue;
+        }
+
+
+        if (mType->isPython) {
+            // Parse Python measure types
+            auto measurePyClass = Py::Object(mType->pythonClass);
+            
+            Py::Tuple args(1);
+            args.setItem(0, selectionPy);
+            Py::Object isValid = measurePyClass.callMemberFunction(std::string("isValidSelection"), args);
+
+            if (isValid.as_bool()) {
+
+                // Check priority
+                Py::Object isPriority = measurePyClass.callMemberFunction("isPrioritySelection", args);
+
+                if (isPriority.as_bool()) {
+                    validTypes.insert(validTypes.begin(), mType);
+                } else {
+                    validTypes.push_back(mType);
+                }
+            }
+        } else {
+            // Parse c++ measure types
+            
+            if (mType->validatorCb && !mType->validatorCb(selection)) {
+                continue;
+            }
+
+            // Check if the measurement type prioritizes the given selection
+            if (mType->prioritizeCb && mType->prioritizeCb(selection)) {
+                validTypes.insert(validTypes.begin(), mType);
+            } else {
+                validTypes.push_back(mType);
+            }
+
+        }
+    }
+
+    return validTypes;
+}
+
+
+//**************************************************************************
 // signaling
 void Application::slotBeforeChangeDocument(const App::Document& doc, const Property& prop)
 {
@@ -1808,7 +1929,7 @@ void segmentation_fault_handler(int sig)
 #if defined(FC_DEBUG)
     abort();
 #else
-    exit(1);
+    _exit(1);
 #endif
 #else
     switch (sig) {
@@ -2027,6 +2148,7 @@ void Application::initTypes()
     App::PropertySpecificHeat               ::init();
     App::PropertySpeed                      ::init();
     App::PropertyStiffness                  ::init();
+    App::PropertyStiffnessDensity           ::init();
     App::PropertyStress                     ::init();
     App::PropertyTemperature                ::init();
     App::PropertyThermalConductivity        ::init();
@@ -2057,6 +2179,8 @@ void Application::initTypes()
     App::LinkBaseExtensionPython       ::init();
     App::LinkExtension                 ::init();
     App::LinkExtensionPython           ::init();
+    App::SuppressibleExtension         ::init();
+    App::SuppressibleExtensionPython   ::init();
 
     // Document classes
     App::TransactionalObject       ::init();
@@ -2101,6 +2225,7 @@ void Application::initTypes()
     App::LinkElementPython         ::init();
     App::LinkGroup                 ::init();
     App::LinkGroupPython           ::init();
+    App::VarSet                    ::init();
 
     // Expression classes
     App::Expression                ::init();
@@ -2960,14 +3085,13 @@ void Application::LoadParameters()
     }
 }
 
-
-#if defined(_MSC_VER)
-// fix weird error while linking boost (all versions of VC)
-// VS2010: https://forum.freecad.org/viewtopic.php?f=4&t=1886&p=12553&hilit=boost%3A%3Afilesystem%3A%3Aget#p12553
-namespace boost { namespace program_options { std::string arg="arg"; } }
-namespace boost { namespace program_options {
+#if defined(_MSC_VER) && BOOST_VERSION < 108300
+    // fix weird error while linking boost (all versions of VC)
+    // VS2010: https://forum.freecad.org/viewtopic.php?f=4&t=1886&p=12553&hilit=boost%3A%3Afilesystem%3A%3Aget#p12553
+    namespace boost { namespace program_options { std::string arg="arg"; } }
+    namespace boost { namespace program_options {
     const unsigned options_description::m_default_line_length = 80;
-} }
+    } }
 #endif
 
 // A helper function to simplify the main part.

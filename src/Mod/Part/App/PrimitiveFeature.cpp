@@ -29,6 +29,7 @@
 # include <BRepBuilderAPI_MakeVertex.hxx>
 # include <BRepBuilderAPI_MakeSolid.hxx>
 # include <BRepBuilderAPI_MakePolygon.hxx>
+# include <BRepGProp.hxx>
 # include <BRepPrim_Cylinder.hxx>
 # include <BRepPrim_Wedge.hxx>
 # include <BRepPrimAPI_MakeCone.hxx>
@@ -113,11 +114,6 @@ PyObject* Primitive::getPyObject()
 void Primitive::Restore(Base::XMLReader &reader)
 {
     Part::Feature::Restore(reader);
-}
-
-void Primitive::handleChangedPropertyName(Base::XMLReader &reader, const char * TypeName, const char *PropName)
-{
-    extHandleChangedPropertyName(reader, TypeName, PropName); // AttachExtension
 }
 
 void Primitive::handleChangedPropertyType(Base::XMLReader &reader, const char * TypeName, App::Property * prop)
@@ -657,12 +653,21 @@ App::DocumentObjectExecReturn *Cone::execute()
     if (Height.getValue() < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Height of cone too small");
     try {
-        // Build a cone
-        BRepPrimAPI_MakeCone mkCone(Radius1.getValue(),
-                                    Radius2.getValue(),
-                                    Height.getValue(),
-                                    Angle.getValue()/180.0f*M_PI);
-        TopoDS_Shape ResultShape = mkCone.Shape();
+        TopoDS_Shape ResultShape;
+        if (std::abs(Radius1.getValue() - Radius2.getValue()) < Precision::Confusion()){
+            //Build a cylinder
+            BRepPrimAPI_MakeCylinder mkCylr(Radius1.getValue(),
+                                            Height.getValue(),
+                                            2.0 * M_PI);
+            ResultShape = mkCylr.Shape();
+        } else {
+            // Build a cone
+            BRepPrimAPI_MakeCone mkCone(Radius1.getValue(),
+                                        Radius2.getValue(),
+                                        Height.getValue(),
+                                        Angle.getValue()/180.0f*M_PI);
+            ResultShape = mkCone.Shape();
+        }
         this->Shape.setValue(ResultShape);
     }
     catch (Standard_Failure& e) {
@@ -746,6 +751,8 @@ Helix::Helix()
     LocalCoord.setEnums(LocalCSEnums);
     ADD_PROPERTY_TYPE(Style,(long(0)),"Helix style",App::Prop_Hidden,"Old style creates incorrect and new style create correct helices");
     Style.setEnums(StyleEnums);
+    ADD_PROPERTY_TYPE(Length,(1.0),"Helix",App::Prop_None,"The length of the helix");
+    Length.setReadOnly(true);
 }
 
 void Helix::onChanged(const App::Property* prop)
@@ -799,6 +806,12 @@ App::DocumentObjectExecReturn *Helix::execute()
         Standard_Real myRadiusTop = myRadius + myHeight * tan(myAngle/180.0f*M_PI);
 
         this->Shape.setValue(TopoShape().makeSpiralHelix(myRadius, myRadiusTop, myHeight, nbTurns, mySegLen, myLocalCS));
+        // props.Mass() may seem a strange way to get the Length, but 
+        // https://dev.opencascade.org/doc/refman/html/class_b_rep_g_prop.html#ab1d4bacc290bfaa8df13dd99ae7b8e70
+        // confirms this.
+        GProp_GProps props;
+        BRepGProp::LinearProperties(Shape.getShape().getShape(), props);
+        Length.setValue(props.Mass());
     }
     catch (Standard_Failure& e) {
 
@@ -820,6 +833,8 @@ Spiral::Spiral()
     Rotations.setConstraints(&quantityRange);
     ADD_PROPERTY_TYPE(SegmentLength,(1.0),"Spiral",App::Prop_None,"The number of turns per spiral subdivision");
     SegmentLength.setConstraints(&quantityRange);
+    ADD_PROPERTY_TYPE(Length,(1.0),"Spiral",App::Prop_None,"The length of the spiral");
+    Length.setReadOnly(true);
 }
 
 void Spiral::onChanged(const App::Property* prop)
@@ -862,6 +877,9 @@ App::DocumentObjectExecReturn *Spiral::execute()
             Standard_Failure::Raise("Number of rotations too small");
 
         this->Shape.setValue(TopoShape().makeSpiralHelix(myRadius, myRadiusTop, 0, myNumRot, mySegLen, Standard_False));
+        GProp_GProps props;
+        BRepGProp::LinearProperties(Shape.getShape().getShape(), props);
+        Length.setValue(props.Mass());
         return Primitive::execute();
     }
     catch (Standard_Failure& e) {

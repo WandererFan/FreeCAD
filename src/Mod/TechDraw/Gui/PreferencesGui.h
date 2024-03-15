@@ -63,9 +63,6 @@ static double      dimArrowSize();
 
 static double      edgeFuzz();
 
-static Qt::PenStyle  sectionLineStyle();
-static bool          sectionLineMarks();
-
 static QString     weldingDirectory();
 
 static bool showGrid();
@@ -78,6 +75,9 @@ static QColor       getAccessibleQColor(QColor orig);
 static QColor       lightTextQColor();
 static QColor       reverseColor(QColor orig);
 static QColor       lightenColor(QColor orig);
+
+static double       templateClickBoxSize();
+static QColor       templateClickBoxColor();
 };
 
 } //end namespace TechDrawGui

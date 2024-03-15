@@ -52,6 +52,7 @@
 #include <Base/Console.h>
 #include <Base/Parameter.h>
 #include <Mod/Part/App/FeatureCompound.h>
+#include <Mod/Part/App/ShapeMapHasher.h>
 
 #include "ImportOCAF.h"
 
@@ -151,7 +152,7 @@ void ImportOCAF::loadShapes(const TDF_Label& label,
     std::vector<App::DocumentObject*> localValue;
 
     if (aShapeTool->GetShape(label, aShape)) {
-        hash = aShape.HashCode(HashUpper);
+        hash = Part::ShapeMapHasher {}(aShape);
     }
 
     Handle(TDataStd_Name) name;
@@ -223,7 +224,7 @@ void ImportOCAF::loadShapes(const TDF_Label& label,
     if (isRef || myRefShapes.find(hash) == myRefShapes.end()) {
         TopoDS_Shape aShape;
         if (isRef && aShapeTool->GetShape(label, aShape)) {
-            myRefShapes.insert(aShape.HashCode(HashUpper));
+            myRefShapes.insert(Part::ShapeMapHasher {}(aShape));
         }
 
         if (aShapeTool->IsSimpleShape(label) && (isRef || aShapeTool->IsFree(label))) {
@@ -550,7 +551,7 @@ void ImportXCAF::createShape(const TopoDS_Shape& shape, bool perface, bool setna
     part->Label.setValue(default_name);
     part->Shape.setValue(shape);
     std::map<Standard_Integer, Quantity_ColorRGBA>::const_iterator jt;
-    jt = myColorMap.find(shape.HashCode(INT_MAX));
+    jt = myColorMap.find(Part::ShapeMapHasher {}(shape));
 
     App::Color partColor(0.8f, 0.8f, 0.8f);
 #if 0  // TODO
@@ -571,7 +572,7 @@ void ImportXCAF::createShape(const TopoDS_Shape& shape, bool perface, bool setna
     // set label name if defined
     if (setname && !myNameMap.empty()) {
         std::map<Standard_Integer, std::string>::const_iterator jt;
-        jt = myNameMap.find(shape.HashCode(INT_MAX));
+        jt = myNameMap.find(Part::ShapeMapHasher {}(shape));
         if (jt != myNameMap.end()) {
             part->Label.setValue(jt->second);
         }
@@ -591,7 +592,7 @@ void ImportXCAF::createShape(const TopoDS_Shape& shape, bool perface, bool setna
         faceColors.resize(faces.Extent(), partColor);
         xp.Init(shape, TopAbs_FACE);
         while (xp.More()) {
-            jt = myColorMap.find(xp.Current().HashCode(INT_MAX));
+            jt = myColorMap.find(Part::ShapeMapHasher {}(xp.Current()));
             if (jt != myColorMap.end()) {
                 int index = faces.FindIndex(xp.Current());
                 faceColors[index - 1] = convertColor(jt->second);
@@ -626,29 +627,29 @@ void ImportXCAF::loadShapes(const TDF_Label& label)
             // add the shapes
             TopExp_Explorer xp;
             for (xp.Init(aShape, TopAbs_SOLID); xp.More(); xp.Next(), ctSolids++) {
-                this->mySolids[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                this->mySolids[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
             }
             for (xp.Init(aShape, TopAbs_SHELL, TopAbs_SOLID); xp.More(); xp.Next(), ctShells++) {
-                this->myShells[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                this->myShells[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
             }
             // if no solids and no shells were found then go for compounds
             if (ctSolids == 0 && ctShells == 0) {
                 for (xp.Init(aShape, TopAbs_COMPOUND); xp.More(); xp.Next(), ctComps++) {
-                    this->myCompds[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                    this->myCompds[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
                 }
             }
             if (ctComps == 0) {
                 for (xp.Init(aShape, TopAbs_FACE, TopAbs_SHELL); xp.More(); xp.Next()) {
-                    this->myShapes[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                    this->myShapes[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
                 }
                 for (xp.Init(aShape, TopAbs_WIRE, TopAbs_FACE); xp.More(); xp.Next()) {
-                    this->myShapes[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                    this->myShapes[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
                 }
                 for (xp.Init(aShape, TopAbs_EDGE, TopAbs_WIRE); xp.More(); xp.Next()) {
-                    this->myShapes[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                    this->myShapes[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
                 }
                 for (xp.Init(aShape, TopAbs_VERTEX, TopAbs_EDGE); xp.More(); xp.Next()) {
-                    this->myShapes[xp.Current().HashCode(INT_MAX)] = (xp.Current());
+                    this->myShapes[Part::ShapeMapHasher {}(xp.Current())] = (xp.Current());
                 }
             }
         }
@@ -659,7 +660,7 @@ void ImportXCAF::loadShapes(const TDF_Label& label)
             || hColors->GetColor(label, XCAFDoc_ColorSurf, col)
             || hColors->GetColor(label, XCAFDoc_ColorCurv, col)) {
             // add defined color
-            myColorMap[aShape.HashCode(INT_MAX)] = col;
+            myColorMap[Part::ShapeMapHasher {}(aShape)] = col;
         }
         else {
             // http://www.opencascade.org/org/forum/thread_17107/
@@ -669,7 +670,7 @@ void ImportXCAF::loadShapes(const TDF_Label& label)
                     || hColors->GetColor(it.Value(), XCAFDoc_ColorSurf, col)
                     || hColors->GetColor(it.Value(), XCAFDoc_ColorCurv, col)) {
                     // add defined color
-                    myColorMap[it.Value().HashCode(INT_MAX)] = col;
+                    myColorMap[Part::ShapeMapHasher {}(it.Value())] = col;
                 }
             }
         }
@@ -682,7 +683,7 @@ void ImportXCAF::loadShapes(const TDF_Label& label)
             extstr.ToUTF8CString(str);
             std::string labelName(str);
             if (!labelName.empty()) {
-                myNameMap[aShape.HashCode(INT_MAX)] = labelName;
+                myNameMap[Part::ShapeMapHasher {}(aShape)] = labelName;
             }
             delete[] str;
         }
