@@ -42,6 +42,10 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
+    bool sceneEventFilter(QGraphicsItem *watched, QEvent *event) override;
+    bool sceneEvent(QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event)  override;
+
     int getProjIndex() const { return projIndex; }
 
     void setCosmetic(bool state);

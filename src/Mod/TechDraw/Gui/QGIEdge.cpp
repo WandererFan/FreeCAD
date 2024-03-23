@@ -22,10 +22,9 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
-# include <cassert>
-
 # include <QPainterPath>
 # include <QPainterPathStroker>
+#include <QKeyEvent>
 #endif
 
 #include <App/Application.h>
@@ -50,10 +49,57 @@ QGIEdge::QGIEdge(int index) :
     isHiddenEdge(false),
     isSmoothEdge(false)
 {
+    setFlag(QGraphicsItem::ItemIsFocusable, true);      // to get key press events
+    setFlag(QGraphicsItem::ItemIsSelectable, true);
+    // installSceneEventFilter(this);
+
     m_width = 1.0;
     setCosmetic(isCosmetic);
     setFill(Qt::NoBrush);
 }
+
+
+bool QGIEdge::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress) {
+        Base::Console().Message("QGIE::sceneEventFilter - key press\n");
+        auto keyEvent = dynamic_cast<QKeyEvent*>(event);
+        if (!keyEvent) {
+            return QGraphicsItem::sceneEventFilter(watched, event);
+        }
+        int ourKey = keyEvent->key();
+        // Qt::Key_Delete
+        Base::Console().Message("QGIE::sceneEventFilter - key is %d\n", ourKey);
+    }
+    return QGraphicsItem::sceneEventFilter(watched, event);
+}
+
+
+bool QGIEdge::sceneEvent(QEvent *event)
+{
+//    Base::Console().Message("QGIE::sceneEvent() - type: %d\n", event->type());
+    if (event->type() == QEvent::KeyPress) {
+        Base::Console().Message("QGIE::sceneEvent - key press\n");
+        auto keyEvent = dynamic_cast<QKeyEvent*>(event);
+        if (!keyEvent) {
+            QGraphicsItem::sceneEvent(event);
+        }
+        int ourKey = keyEvent->key();
+        // Qt::Key_Delete
+        Base::Console().Message("QGIE::sceneEvent - key is %d\n", ourKey);
+    }
+    return QGraphicsItem::sceneEvent(event);
+}
+
+void QGIEdge::keyPressEvent(QKeyEvent *event)
+{
+    Base::Console().Message("QGIE::keyPressEvent()\n");
+    int ourKey = event->key();
+    // Qt::Key_Delete
+    Base::Console().Message("QGIE::keyPressEvent - key is %d\n", ourKey);
+    QGraphicsItem::keyPressEvent(event);
+}
+
 
 // NOTE this refers to Qt cosmetic lines (a line with minimum width),
 // not FreeCAD cosmetic lines

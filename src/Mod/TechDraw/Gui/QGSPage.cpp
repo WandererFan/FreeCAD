@@ -106,6 +106,12 @@ QGSPage::QGSPage(ViewProviderPage* vpPage, QWidget* parent)
     //    setItemIndexMethod(QGraphicsScene::NoIndex);    //sometimes faster
 }
 
+void QGSPage::keyPressEvent(QKeyEvent *keyEvent)
+{
+    Base::Console().Message("QGSP::keyPressEvent() - key: %d\n");
+    QGraphicsScene::keyPressEvent(keyEvent);
+}
+
 void QGSPage::addChildrenToPage()
 {
     //    Base::Console().Message("QGSP::addChildrenToPage()\n");
@@ -387,12 +393,13 @@ bool QGSPage::attachView(App::DocumentObject* obj)
 
 QGIView* QGSPage::addViewPart(TechDraw::DrawViewPart* partFeat)
 {
-    // Base::Console().Message("QGSP::addViewPart(%s)\n", partFeat->Label.getValue());
+    Base::Console().Message("QGSP::addViewPart(%s)\n", partFeat->Label.getValue());
     auto viewPart(new QGIViewPart);
 
     viewPart->setViewPartFeature(partFeat);
 
     addQView(viewPart);
+    viewPart->installSceneEventFilter(viewPart);
     return viewPart;
 }
 

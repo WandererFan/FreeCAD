@@ -75,6 +75,8 @@ public:
     explicit QGSPage(ViewProviderPage* vpPage, QWidget* parent = nullptr);
     ~QGSPage() override = default;
 
+    void keyPressEvent(QKeyEvent *keyEvent) override;
+
     bool addView(const App::DocumentObject* obj);
     bool attachView(App::DocumentObject* obj);
     QGIView* addViewDimension(TechDraw::DrawViewDimension* dimFeat);

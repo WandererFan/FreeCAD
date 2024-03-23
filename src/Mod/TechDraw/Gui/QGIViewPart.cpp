@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include <QPainterPath>
+#include <QKeyEvent>
 #include <qmath.h>
 #endif// #ifndef _PreComp_
 
@@ -83,6 +84,7 @@ QGIViewPart::QGIViewPart()
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+    setFlag(QGraphicsItem::ItemIsFocusable, true);
 
     showSection = false;
     m_pathBuilder = new PathBuilder(this);
@@ -105,6 +107,47 @@ QVariant QGIViewPart::itemChange(GraphicsItemChange change, const QVariant& valu
         tidy();
     }
     return QGIView::itemChange(change, value);
+}
+
+bool QGIViewPart::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress) {
+        Base::Console().Message("QGIVP::sceneEventFilter - key press\n");
+        auto keyEvent = dynamic_cast<QKeyEvent*>(event);
+        if (!keyEvent) {
+            return QGraphicsItem::sceneEventFilter(watched, event);
+        }
+        int ourKey = keyEvent->key();
+        // Qt::Key_Delete
+        Base::Console().Message("QGIVP::sceneEventFilter - key is %d\n", ourKey);
+    }
+    return QGraphicsItem::sceneEventFilter(watched, event);
+}
+
+
+bool QGIViewPart::sceneEvent(QEvent *event)
+{
+    // Base::Console().Message("QGIVP::sceneEvent() - type: %d\n", event->type());
+    if (event->type() == QEvent::KeyPress) {
+        Base::Console().Message("QGIVP::sceneEvent - key press\n");
+        auto keyEvent = dynamic_cast<QKeyEvent*>(event);
+        if (!keyEvent) {
+            QGraphicsItem::sceneEvent(event);
+        }
+        int ourKey = keyEvent->key();
+        // Qt::Key_Delete
+        Base::Console().Message("QGIVP::sceneEvent - key is %d\n", ourKey);
+    }
+    return QGraphicsItem::sceneEvent(event);
+}
+
+void QGIViewPart::keyPressEvent(QKeyEvent *event)
+{
+    Base::Console().Message("QGIVP::keyPressEvent()\n");
+    int ourKey = event->key();
+    // Qt::Key_Delete
+    Base::Console().Message("QGIVP::keyPressEvent - key is %d\n", ourKey);
+    QGraphicsItem::keyPressEvent(event);
 }
 
 //obs?
@@ -304,6 +347,7 @@ void QGIViewPart::drawAllEdges()
 
         item = new QGIEdge(iEdge);
         addToGroup(item);      //item is created at scene(0, 0), not group(0, 0)
+        item->installSceneEventFilter(item);
         item->setPath(drawPainterPath(*itGeom));
 
         item->setNormalColor(PreferencesGui::getAccessibleQColor(PreferencesGui::normalQColor()));

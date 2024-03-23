@@ -421,6 +421,7 @@ void QGVPage::wheelEvent(QWheelEvent* event)
 
 void QGVPage::keyPressEvent(QKeyEvent* event)
 {
+    Base::Console().Message("QGVP::keyPressEvent() - key: %d\n", event->key());
     m_navStyle->handleKeyPressEvent(event);
     if (!event->isAccepted()) {
         QGraphicsView::keyPressEvent(event);

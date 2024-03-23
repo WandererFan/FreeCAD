@@ -63,7 +63,9 @@ public:
     void paint( QPainter * painter,
                         const QStyleOptionGraphicsItem * option,
                         QWidget * widget = nullptr ) override;
-
+    bool sceneEventFilter(QGraphicsItem *watched, QEvent *event) override;
+    bool sceneEvent(QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event)  override;
 
     void toggleCache(bool state) override;
     void toggleCosmeticLines(bool state);

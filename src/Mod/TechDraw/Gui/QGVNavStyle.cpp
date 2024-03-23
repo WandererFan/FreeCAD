@@ -109,7 +109,7 @@ void QGVNavStyle::handleFocusOutEvent(QFocusEvent* event)
 
 void QGVNavStyle::handleKeyPressEvent(QKeyEvent* event)
 {
-//    Base::Console().Message("QGNS::handleKeyPressEvent(%d)\n", event->key());
+    Base::Console().Message("QGNS::handleKeyPressEvent(%d)\n", event->key());
     if (event->modifiers().testFlag(Qt::ControlModifier)) {
         switch (event->key()) {
             case Qt::Key_Plus: {
@@ -214,7 +214,7 @@ void QGVNavStyle::handleLeaveEvent(QEvent* event)
 
 void QGVNavStyle::handleMousePressEvent(QMouseEvent* event)
 {
-    //    Base::Console().Message("QGVNS::handleMousePressEvent()\n");
+    Base::Console().Message("QGVNS::handleMousePressEvent()\n");
     if (!panningActive && (event->button() == Qt::MiddleButton)) {
         startPan(event->pos());
         event->accept();

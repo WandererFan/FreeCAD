@@ -27,6 +27,8 @@
 # include <QMouseEvent>
 #endif
 
+#include <Base/Console.h>
+
 #include "QGVNavStyleTouchpad.h"
 #include "QGVPage.h"
 
@@ -46,6 +48,7 @@ QGVNavStyleTouchpad::~QGVNavStyleTouchpad()
 
 void QGVNavStyleTouchpad::handleKeyPressEvent(QKeyEvent *event)
 {
+    Base::Console().Message("QGVNST::handleKeyPressEvent() - Key: %d\n", event->key());
 //    Q_UNUSED(event)
     if (event->key() == Qt::Key_PageUp) {
         zoomIn();
