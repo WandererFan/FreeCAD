@@ -445,7 +445,7 @@ short DrawViewDimension::mustExecute() const
 
 App::DocumentObjectExecReturn* DrawViewDimension::execute()
 {
-    // Base::Console().Message("DVD::execute() - %s\n", getNameInDocument());
+    Base::Console().Message("DVD::execute() - %s\n", getNameInDocument());
     if (!okToProceed()) {
         return  new App::DocumentObjectExecReturn("Dimension could not execute");
     }
@@ -458,10 +458,12 @@ App::DocumentObjectExecReturn* DrawViewDimension::execute()
     // everything matches, we don't need to correct anything.
     std::vector<bool> referenceState;
     bool refsAreValid = m_corrector->referencesHaveValidGeometry(referenceState);
+    Base::Console().Message("DVD::execute - refsAreValid (1): %d\n", refsAreValid);
     if (!refsAreValid) {
         m_corrector->set3dObjectCache(m_3dObjectCache);
         ReferenceVector repairedRefs;
         refsAreValid = m_corrector->autocorrectReferences(referenceState, repairedRefs);
+        Base::Console().Message("DVD::execute - refsAreValid (1): %d\n", refsAreValid);
         if (!refsAreValid) {
             // references are broken and we can not fix them
             Base::Console().Warning("Autocorrect failed to fix references for %s\n",
@@ -533,17 +535,19 @@ bool DrawViewDimension::okToProceed()
     }
     DrawViewPart* dvp = getViewPart();
     if (!dvp) {
+        Base::Console().Message("DVD::okToProceed - no dvp\n");
         return false;
     }
 
     if (!has2DReferences() && !has3DReferences()) {
         // no references, can't do anything
-        Base::Console().Warning("Dimension object has no valid references\n");
+        Base::Console().Warning("DVD::okToProceed - Dimension object has no valid references\n");
         return false;
     }
 
     if (!getViewPart()->hasGeometry()) {
         // can't do anything until Source has geometry
+        Base::Console().Warning("DVD::okToProceed - Dimension object has no valid references\n");
         return false;
     }
 
@@ -711,7 +715,7 @@ double DrawViewDimension::getDimValue()
 
 pointPair DrawViewDimension::getPointsOneEdge(ReferenceVector references)
 {
-    // Base::Console().Message("DVD::getPointsOneEdge()\n");
+    Base::Console().Message("DVD::getPointsOneEdge()\n");
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement = DrawUtil::getIndexFromName(references.front().getSubName());
     if (refObject->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())
@@ -730,6 +734,11 @@ pointPair DrawViewDimension::getPointsOneEdge(ReferenceVector references)
             throw Base::RuntimeError(ssMessage.str());
         }
         TechDraw::GenericPtr generic = std::static_pointer_cast<TechDraw::Generic>(geom);
+        // these points are from 2d geometry, so they are scaled and rotated and the dimension should
+        // reflect that, but doesn't!
+        Base::Console().Message("DVD::getPointsOneEdge - returns 2d points: %s  %s\n",
+                                DU::formatVector(generic->points[0]).c_str(),
+                                DU::formatVector(generic->points[1]).c_str());
         return {generic->points[0], generic->points[1]};
     }
 
@@ -1303,7 +1312,7 @@ DrawViewPart* DrawViewDimension::getViewPart() const
 // subName)
 ReferenceVector DrawViewDimension::getEffectiveReferences() const
 {
-    // Base::Console().Message("DVD::getEffectiveReferences()\n");
+    Base::Console().Message("DVD::getEffectiveReferences()\n");
     const std::vector<App::DocumentObject*>& objects3d = References3D.getValues();
     const std::vector<std::string>& subElements3d = References3D.getSubValues();
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
@@ -1408,7 +1417,7 @@ int DrawViewDimension::getRefTypeSubElements(const std::vector<std::string>& sub
 //! validate 2D references - only checks if the target exists
 bool DrawViewDimension::checkReferences2D() const
 {
-    //    Base::Console().Message("DVD::checkReferences2d() - %s\n", getNameInDocument());
+    Base::Console().Message("DVD::checkReferences2d() - %s\n", getNameInDocument());
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
     if (objects.empty()) {
         return false;
@@ -1468,8 +1477,8 @@ bool DrawViewDimension::hasBroken3dReferences() const
 
 void DrawViewDimension::updateSavedGeometry()
 {
-    // Base::Console().Message("DVD::updateSavedGeometry() - %s - savedGeometry: %d\n",
-    //    getNameInDocument(), SavedGeometry.getValues().size());
+    Base::Console().Message("DVD::updateSavedGeometry() - %s - savedGeometry: %d\n",
+       getNameInDocument(), SavedGeometry.getValues().size());
     ReferenceVector references = getEffectiveReferences();
     if (references.empty()) {
         // no references to save
@@ -1479,26 +1488,28 @@ void DrawViewDimension::updateSavedGeometry()
     const std::vector<TopoShape> oldGeometry = SavedGeometry.getValues();
     // need to clean up old geometry objects here?
 
-    size_t iOldGeom(0);
+    // size_t iOldGeom(0);
     for (auto& entry : references) {
         if (entry.getSubName().empty()) {
             // view only reference has no geometry.
             continue;
         }
         if (entry.hasGeometry()) {
+            // we should convert the entry to canonical form if it is a 2d ref
+            // entry.asCanonicalTopoShape();
             newGeometry.push_back(entry.asTopoShape());
         }
         else {
             // use old geometry entry? null shape? have to put something in the vector
             // so SavedGeometry and references stay in sync.
-            if (iOldGeom < oldGeometry.size()) {
-                newGeometry.push_back(oldGeometry.at(iOldGeom));
-            }
-            else {
+            // if (iOldGeom < oldGeometry.size()) {
+            //     newGeometry.push_back(oldGeometry.at(iOldGeom));
+            // }
+            // else {
                 newGeometry.push_back(Part::TopoShape());
-            }
+            // }
         }
-        iOldGeom++;
+        // iOldGeom++;
     }
     if (!newGeometry.empty()) {
         SavedGeometry.setValues(newGeometry);
@@ -1525,7 +1536,6 @@ std::vector<TopoShape> DrawViewDimension::getEdges(const TopoShape& inShape)
 
     return ret;
 }
-
 
 // based on Part::TopoShapePyImp::getShapes
 std::vector<TopoShape> DrawViewDimension::getVertexes(const TopoShape& inShape)
@@ -1567,7 +1577,7 @@ pointPair DrawViewDimension::closestPoints(TopoDS_Shape s1, TopoDS_Shape s2) con
 // set the reference property from a reference vector
 void DrawViewDimension::setReferences2d(ReferenceVector refs)
 {
-    //    Base::Console().Message("DVD::setReferences2d(%d)\n", refs.size());
+    Base::Console().Message("DVD::setReferences2d(%d)\n", refs.size());
     std::vector<App::DocumentObject*> objects;
     std::vector<std::string> subNames;
     if (objects.size() != subNames.size()) {
@@ -1585,7 +1595,7 @@ void DrawViewDimension::setReferences2d(ReferenceVector refs)
 // set the reference property from a reference vector
 void DrawViewDimension::setReferences3d(ReferenceVector refs)
 {
-    // Base::Console().Message("DVD::setReferences3d()\n");
+    Base::Console().Message("DVD::setReferences3d()\n");
     if (refs.empty() && !References3D.getValues().empty()) {
         // clear the property of any old links
         References3D.setValue(nullptr, nullptr);
@@ -1619,7 +1629,7 @@ void DrawViewDimension::setReferences3d(ReferenceVector refs)
 //! add Dimension 3D references to measurement
 void DrawViewDimension::setAll3DMeasurement()
 {
-    //    Base::Console().Message("DVD::setAll3dMeasurement()\n");
+    Base::Console().Message("DVD::setAll3dMeasurement()\n");
     measurement->clear();
     const std::vector<App::DocumentObject*>& Objs = References3D.getValues();
     const std::vector<std::string>& Subs = References3D.getSubValues();
@@ -1645,6 +1655,7 @@ void DrawViewDimension::setAll3DMeasurement()
 //! dimension.
 bool DrawViewDimension::validateReferenceForm() const
 {
+    Base::Console().Message("DVD::validateReferenceForm()\n");
    // we have either or both valid References3D and References2D
     ReferenceVector references = getEffectiveReferences();
     if (references.empty()) {

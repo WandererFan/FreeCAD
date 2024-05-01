@@ -54,7 +54,7 @@ using DU = DrawUtil;
 
 bool GeometryMatcher::compareGeometry(Part::TopoShape shape1, Part::TopoShape shape2)
 {
-    //    Base::Console().Message("GM::compareGeometry()\n");
+    Base::Console().Message("GM::compareGeometry()\n");
     if (!Preferences::useExactMatchOnDims()) {
         return false;
     }
@@ -100,7 +100,7 @@ bool GeometryMatcher::comparePoints(TopoDS_Shape& shape1, TopoDS_Shape& shape2)
 
 bool GeometryMatcher::compareEdges(TopoDS_Shape& shape1, TopoDS_Shape& shape2)
 {
-    //    Base::Console().Message("GM::compareEdges()\n");
+    Base::Console().Message("GM::compareEdges()\n");
     if (shape1.ShapeType() != TopAbs_EDGE || shape2.ShapeType() != TopAbs_EDGE) {
         // can not compare these shapes
         //        Base::Console().Message("GM::compareEdges - shape is not an edge\n");
@@ -148,7 +148,7 @@ bool GeometryMatcher::compareEdges(TopoDS_Shape& shape1, TopoDS_Shape& shape2)
 
 bool GeometryMatcher::compareLines(TopoDS_Edge& edge1, TopoDS_Edge& edge2)
 {
-    //    Base::Console().Message("GM::compareLines()\n");
+    Base::Console().Message("GM::compareLines()\n");
     // how does the edge that was NOT null in compareEdges become null here?
     // should not happen, but does!
     if (edge1.IsNull() || edge2.IsNull()) {
@@ -157,8 +157,14 @@ bool GeometryMatcher::compareLines(TopoDS_Edge& edge1, TopoDS_Edge& edge2)
     }
     auto start1 = DU::toVector3d(BRep_Tool::Pnt(TopExp::FirstVertex(edge1)));
     auto end1 = DU::toVector3d(BRep_Tool::Pnt(TopExp::LastVertex(edge1)));
+    Base::Console().Message("GM::compareLines - edge1 start: %s  end:  %s\n",
+                            DU::formatVector(start1).c_str(),
+                            DU::formatVector(end1).c_str());
     auto start2 = DU::toVector3d(BRep_Tool::Pnt(TopExp::FirstVertex(edge2)));
     auto end2 = DU::toVector3d(BRep_Tool::Pnt(TopExp::LastVertex(edge2)));
+    Base::Console().Message("GM::compareLines - edge2 start: %s  end:  %s\n",
+                            DU::formatVector(start2).c_str(),
+                            DU::formatVector(end2).c_str());
     if (start1.IsEqual(start2, EWTOLERANCE) && end1.IsEqual(end2, EWTOLERANCE)) {
         // exact match
         return true;

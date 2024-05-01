@@ -277,6 +277,10 @@ void DrawViewPart::onChanged(const App::Property* prop)
         Direction.setValue(Base::Vector3d(0.0, -1.0, 0.0));
     }
 
+    if (prop == &Rotation) {
+        Base::Console().Message("DVP::onChanged(Rotation)\n");
+    }
+
     DrawView::onChanged(prop);
 }
 
