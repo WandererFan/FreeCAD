@@ -42,9 +42,11 @@
 #include "DrawUtil.h"
 #include "DrawViewPart.h"
 #include "ShapeUtils.h"
+#include "CosmeticVertex.h"
 
 using namespace TechDraw;
 using DU = DrawUtil;
+using SU = ShapeUtils;
 
 
 ReferenceEntry::ReferenceEntry( App::DocumentObject* docObject, std::string subName, App::Document* document)
@@ -173,7 +175,7 @@ App::DocumentObject* ReferenceEntry::getObject() const
 
 Part::TopoShape ReferenceEntry::asTopoShape() const
 {
-//    Base::Console().Message("RE::asTopoShape()\n");
+    Base::Console().Message("RE::asTopoShape()\n");
     TopoDS_Shape geom = getGeometry();
     if (geom.IsNull()) {
         // throw Base::RuntimeError("Dimension Reference has null geometry");
@@ -191,12 +193,27 @@ Part::TopoShape ReferenceEntry::asTopoShape() const
     throw Base::RuntimeError("Dimension Reference has unsupported geometry");
 }
 
+Part::TopoShape ReferenceEntry::asCanonicalTopoShape() const
+{
+    Base::Console().Message("RE::asCanonicalTopoShape()\n");
+    if (is3d()) {
+        return asTopoShape();
+    }
+    auto dvp = static_cast<DrawViewPart*>(getObject());
+    gp_Ax2 OXYZ;
+    auto rawTopoShape = asTopoShape();
+    auto unscaledShape = SU::scaleShape(rawTopoShape.getShape(), 1.0 / dvp->getScale());
+    auto rotationDeg = dvp->Rotation.getValue();
+    unscaledShape = SU::rotateShape(unscaledShape, OXYZ, -rotationDeg);
+    return {unscaledShape};
+}
+
 Part::TopoShape ReferenceEntry::asTopoShapeVertex(TopoDS_Vertex& vert) const
 {
     Base::Vector3d point = DU::toVector3d(BRep_Tool::Pnt(vert));
     if (!is3d()) {
         auto dvp = static_cast<TechDraw::DrawViewPart*>(getObject());
-        point = point / dvp->getScale();
+        point = CosmeticVertex::makeCanonicalPoint(dvp, point);
     }
     BRepBuilderAPI_MakeVertex mkVert(DU::togp_Pnt(point));
     return { mkVert.Vertex() };
@@ -204,12 +221,17 @@ Part::TopoShape ReferenceEntry::asTopoShapeVertex(TopoDS_Vertex& vert) const
 
 Part::TopoShape ReferenceEntry::asTopoShapeEdge(TopoDS_Edge &edge) const
 {
-//    Base::Console().Message("RE::asTopoShapeEdge()\n");
+    Base::Console().Message("RE::asTopoShapeEdge()\n");
     TopoDS_Edge unscaledEdge = edge;
     if (!is3d()) {
         // 2d reference - projected and scaled. scale might have changed, so we need to unscale
         auto dvp = static_cast<TechDraw::DrawViewPart*>(getObject());
         TopoDS_Shape unscaledShape = ShapeUtils::scaleShape(edge, 1.0 / dvp->getScale());
+        auto rotationDeg = dvp->Rotation.getValue();
+        if (rotationDeg != 0.0) {
+            gp_Ax2 OXYZ;
+            unscaledShape = SU::rotateShape(unscaledShape, OXYZ, -rotationDeg);
+        }
         unscaledEdge = TopoDS::Edge(unscaledShape);
     }
     return { unscaledEdge };

@@ -47,6 +47,7 @@ class TopoShape;
 
 namespace TechDraw
 {
+class DrawViewPart;
 
 //a convenient way of handling object+subName references
 class TechDrawExport ReferenceEntry
@@ -73,6 +74,8 @@ public:
     bool isWholeObject() const;
 
     Part::TopoShape asTopoShape() const;
+    Part::TopoShape asCanonicalTopoShape() const;
+    static Part::TopoShape asCanonicalTopoShape(const Part::TopoShape& inShape, const DrawViewPart& dvp);
 
     bool is3d() const;
     bool hasGeometry() const;
