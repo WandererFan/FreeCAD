@@ -238,6 +238,7 @@ protected:
     void updateSavedGeometry();
 
     bool validateReferenceForm() const;
+    bool autocorrectReferences();
 
 private:
     static const char* TypeEnums[];

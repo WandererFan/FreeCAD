@@ -173,6 +173,8 @@ App::DocumentObject* ReferenceEntry::getObject() const
     return obj;
 }
 
+
+//! return the reference geometry as a Part::TopoShape
 Part::TopoShape ReferenceEntry::asTopoShape() const
 {
     Base::Console().Message("RE::asTopoShape()\n");
@@ -193,6 +195,7 @@ Part::TopoShape ReferenceEntry::asTopoShape() const
     throw Base::RuntimeError("Dimension Reference has unsupported geometry");
 }
 
+//! returns unscaled, unrotated version of inShape. inShape is assumed to be a 2d shape, but this is not enforced.
 Part::TopoShape ReferenceEntry::asCanonicalTopoShape() const
 {
     Base::Console().Message("RE::asCanonicalTopoShape()\n");
@@ -200,11 +203,25 @@ Part::TopoShape ReferenceEntry::asCanonicalTopoShape() const
         return asTopoShape();
     }
     auto dvp = static_cast<DrawViewPart*>(getObject());
-    gp_Ax2 OXYZ;
     auto rawTopoShape = asTopoShape();
-    auto unscaledShape = SU::scaleShape(rawTopoShape.getShape(), 1.0 / dvp->getScale());
-    auto rotationDeg = dvp->Rotation.getValue();
-    unscaledShape = SU::rotateShape(unscaledShape, OXYZ, -rotationDeg);
+    return ReferenceEntry::asCanonicalTopoShape(rawTopoShape, *dvp);
+}
+
+//! static public method returns unscaled, unrotated version of inShape. inShape is assumed to be a 2d shape,
+//! but this is not enforced.  3d shapes should not be made canonical.
+//! 2d shapes are inverted in Y direction and need to be inverted before and after rotation
+//! operations.
+Part::TopoShape ReferenceEntry::asCanonicalTopoShape(const Part::TopoShape& inShape, const DrawViewPart& dvp)
+{
+    Base::Console().Message("RE::(static)asCanonicalTopoShape()\n");
+    DU::dumpEdges("RE::asCanonicalTopoShape - input", inShape.getShape());
+    gp_Ax2 OXYZ;
+    auto unscaledShape = SU::scaleShape(inShape.getShape(), 1.0 / dvp.getScale());
+    auto rotationDeg = dvp.Rotation.getValue();
+    unscaledShape = SU::invertGeometry(unscaledShape);
+    unscaledShape = SU::rotateShape(unscaledShape, OXYZ, rotationDeg);
+    unscaledShape = SU::invertGeometry(unscaledShape);
+    DU::dumpEdges("RE::asCanonicalTopoShape - inverted rotated", unscaledShape);
     return {unscaledShape};
 }
 
@@ -257,15 +274,19 @@ bool ReferenceEntry::is3d() const
         return false;
     }
 
-    if (getObject() &&
-        getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId()) &&
-        getSubName().empty()) {
-        // this is a broken 3d reference, so it should be treated as 3d
-        return true;
-    }
-
-    // either we have no object or we have an object and it is a 3d object
+    // not a 2d ref, must be 3d
     return true;
+
+    // if (getObject() &&
+    //     !getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId()) &&
+    //     getSubName().empty()) {
+    //     // this is a broken 3d reference, so it should be treated as 3d
+    //     return true;
+    // }
+
+    // // either we have no object or we have an object and it is a 3d object
+    // //
+    // return true;
 }
 
 //! check if this reference has valid geometry in the model
@@ -278,6 +299,8 @@ bool ReferenceEntry::hasGeometry() const
 
     if ( getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId()) ) {
         // 2d reference
+        // return hasGeometry2d();
+        // bool hasGeometry2d() {
         auto dvp = static_cast<TechDraw::DrawViewPart*>(getObject());
         if (getSubName().empty()) {
             return false;
@@ -297,6 +320,7 @@ bool ReferenceEntry::hasGeometry() const
         }
         // if we ever have dimensions for faces, add something here.
         return false;
+        // }  // end hasGeometry2d
     }
 
     // 3d reference

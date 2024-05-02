@@ -391,7 +391,7 @@ class TechDrawExport Vertex
         bool isReference() { return m_reference; }
         void isReference(bool state) { m_reference = state; }
 
-        Part::TopoShape asTopoShape(double scale);
+        Part::TopoShape asTopoShape(double scale = 1.0);
 
     protected:
         //Uniqueness

@@ -138,15 +138,15 @@ bool DimensionAutoCorrect::autocorrectReferences(std::vector<bool>& referenceSta
         return false;
     }
 
-    std::vector<Part::TopoShape> referenceGeometry;
-    for (auto& entry : refsAll) {
-        if (entry.hasGeometry()) {
-            referenceGeometry.push_back(entry.asTopoShape());
-        }
-        else {
-            referenceGeometry.push_back(Part::TopoShape());
-        }
-    }
+    // std::vector<Part::TopoShape> referenceGeometry;
+    // for (auto& entry : refsAll) {
+    //     if (entry.hasGeometry()) {
+    //         referenceGeometry.push_back(entry.asCanonicalTopoShape());
+    //     }
+    //     else {
+    //         referenceGeometry.push_back(Part::TopoShape());
+    //     }
+    // }
 
     size_t iRef {0};
     for (const auto& state : referenceState) {
@@ -428,11 +428,14 @@ bool DimensionAutoCorrect::findSimilarEdge3d(ReferenceEntry& refToFix,
 bool DimensionAutoCorrect::isMatchingGeometry(ReferenceEntry ref,
                                               Part::TopoShape savedGeometry) const
 {
+    Base::Console().Message("DAC::isMatchingGeometry()\n");
     Part::TopoShape temp = ref.asCanonicalTopoShape();
     if (temp.isNull()) {
         // this shouldn't happen as we already know that this ref points to valid geometry
         return false;
     }
+    DU::dumpEdges("reference geometry", temp.getShape());
+    DU::dumpEdges("saved geometry", savedGeometry.getShape());
     if (getMatcher()->compareGeometry(temp, savedGeometry)) {
         // reference still points to the same geometry
         return true;
@@ -498,14 +501,13 @@ ReferenceEntry DimensionAutoCorrect::searchViewForExactEdge(DrawViewPart* obj,
                                                             Part::TopoShape refEdge) const
 {
     Base::Console().Message("DAC::searchViewForExactEdge()\n");
-    double scale = getDimension()->getViewPart()->getScale();
     auto gEdgeAll = getDimension()->getViewPart()->getEdgeGeometry();
     int iEdge {0};
     for (auto& edge : gEdgeAll) {
         // edge is scaled and rotated. we need it in the same scale/rotate state as
         // the reference edge in order to match.
-        // static asCanonicalTopoShape(edge->asTopoShape(1.0), obj);
-        Part::TopoShape temp = edge->asTopoShape(scale);
+        Part::TopoShape temp = ReferenceEntry::asCanonicalTopoShape(edge->asTopoShape(1.0), *obj);
+        DU::dumpEdges("DAC::searchViewforedge temp", temp.getShape());
         bool isSame = getMatcher()->compareGeometry(refEdge, temp);
         if (isSame) {
             auto newSubname = std::string("Edge") + std::to_string(iEdge);

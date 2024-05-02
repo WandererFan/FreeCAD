@@ -450,37 +450,18 @@ App::DocumentObjectExecReturn* DrawViewDimension::execute()
         return  new App::DocumentObjectExecReturn("Dimension could not execute");
     }
 
+    m_referencesCorrect = true;
+    if (Preferences::autoCorrectDimRefs()) {
+        m_referencesCorrect = autocorrectReferences();
+    }
+    if (!m_referencesCorrect) {
+        new App::DocumentObjectExecReturn("Autocorrect failed to fix broken references", this);
+    }
+
+    // references are good, we can proceed
     resetLinear();
     resetAngular();
     resetArc();
-
-    // check if geometry pointed to by references matches the saved version. If
-    // everything matches, we don't need to correct anything.
-    std::vector<bool> referenceState;
-    bool refsAreValid = m_corrector->referencesHaveValidGeometry(referenceState);
-    Base::Console().Message("DVD::execute - refsAreValid (1): %d\n", refsAreValid);
-    if (!refsAreValid) {
-        m_corrector->set3dObjectCache(m_3dObjectCache);
-        ReferenceVector repairedRefs;
-        refsAreValid = m_corrector->autocorrectReferences(referenceState, repairedRefs);
-        Base::Console().Message("DVD::execute - refsAreValid (1): %d\n", refsAreValid);
-        if (!refsAreValid) {
-            // references are broken and we can not fix them
-            Base::Console().Warning("Autocorrect failed to fix references for %s\n",
-                                    getNameInDocument());
-            m_referencesCorrect = false;
-            return new App::DocumentObjectExecReturn("Autocorrect failed to fix broken references",
-                                                     this);
-        }
-        if (repairedRefs.front().is3d()) {
-            setReferences3d(repairedRefs);
-        }
-        else {
-            setReferences2d(repairedRefs);
-        }
-    }
-    // references are good, we can proceed
-    m_referencesCorrect = true;
 
     // we have either or both valid References3D and References2D
     ReferenceVector references = getEffectiveReferences();
@@ -488,6 +469,7 @@ App::DocumentObjectExecReturn* DrawViewDimension::execute()
     if (Type.isValue("Distance") || Type.isValue("DistanceX") || Type.isValue("DistanceY")) {
         if (getRefType() == oneEdge) {
             m_linearPoints = getPointsOneEdge(references);
+            m_linearPoints.dump("DVD::exec points 1 edge");
         }
         else if (getRefType() == twoEdge) {
             m_linearPoints = getPointsTwoEdges(references);
@@ -558,6 +540,35 @@ bool DrawViewDimension::okToProceed()
         return false;
     }
     return validateReferenceForm();
+}
+
+//! check if geometry pointed to by references matches the saved version. If
+//! everything matches, we don't need to correct anything.
+bool DrawViewDimension::autocorrectReferences()
+{
+    std::vector<bool> referenceState;
+    bool refsAreValid = m_corrector->referencesHaveValidGeometry(referenceState);
+    Base::Console().Message("DVD::autocorrectReferences - refsAreValid (1): %d\n", refsAreValid);
+    if (!refsAreValid) {
+        m_corrector->set3dObjectCache(m_3dObjectCache);
+        ReferenceVector repairedRefs;
+        refsAreValid = m_corrector->autocorrectReferences(referenceState, repairedRefs);
+        Base::Console().Message("DVD::autocorrectReferences - refsAreValid (2): %d\n", refsAreValid);
+        if (!refsAreValid) {
+            // references are broken and we can not fix them
+            Base::Console().Warning("Autocorrect failed to fix references for %s\n",
+                                    getNameInDocument());
+            return false;
+
+        }
+        if (repairedRefs.front().is3d()) {
+            setReferences3d(repairedRefs);
+        }
+        else {
+            setReferences2d(repairedRefs);
+        }
+    }
+    return true;
 }
 
 bool DrawViewDimension::isMultiValueSchema() const
@@ -1495,9 +1506,11 @@ void DrawViewDimension::updateSavedGeometry()
             continue;
         }
         if (entry.hasGeometry()) {
-            // we should convert the entry to canonical form if it is a 2d ref
-            // entry.asCanonicalTopoShape();
-            newGeometry.push_back(entry.asTopoShape());
+            newGeometry.push_back(entry.asCanonicalTopoShape());
+            TopoDS_Shape dbEntry = entry.asTopoShape().getShape();
+            DU::dumpEdges("DVD updateSaved", dbEntry);
+            TopoDS_Shape dbEntryCanon = entry.asCanonicalTopoShape().getShape();
+            DU::dumpEdges("DVD updateSavedCanon", dbEntryCanon);
         }
         else {
             // use old geometry entry? null shape? have to put something in the vector

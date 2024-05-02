@@ -157,12 +157,12 @@ bool GeometryMatcher::compareLines(TopoDS_Edge& edge1, TopoDS_Edge& edge2)
     }
     auto start1 = DU::toVector3d(BRep_Tool::Pnt(TopExp::FirstVertex(edge1)));
     auto end1 = DU::toVector3d(BRep_Tool::Pnt(TopExp::LastVertex(edge1)));
-    Base::Console().Message("GM::compareLines - edge1 start: %s  end:  %s\n",
+    Base::Console().Message("GM::compareLines - (refer) edge1 start: %s  end:  %s\n",
                             DU::formatVector(start1).c_str(),
                             DU::formatVector(end1).c_str());
     auto start2 = DU::toVector3d(BRep_Tool::Pnt(TopExp::FirstVertex(edge2)));
     auto end2 = DU::toVector3d(BRep_Tool::Pnt(TopExp::LastVertex(edge2)));
-    Base::Console().Message("GM::compareLines - edge2 start: %s  end:  %s\n",
+    Base::Console().Message("GM::compareLines - (saved) edge2 start: %s  end:  %s\n",
                             DU::formatVector(start2).c_str(),
                             DU::formatVector(end2).c_str());
     if (start1.IsEqual(start2, EWTOLERANCE) && end1.IsEqual(end2, EWTOLERANCE)) {
