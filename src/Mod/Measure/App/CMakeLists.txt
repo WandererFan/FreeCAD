@@ -54,6 +54,9 @@ SET(MeasureModule_SRCS
 
     Preferences.cpp
     Preferences.h
+
+    LinkCrawler.cpp
+    LinkCrawler.h
 )
 
 SOURCE_GROUP("Module" FILES ${MeasureModule_SRCS})
