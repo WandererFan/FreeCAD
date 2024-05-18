@@ -192,7 +192,7 @@ void TaskDimRepair::loadTableWidget(QTableWidget* tw, ReferenceVector refs)
         QTableWidgetItem* itemLabel = new QTableWidgetItem(qLabel);
         itemLabel->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         tw->setItem(iRow, 1, itemLabel);
-        QString qSubName = Base::Tools::fromStdString(ref.getSubName());
+        QString qSubName = Base::Tools::fromStdString(ref.getSubName(true));
         QTableWidgetItem* itemSubName = new QTableWidgetItem(qSubName);
         itemSubName->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         tw->setItem(iRow, 2, itemSubName);

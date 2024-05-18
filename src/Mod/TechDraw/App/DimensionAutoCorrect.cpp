@@ -44,7 +44,7 @@
 //            // reference
 //            replace(ref, newRef)
 //        else:
-//            // auto correct phase 2
+//            // auto correct phase 2 - to be implemented
 //            // we don't have any geometry that is identical to our saved geometry.
 //            // finding a match now becomes guess work.  we have to find the most
 //            // similar geometry (with at least some level of same-ness) and use
@@ -68,6 +68,7 @@
 #include <Base/Tools.h>
 
 #include <Mod/Part/App/TopoShape.h>
+#include <Mod/Measure/App/LinkCrawler.h>
 
 #include "GeometryMatcher.h"
 #include "DimensionReferences.h"
@@ -77,6 +78,7 @@
 #include "Preferences.h"
 
 using namespace TechDraw;
+using namespace Measure;
 using DU = DrawUtil;
 
 //! true if references point to valid geometry and the valid geometry matches the
@@ -102,14 +104,17 @@ bool DimensionAutoCorrect::referencesHaveValidGeometry(std::vector<bool>& refere
         if (entry.hasGeometry()) {
             // entry points to something, is it the correct geom?
             if (isMatchingGeometry(entry, savedGeometry.at(iRef))) {
+                // Base::Console().Message("DAC::refsHaveValidGeometry - ref: %d sub: %s matches saved geom\n", iRef, entry.getSubName(true));
                 referenceState.emplace_back(true);
             }
             else {
+                // Base::Console().Message("DAC::refsHaveValidGeometry - ref: %d sub: %s does not match saved geom\n", iRef, entry.getSubName(true));
                 result = false;
                 referenceState.emplace_back(false);
             }
         }
         else {
+            // Base::Console().Message("DAC::refsHaveValidGeometry - ref: %d sub: %s ha NO saved geom\n", iRef, entry.getSubName(true));
             result = false;
             referenceState.emplace_back(false);
         }
@@ -139,6 +144,18 @@ bool DimensionAutoCorrect::autocorrectReferences(std::vector<bool>& referenceSta
         return true;
     }
 
+    std::vector<Part::TopoShape> referenceGeometry;
+    for (auto& entry : refsAll) {
+        if (entry.hasGeometry()) {
+            // Base::Console().Message("DAC::autocorrectReferences - entry has geometry\n");
+            referenceGeometry.push_back(entry.asTopoShape());
+        }
+        else {
+            // Base::Console().Message("DAC::autocorrectReferences - entry has NO geometry\n");
+            referenceGeometry.push_back(Part::TopoShape());
+        }
+    }
+
     size_t iRef {0};
     for (const auto& state : referenceState) {
         if (state) {
@@ -149,8 +166,9 @@ bool DimensionAutoCorrect::autocorrectReferences(std::vector<bool>& referenceSta
             continue;
         }
 
-        const Part::TopoShape& temp = savedGeometry.at(iRef);
+        Part::TopoShape temp = savedGeometry.at(iRef);
         if (temp.isNull()) {
+            Base::Console().Message("DAC::autocorrectReferences - no saved geometry to use for correction\n");
             result = false;
             referenceState.at(iRef) = false;
             repairedRefs.push_back(refsAll.at(iRef));
@@ -161,29 +179,32 @@ bool DimensionAutoCorrect::autocorrectReferences(std::vector<bool>& referenceSta
 
         // this ref does not point to valid geometry or
         // the geometry it points to does not match the saved geometry
+
         ReferenceEntry fixedRef = refsAll.at(iRef);
 
         // first, look for an exact match to the saved geometry
         bool success = fix1GeomExact(fixedRef, savedGeometry.at(iRef).getShape());
         if (success) {
             // we did find a match
+            // Base::Console().Message("DAC::autocorrectReferences - found exact match with obj: %s sub  %s\n",
+            //                         fixedRef.getObjectName().c_str(), fixedRef.getSubName(true).c_str());
             referenceState.at(iRef) = true;
             repairedRefs.push_back(fixedRef);
             iRef++;
             continue;
         }
 
-        // we did not find an exact match, so check for an similar match
+        // we did not find an exact match, so check for a similar match
         success = fix1GeomSimilar(fixedRef, savedGeometry.at(iRef).getShape());
         if (success) {
-            // we did find an similar match
+            // we did find a similar match
             referenceState.at(iRef) = true;
             repairedRefs.push_back(fixedRef);
             iRef++;
             continue;
         }
 
-        // we did not find an similar match the geometry
+        // we did not find a similar match the geometry
         result = false;
         referenceState.at(iRef) = false;
         repairedRefs.push_back(fixedRef);
@@ -194,60 +215,60 @@ bool DimensionAutoCorrect::autocorrectReferences(std::vector<bool>& referenceSta
     return result;
 }
 
-//! fix a single reference with an exact match to geomToMatch
-bool DimensionAutoCorrect::fix1GeomExact(ReferenceEntry& refToFix, const TopoDS_Shape &geomToMatch) const
+//! fix a single reference with an exact match to savedGeom
+bool DimensionAutoCorrect::fix1GeomExact(ReferenceEntry& refToFix, const TopoDS_Shape& savedGeom) const
 {
     // Base::Console().Message("DAC::fix1GeomExact()\n");
     ReferenceEntry fixedRef = refToFix;
-    Part::TopoShape topoShapeToMatch(geomToMatch);
+    Part::TopoShape savedGeomToMatch(savedGeom);
     bool success {false};
     if (refToFix.is3d()) {
         if (!refToFix.getObject() && m_3dObjectCache.empty()) {
             return false;
         }
-        if (geomToMatch.ShapeType() == TopAbs_VERTEX) {
-            success = findExactVertex3d(refToFix, topoShapeToMatch);
+        if (savedGeom.ShapeType() == TopAbs_VERTEX) {
+            success = findExactVertex3d(refToFix, savedGeomToMatch);
         }
         else {
-            success = findExactEdge3d(refToFix, topoShapeToMatch);
+            success = findExactEdge3d(refToFix, savedGeomToMatch);
         }
     }
     else {
-        if (geomToMatch.ShapeType() == TopAbs_VERTEX) {
-            success = findExactVertex2d(refToFix, topoShapeToMatch);
+        if (savedGeom.ShapeType() == TopAbs_VERTEX) {
+            success = findExactVertex2d(refToFix, savedGeomToMatch);
         }
         else {
-            success = findExactEdge2d(refToFix, topoShapeToMatch);
+            success = findExactEdge2d(refToFix, savedGeomToMatch);
         }
     }
     return success;
 }
 
 
-//! fix a single reference with an Similar match to geomToMatch
-bool DimensionAutoCorrect::fix1GeomSimilar(ReferenceEntry& refToFix, const TopoDS_Shape &geomToMatch) const
+//! fix a single reference with an Similar match to savedGeom
+bool DimensionAutoCorrect::fix1GeomSimilar(ReferenceEntry& refToFix, const TopoDS_Shape& savedGeom) const
 {
     // Base::Console().Message("DAC::fix1GeomSimilar()\n");
-    Part::TopoShape topoShapeToMatch(geomToMatch);
+    Part::TopoShape savedGeomToMatch(savedGeom);
     bool success {false};
     if (refToFix.is3d()) {
         if (!refToFix.getObject() && m_3dObjectCache.empty()) {
             // can't fix this. nothing to compare.
             return false;
         }
-        if (geomToMatch.ShapeType() == TopAbs_VERTEX) {
-            success = findSimilarVertex3d(refToFix, topoShapeToMatch);
+        if (savedGeom.ShapeType() == TopAbs_VERTEX) {
+            success = findSimilarVertex3d(refToFix, savedGeomToMatch);
         }
         else {
-            success = findSimilarEdge3d(refToFix, topoShapeToMatch);
+            success = findSimilarEdge3d(refToFix, savedGeomToMatch);
         }
     }
     else {
-        if (geomToMatch.ShapeType() == TopAbs_VERTEX) {
-            success = findSimilarVertex2d(refToFix, topoShapeToMatch);
+        if (savedGeom.ShapeType() == TopAbs_VERTEX) {
+            success = findSimilarVertex2d(refToFix, savedGeomToMatch);
         }
         else {
-            success = findSimilarEdge2d(refToFix, topoShapeToMatch);
+            success = findSimilarEdge2d(refToFix, savedGeomToMatch);
         }
     }
     return success;
@@ -289,7 +310,8 @@ bool DimensionAutoCorrect::findExactEdge2d(ReferenceEntry& refToFix, const Part:
             return true;
         }
     }
-    // no match
+
+    // no match, return the input reference
     return false;
 }
 
@@ -413,10 +435,12 @@ bool DimensionAutoCorrect::findSimilarEdge3d(ReferenceEntry& refToFix,
 bool DimensionAutoCorrect::isMatchingGeometry(const ReferenceEntry& ref,
                                               const Part::TopoShape& savedGeometry) const
 {
-    // Base::Console().Message("DAC::isMatchingGeometry()\n");
-    Part::TopoShape temp = ref.asCanonicalTopoShape();
+    auto shape3d = LinkCrawler::getLocatedShape(*ref.getObject(), ref.getSubName(true));
+    Part::TopoShape temp(shape3d);
+
     if (temp.isNull()) {
         // this shouldn't happen as we already know that this ref points to valid geometry
+        Base::Console().Message("DAC::isMatchingGeometry - reference's shape is null\n");
         return false;
     }
     if (getMatcher()->compareGeometry(temp, savedGeometry)) {
@@ -424,18 +448,21 @@ bool DimensionAutoCorrect::isMatchingGeometry(const ReferenceEntry& ref,
         return true;
     }
 
+    // Base::Console().Message("DAC::isMatchingGeometry - reference's shape does not match\n");
     return false;
 }
 
 //! search obj (3d object with a shape) for a match to refVertex.  This is always
 //! an exact match for phase 1 (GeometryMatcher), but in phase 2 (GeometryGuesser)
 //! a similar match will be allowed.
+//!     searchObjForVert(App::DocumentObject* obj, const Part::TopoShape& refVertex, bool exact = true) const;
 ReferenceEntry DimensionAutoCorrect::searchObjForVert(App::DocumentObject* obj,
                                                       const Part::TopoShape& refVertex,
                                                       bool exact) const
 {
     (void)exact;
-    auto shape3d = Part::Feature::getShape(obj);
+    auto shape3d = LinkCrawler::getLocatedShape(*obj, "");
+    // auto shape3d = Part::Feature::getShape(obj);
     if (shape3d.IsNull()) {
         // how to handle this?
         return {};
@@ -443,7 +470,7 @@ ReferenceEntry DimensionAutoCorrect::searchObjForVert(App::DocumentObject* obj,
     auto vertsAll = getDimension()->getVertexes(shape3d);
     size_t iVert {1};
     for (auto& vert : vertsAll) {
-        bool isSame = getMatcher()->compareGeometry(vert, refVertex);
+        bool isSame = getMatcher()->compareGeometry(refVertex, vert);
         if (isSame) {
             auto newSubname = std::string("Vertex") + std::to_string(iVert);
             return {obj, newSubname, getDimension()->getDocument()};
@@ -523,6 +550,7 @@ ReferenceEntry DimensionAutoCorrect::searchObjForEdge(App::DocumentObject* obj,
     auto shape3d = Part::Feature::getShape(obj);
     if (shape3d.IsNull()) {
         // how to handle this?
+        // Base::Console().Message("DAC::searchObjForEdge - object shape is null\n");
         return {};
     }
     auto edgesAll = getDimension()->getEdges(shape3d);

@@ -33,7 +33,10 @@
 #include <App/GeoFeature.h>
 #include <App/DocumentObject.h>
 #include <App/Document.h>
+#include <App/Link.h>
 #include <Base/Console.h>
+
+#include <Mod/Measure/App/LinkCrawler.h>
 #include <Mod/Part/App/TopoShape.h>
 #include <Mod/PartDesign/App/Body.h>
 #include <Mod/PartDesign/App/Feature.h>
@@ -45,6 +48,7 @@
 #include "CosmeticVertex.h"
 
 using namespace TechDraw;
+using namespace Measure;
 using DU = DrawUtil;
 using SU = ShapeUtils;
 
@@ -66,7 +70,7 @@ ReferenceEntry::ReferenceEntry( App::DocumentObject* docObject, std::string subN
 ReferenceEntry::ReferenceEntry(const ReferenceEntry& other)
 {
     setObject(other.getObject());
-    setSubName(other.getSubName());
+    setSubName(other.getSubName(true));
     setObjectName(other.getObjectName());
     setDocument(other.getDocument());
 }
@@ -79,7 +83,7 @@ ReferenceEntry& ReferenceEntry::operator=(const ReferenceEntry& otherRef)
         return *this;
     }
     setObject(otherRef.getObject());
-    setSubName(otherRef.getSubName());
+    setSubName(otherRef.getSubName(true));
     setObjectName(otherRef.getObjectName());
     setDocument(otherRef.getDocument());
     return *this;
@@ -95,7 +99,7 @@ bool ReferenceEntry::operator==(const ReferenceEntry& otherRef) const
 TopoDS_Shape ReferenceEntry::getGeometry() const
 {
     // Base::Console().Message("RE::getGeometry() - objectName: %s  sub: **%s**\n",
-    //                        getObjectName(), getSubName());
+    //                        getObjectName(), getSubName(true));
     // first, make sure the object has not been deleted!
     App::DocumentObject* obj = getDocument()->getObject(getObjectName().c_str());
     if (!obj) {
@@ -112,17 +116,7 @@ TopoDS_Shape ReferenceEntry::getGeometry() const
     }
 
     // 3d geometry
-    Part::TopoShape shape = Part::Feature::getTopoShape(getObject());
-    auto geoFeat = dynamic_cast<App::GeoFeature*>(getObject());
-    if (geoFeat) {
-        shape.setPlacement(geoFeat->globalPlacement());
-    }
-
-    if (getSubName().empty()) {
-        return shape.getShape();
-    }
-    // TODO: what happens if the subelement is no longer present?
-    return shape.getSubShape(getSubName().c_str());
+    return LinkCrawler::getLocatedShape(*getObject(), getSubName(true));
 }
 
 
@@ -159,10 +153,8 @@ TopoDS_Shape ReferenceEntry::getGeometry2d() const
         }
     }
     catch (...) {
-        Base::Console().Message("RE::getGeometry2d - no shape for dimension 2d reference - gType: **%s**\n", gType.c_str());
-        return {};
+        Base::Console().Message("RE::getGeometry - no shape for dimension 2d reference - gType: **%s**\n", gType.c_str());
     }
-
     return {};
 }
 
@@ -172,12 +164,8 @@ std::string ReferenceEntry::getSubName(bool longForm) const
     if (longForm) {
         return m_subName;
     }
-    std::string workingSubName(m_subName);
-    size_t lastDot = workingSubName.rfind('.');
-    if (lastDot != std::string::npos) {
-        workingSubName = workingSubName.substr(lastDot + 1);
-    }
-    return workingSubName;
+
+    return LinkCrawler::getLastTerm(m_subName);
 }
 
 
@@ -295,19 +283,25 @@ bool ReferenceEntry::isWholeObject() const
 //! true if this reference point to 3d model geometry
 bool ReferenceEntry::is3d() const
 {
-    if (!getObject()) {
-        // we should really fail here?
-        return false;
-    }
-    if (getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())) {
+    if (getObject() &&
+        getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId()) &&
+        !getSubName().empty()) {
+        // this is a well formed 2d reference
         return false;
     }
 
+    if (getObject() &&
+        getObject()->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId()) &&
+        getSubName().empty()) {
+        // this is a broken 3d reference, so it should be treated as 3d
+        return true;
+    }
+
+    // either we have no object or we have an object and it is a 3d object
     return true;
 }
 
-
-//! true if the target of this reference has a shape
+//! check if this reference has valid geometry in the model
 bool ReferenceEntry::hasGeometry() const
 {
     // Base::Console().Message("RE::hasGeometry()\n");

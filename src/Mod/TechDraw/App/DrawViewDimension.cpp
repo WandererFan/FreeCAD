@@ -1467,7 +1467,7 @@ int DrawViewDimension::getRefType() const
 // decide what the reference configuration is by examining the names of the sub elements
 int DrawViewDimension::getRefTypeSubElements(const std::vector<std::string>& subElements)
 {
-    int refType = invalidRef;
+    int refType{invalidRef};
     int refEdges{0};
     int refVertices{0};
     int refFaces{0};
@@ -1841,8 +1841,8 @@ void DrawViewDimension::dumpRefs2D(const char* text) const
     Base::Console().Message("DUMP - %s\n", text);
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
     const std::vector<std::string>& subElements = References2D.getSubValues();
-    std::vector<App::DocumentObject*>::const_iterator objIt = objects.begin();
-    std::vector<std::string>::const_iterator subIt = subElements.begin();
+    auto objIt = objects.begin();
+    auto subIt = subElements.begin();
     int i = 0;
     for (; objIt != objects.end(); objIt++, subIt++, i++) {
         Base::Console().Message("DUMP - ref: %d object: %s subElement: %s\n",
