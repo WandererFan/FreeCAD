@@ -435,8 +435,15 @@ bool DimensionAutoCorrect::findSimilarEdge3d(ReferenceEntry& refToFix,
 bool DimensionAutoCorrect::isMatchingGeometry(const ReferenceEntry& ref,
                                               const Part::TopoShape& savedGeometry) const
 {
-    auto shape3d = LinkCrawler::getLocatedShape(*ref.getObject(), ref.getSubName(true));
-    Part::TopoShape temp(shape3d);
+    Part::TopoShape temp;
+    if (ref.is3d()) {
+        auto shape3d = LinkCrawler::getLocatedShape(*ref.getObject(), ref.getSubName(true));
+        temp = Part::TopoShape(shape3d);
+    } else {
+        auto shape2d = ref.getGeometry();
+        temp = Part::TopoShape(shape2d);
+    }
+
 
     if (temp.isNull()) {
         // this shouldn't happen as we already know that this ref points to valid geometry

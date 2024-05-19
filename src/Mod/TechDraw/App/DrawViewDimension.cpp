@@ -540,13 +540,14 @@ bool DrawViewDimension::okToProceed()
 
     if (!(has2DReferences() || has3DReferences())) {
         // no references, can't do anything
-        // Base::Console().Message("DVD::okToProceed - Dimension object has no valid references\n");
+        // Base::Console().Warning("DVD::okToProceed - Dimension object has no valid references\n");
         return false;
     }
 
     if (!getViewPart()->hasGeometry()) {
-        // can't do anything until Source has geometry
-        // Base::Console().Message("DVD::okToProceed - Dimension object has no geometry\n");
+        // can't do anything until Source has geometry. we will get asked to recompute many times
+        // during the document load process before Source is ready.
+        // Base::Console().Warning("DVD::okToProceed - Dimension object has no geometry\n");
         return false;
     }
 
@@ -635,7 +636,6 @@ QStringList DrawViewDimension::getPrefixSuffixSpec(const QString &fSpec)
 //! NOTE: this returns the Dimension value in internal units (ie mm)!!!!
 double DrawViewDimension::getDimValue()
 {
-    //    Base::Console().Message("DVD::getDimValue()\n");
     constexpr double CircleDegrees{360.0};
     double result = 0.0;
     if (!has2DReferences() && !has3DReferences()) {
@@ -684,7 +684,6 @@ double DrawViewDimension::getDimValue()
 //! retrieve the dimension value for "true" dimensions. The returned value is in internal units (mm).
 double DrawViewDimension::getTrueDimValue() const
 {
-    //    Base::Console().Message("DVD::getTrueDimValue()\n");
     double result = 0.0;
 
     if (Type.isValue("Distance") || Type.isValue("DistanceX") || Type.isValue("DistanceY")) {
@@ -694,7 +693,7 @@ double DrawViewDimension::getTrueDimValue() const
         result = measurement->radius();
     }
     else if (Type.isValue("Diameter")) {
-        result = 2.0 * measurement->radius();
+        result = 2 * measurement->radius();
     }
     else if (Type.isValue("Angle") || Type.isValue("Angle3Pt")) {
         result = measurement->angle();
@@ -711,7 +710,6 @@ double DrawViewDimension::getTrueDimValue() const
 //! retrieve the dimension value for "projected" (2d) dimensions. The returned value is in internal units (mm).
 double DrawViewDimension::getProjectedDimValue() const
 {
-    //    Base::Console().Message("DVD::getProjectedDimValue()\n");
     double result = 0.0;
 
     if (Type.isValue("Distance") || Type.isValue("DistanceX") || Type.isValue("DistanceY")) {
@@ -726,7 +724,7 @@ double DrawViewDimension::getProjectedDimValue() const
             // then we should not move the points.
             //
             pts.invertY();
-            pts.scale(1.0 / getViewPart()->getScale());
+            pts.scale(1 / getViewPart()->getScale());
             pts.first(dbv->mapPoint2dFromView(pts.first()));
             pts.second(dbv->mapPoint2dFromView(pts.second()));
             pts.invertY();
@@ -749,7 +747,7 @@ double DrawViewDimension::getProjectedDimValue() const
     }
     else if (Type.isValue("Diameter")) {
         arcPoints pts = m_arcPoints;
-        result = (pts.radius * 2.0)
+        result = (pts.radius * 2)
             / getViewPart()->getScale();  // Projected BaseGeom is scaled for drawing
     }
     else if (Type.isValue("Angle") || Type.isValue("Angle3Pt")) {  // same as case "Angle"?
@@ -770,7 +768,6 @@ double DrawViewDimension::getProjectedDimValue() const
 
 pointPair DrawViewDimension::getPointsOneEdge(ReferenceVector references)
 {
-    // Base::Console().Message("DVD::getPointsOneEdge()\n");
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement = DrawUtil::getIndexFromName(references.front().getSubName());
     if (refObject->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())
@@ -811,7 +808,6 @@ pointPair DrawViewDimension::getPointsOneEdge(ReferenceVector references)
 
 pointPair DrawViewDimension::getPointsTwoEdges(ReferenceVector references)
 {
-    //    Base::Console().Message("DVD::getPointsTwoEdges() - %s\n", getNameInDocument());
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement0 = DrawUtil::getIndexFromName(references.at(0).getSubName());
     int iSubelement1 = DrawUtil::getIndexFromName(references.at(1).getSubName());
@@ -844,7 +840,6 @@ pointPair DrawViewDimension::getPointsTwoEdges(ReferenceVector references)
 
 pointPair DrawViewDimension::getPointsTwoVerts(ReferenceVector references)
 {
-    //    Base::Console().Message("DVD::getPointsTwoVerts() - %s\n", getNameInDocument());
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement0 = DrawUtil::getIndexFromName(references.at(0).getSubName());
     int iSubelement1 = DrawUtil::getIndexFromName(references.at(1).getSubName());
@@ -882,7 +877,6 @@ pointPair DrawViewDimension::getPointsTwoVerts(ReferenceVector references)
 
 pointPair DrawViewDimension::getPointsEdgeVert(ReferenceVector references)
 {
-    //    Base::Console().Message("DVD::getPointsEdgeVert() - %s\n", getNameInDocument());
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement0 = DrawUtil::getIndexFromName(references.at(0).getSubName());
     int iSubelement1 = DrawUtil::getIndexFromName(references.at(1).getSubName());
@@ -940,7 +934,6 @@ pointPair DrawViewDimension::getPointsEdgeVert(ReferenceVector references)
 
 arcPoints DrawViewDimension::getArcParameters(ReferenceVector references)
 {
-    //    Base::Console().Message("DVD::getArcParameters()\n");
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement = DrawUtil::getIndexFromName(references.front().getSubName());
     if (refObject->isDerivedFrom(TechDraw::DrawViewPart::getClassTypeId())
@@ -1001,7 +994,7 @@ arcPoints DrawViewDimension::arcPointsFromBaseGeom(TechDraw::BaseGeomPtr base)
         if (ellipse->closed()) {
             double r1 = ellipse->minor;
             double r2 = ellipse->major;
-            double rAvg = (r1 + r2) / 2.0;
+            double rAvg = (r1 + r2) / 2;
             pts.center = Base::Vector3d(ellipse->center.x, ellipse->center.y, 0.0);
             pts.radius = rAvg;
             pts.isArc = false;
@@ -1014,7 +1007,7 @@ arcPoints DrawViewDimension::arcPointsFromBaseGeom(TechDraw::BaseGeomPtr base)
             TechDraw::AOEPtr aoe = std::static_pointer_cast<TechDraw::AOE>(base);
             double r1 = aoe->minor;
             double r2 = aoe->major;
-            double rAvg = (r1 + r2) / 2.0;
+            double rAvg = (r1 + r2) / 2;
             pts.isArc = true;
             pts.center = Base::Vector3d(aoe->center.x, aoe->center.y, 0.0);
             pts.radius = rAvg;
@@ -1078,7 +1071,7 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
     BRepAdaptor_Curve adapt(occEdge);
     double pFirst = adapt.FirstParameter();
     double pLast = adapt.LastParameter();
-    double pMid = (pFirst + pLast) / 2.0;
+    double pMid = (pFirst + pLast) / 2;
     BRepLProp_CLProps props(adapt, pFirst, 0, Precision::Confusion());
     pts.arcEnds.first(DrawUtil::toVector3d(props.Value()));
     props.SetParameter(pLast);
@@ -1111,7 +1104,7 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
     else if (adapt.GetType() == GeomAbs_Ellipse) {
         gp_Elips ellipse = adapt.Ellipse();
         pts.center = DrawUtil::toVector3d(ellipse.Location());
-        pts.radius = (ellipse.MajorRadius() + ellipse.MinorRadius()) / 2.0;
+        pts.radius = (ellipse.MajorRadius() + ellipse.MinorRadius()) / 2;
         if (pts.isArc) {
             // part of ellipse
             gp_Ax1 axis = ellipse.Axis();
@@ -1170,7 +1163,6 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
 
 anglePoints DrawViewDimension::getAnglePointsTwoEdges(ReferenceVector references)
 {
-    // Base::Console().Message("DVD::getAnglePointsTwoEdges() - %s\n", getNameInDocument());
     App::DocumentObject* refObject = references.front().getObject();
     int iSubelement0 = DrawUtil::getIndexFromName(references.at(0).getSubName());
     int iSubelement1 = DrawUtil::getIndexFromName(references.at(1).getSubName());
@@ -1305,7 +1297,6 @@ anglePoints DrawViewDimension::getAnglePointsTwoEdges(ReferenceVector references
 // somewhere?
 anglePoints DrawViewDimension::getAnglePointsThreeVerts(ReferenceVector references)
 {
-    //    Base::Console().Message("DVD::getAnglePointsThreeVerts() - %s\n", getNameInDocument());
     if (references.size() < 3) {
         throw Base::RuntimeError("Not enough references to make angle dimension");
     }
@@ -1396,7 +1387,6 @@ DrawViewPart* DrawViewDimension::getViewPart() const
 // subName)
 ReferenceVector DrawViewDimension::getEffectiveReferences() const
 {
-    // Base::Console().Message("DVD::getEffectiveReferences()\n");
     const std::vector<App::DocumentObject*>& objects3d = References3D.getValues();
     const std::vector<std::string>& subElements3d = References3D.getSubValues();
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
@@ -1509,7 +1499,6 @@ int DrawViewDimension::getRefTypeSubElements(const std::vector<std::string>& sub
 //! validate 2D references - only checks if the target exists
 bool DrawViewDimension::checkReferences2D() const
 {
-    // Base::Console().Message("DVD::checkReferences2d() - %s\n", getNameInDocument());
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
     if (objects.empty()) {
         return false;
@@ -1568,8 +1557,6 @@ bool DrawViewDimension::hasBroken3dReferences() const
 
 void DrawViewDimension::updateSavedGeometry()
 {
-    // Base::Console().Message("DVD::updateSavedGeometry() - %s - savedGeometry: %d\n",
-    //    getNameInDocument(), SavedGeometry.getValues().size());
     ReferenceVector references = getEffectiveReferences();
     if (references.empty()) {
         // no references to save
@@ -1658,7 +1645,6 @@ pointPair DrawViewDimension::closestPoints(TopoDS_Shape s1, TopoDS_Shape s2) con
 // set the reference property from a reference vector
 void DrawViewDimension::setReferences2d(ReferenceVector refsAll)
 {
-    // Base::Console().Message("DVD::setReferences2d(%d)\n", refs.size());
     std::vector<App::DocumentObject*> objects;
     std::vector<std::string> subNames;
     if (objects.size() != subNames.size()) {
@@ -1676,7 +1662,6 @@ void DrawViewDimension::setReferences2d(ReferenceVector refsAll)
 // set the reference property from a reference vector
 void DrawViewDimension::setReferences3d(ReferenceVector refsAll)
 {
-    // Base::Console().Message("DVD::setReferences3d()\n");
     if (refsAll.empty() && !References3D.getValues().empty()) {
         // clear the property of any old links
         References3D.setValue(nullptr, nullptr);
@@ -1690,7 +1675,7 @@ void DrawViewDimension::setReferences3d(ReferenceVector refsAll)
 
     for (auto& ref : refsAll) {
         objects.push_back(ref.getObject());
-        subNames.push_back(ref.getSubName());
+        subNames.push_back(ref.getSubName(true));
         // cache the referenced object
         m_3dObjectCache.insert(ref.getObject()->getNameInDocument());
         // cache the parent object if available.  Ideally, we would handle deletion
@@ -1710,7 +1695,6 @@ void DrawViewDimension::setReferences3d(ReferenceVector refsAll)
 //! add Dimension 3D references to measurement
 void DrawViewDimension::setAll3DMeasurement()
 {
-    // Base::Console().Message("DVD::setAll3dMeasurement()\n");
     measurement->clear();
     const std::vector<App::DocumentObject*>& Objs = References3D.getValues();
     const std::vector<std::string>& Subs = References3D.getSubValues();
@@ -1736,7 +1720,6 @@ void DrawViewDimension::setAll3DMeasurement()
 //! dimension.
 bool DrawViewDimension::validateReferenceForm() const
 {
-    // Base::Console().Message("DVD::validateReferenceForm()\n");
    // we have either or both valid References3D and References2D
     ReferenceVector references = getEffectiveReferences();
     if (references.empty()) {
@@ -1852,6 +1835,7 @@ void DrawViewDimension::dumpRefs2D(const char* text) const
     }
 }
 
+// TODO: this should go into DrawUtil or ShapeUtil or ??
 double DrawViewDimension::dist2Segs(Base::Vector3d s1,
                                     Base::Vector3d e1,
                                     Base::Vector3d s2,
@@ -1959,7 +1943,6 @@ pointPair DrawViewDimension::getArrowPositions()
 
 bool DrawViewDimension::has2DReferences() const
 {
-    //    Base::Console().Message("DVD::has2DReferences() - %s\n",getNameInDocument());
     const std::vector<App::DocumentObject*>& objects = References2D.getValues();
     const std::vector<std::string>& subNames = References2D.getSubValues();
     if (objects.empty()) {
@@ -2036,6 +2019,8 @@ PyObject* DrawViewDimension::getPyObject()
     return Py::new_reference_to(PythonObject);
 }
 
+
+//! store the corners of this dimension's base view for use by phase 2 of the auto correct process.
 void DrawViewDimension::saveFeatureBox()
 {
     std::vector<Base::Vector3d> bbxCorners;

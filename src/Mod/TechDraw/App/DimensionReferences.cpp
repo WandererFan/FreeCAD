@@ -53,7 +53,7 @@ using DU = DrawUtil;
 using SU = ShapeUtils;
 
 
-ReferenceEntry::ReferenceEntry( App::DocumentObject* docObject, std::string subName, App::Document* document)
+ReferenceEntry::ReferenceEntry( App::DocumentObject* docObject, const std::string& subName, App::Document* document)
 {
     setObject(docObject);
     setSubName(subName);
@@ -98,8 +98,6 @@ bool ReferenceEntry::operator==(const ReferenceEntry& otherRef) const
 
 TopoDS_Shape ReferenceEntry::getGeometry() const
 {
-    // Base::Console().Message("RE::getGeometry() - objectName: %s  sub: **%s**\n",
-    //                        getObjectName(), getSubName(true));
     // first, make sure the object has not been deleted!
     App::DocumentObject* obj = getDocument()->getObject(getObjectName().c_str());
     if (!obj) {
@@ -123,7 +121,6 @@ TopoDS_Shape ReferenceEntry::getGeometry() const
 //! get a shape for this 2d reference
 TopoDS_Shape ReferenceEntry::getGeometry2d() const
 {
-    // Base::Console().Message("RE::getGeometry2d()\n");
     std::string gType;
     try {
         auto dvp = static_cast<TechDraw::DrawViewPart*>(getObject());   //NOLINT cppcoreguidelines-pro-type-static-cast-downcast
@@ -186,10 +183,8 @@ App::DocumentObject* ReferenceEntry::getObject() const
 //! return the reference geometry as a Part::TopoShape.
 Part::TopoShape ReferenceEntry::asTopoShape() const
 {
-    // Base::Console().Message("RE::asTopoShape()\n");
     TopoDS_Shape geom = getGeometry();
     if (geom.IsNull()) {
-        // throw Base::RuntimeError("Dimension Reference has null geometry");
         return {};
     }
     if (geom.ShapeType() == TopAbs_VERTEX) {
@@ -210,7 +205,6 @@ Part::TopoShape ReferenceEntry::asTopoShape() const
 //! returns unscaled, unrotated version of inShape. inShape is assumed to be a 2d shape, but this is not enforced.
 Part::TopoShape ReferenceEntry::asCanonicalTopoShape() const
 {
-    // Base::Console().Message("RE::asCanonicalTopoShape()\n");
     if (is3d()) {
         return asTopoShape();
     }
@@ -228,7 +222,6 @@ Part::TopoShape ReferenceEntry::asCanonicalTopoShape() const
 //! operations.
 Part::TopoShape ReferenceEntry::asCanonicalTopoShape(const Part::TopoShape& inShape, const DrawViewPart& dvp)
 {
-    // Base::Console().Message("RE::(static)asCanonicalTopoShape()\n");
     gp_Ax2 OXYZ;
     auto unscaledShape = SU::scaleShape(inShape.getShape(), 1.0 / dvp.getScale());
     if (dvp.Rotation.getValue() != 0.0) {
@@ -258,7 +251,6 @@ Part::TopoShape ReferenceEntry::asTopoShapeFace(const TopoDS_Face &face)
 
 std::string ReferenceEntry::geomType() const
 {
-    // Base::Console().Message("RE::geomType() - subName: **%s**\n", getSubName().c_str());
     return DrawUtil::getGeomTypeFromName(getSubName());
 }
 
@@ -304,7 +296,6 @@ bool ReferenceEntry::is3d() const
 //! check if this reference has valid geometry in the model
 bool ReferenceEntry::hasGeometry() const
 {
-    // Base::Console().Message("RE::hasGeometry()\n");
     if (!getObject()) {
         return false;
     }
@@ -315,6 +306,7 @@ bool ReferenceEntry::hasGeometry() const
     }
 
     // 3d reference
+    // TODO: shouldn't this be LinkCrawler.getLocatedShape?
     auto shape = Part::Feature::getTopoShape(getObject());
     auto subShape = shape.getSubShape(getSubName().c_str());
 

@@ -2100,6 +2100,9 @@ void QGIViewDimension::drawAreaExecutive(const Base::Vector2d& centerPoint, doub
                                            double centerOverhang, int standardStyle,
                                            int renderExtent, bool flipArrow) const
 {
+    (void)area;
+    (void)centerOverhang;
+    (void)renderExtent;
     QPainterPath areaPath;
 
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
@@ -2595,9 +2598,6 @@ void QGIViewDimension::drawArea(TechDraw::DrawViewDimension* dimension,
     Base::BoundBox2d labelRectangle(
         fromQtGui(mapRectFromItem(datumLabel, datumLabel->boundingRect())));
     areaPoint areaPoint = dimension->getAreaPoint();
-
-    double endAngle;
-    double startRotation;
 
     drawAreaExecutive(
         fromQtApp(areaPoint.center), areaPoint.area, labelRectangle, 0.0, viewProvider->StandardAndStyle.getValue(),

@@ -45,31 +45,29 @@ ResolveResult::ResolveResult(const App::DocumentObject* realTarget, const std::s
 
 App::DocumentObject& ResolveResult::getTarget() const
 {
-    // Base::Console().Message("RR::getTarget()\n");
     return *(m_target.getObject());
 }
 
 std::string ResolveResult::getShortSub() const
 {
-    // Base::Console().Message("RR::getShortSub()\n");
     return m_target.getSubName();
 }
 
 App::DocumentObject& ResolveResult::getTargetParent() const
 {
-    // Base::Console().Message("RR::getTargetParent()\n");
     return *(m_targetParent.getObject());
 }
 
 
-//! LinKCrawler is a class to obtain the located shape pointed at by a selection. It hides the complexities of
-//! obtaining the correct object and its placement.
 
-//! returns the actual target object and subname pointed to by selectObj and selectLongSub which originated in getSelection
-//! or getSelectionEx
+//! LinKCrawler is a class to obtain the located shape pointed at by a DocumentObject and a
+//! "new-style" long subelement name. It hides the complexities of obtaining the correct object
+//! and its placement.
+
+//! returns the actual target object and subname pointed to by selectObj and selectLongSub (which
+//! is likely a result from getSelection or getSelectionEx)
 ResolveResult LinkCrawler::resolveSelection(const App::DocumentObject& selectObj, const std::string& selectLongSub)
 {
-    // Base::Console().Message("LC::resolveSelection()\n");
     App::DocumentObject* targetParent{nullptr};
     std::string childName{};
     const char* subElement{nullptr};
@@ -84,6 +82,7 @@ ResolveResult LinkCrawler::resolveSelection(const App::DocumentObject& selectObj
 
 //! returns the shape of rootObject+leafSub with all the relevant placements applied to it.  The rootObject and
 //! leafSub are typically obtained from Selection.
+// TODO: only GeoFeature and LinkElement root objects tested so far
 TopoDS_Shape LinkCrawler::getLocatedShape(const App::DocumentObject& rootObject, const std::string& leafSub)
 {
     auto resolved = resolveSelection(rootObject, leafSub);
@@ -98,7 +97,7 @@ TopoDS_Shape LinkCrawler::getLocatedShape(const App::DocumentObject& rootObject,
         // get the total placement above the target.  This is where we deal with things like LinkElements
         // that are not GeoFeatures and do not provide a global placement
         std::vector<Base::Placement> plmStack;
-        std::string newSub = pruneLastTerm(leafSub);    // remove Vertex1
+        std::string newSub = pruneLastTerm(leafSub);    // remove "Vertex1"
         crawlPlacementChain(plmStack, rootObject, newSub);
         // apply the placements from the top down to us
         auto itRev = plmStack.rbegin();
@@ -131,7 +130,6 @@ void LinkCrawler::crawlPlacementChain(std::vector<Base::Placement>& plmStack,
                                                               const App::DocumentObject& rootObject,
                                                               const std::string& leafSub)
 {
-    // Base::Console().Message("LC::crawlPlacementChain(%s, %s)\n", rootObject.getNameInDocument(), leafSub);
     Base::Placement summedPlm;
     auto currentSub = leafSub;
     auto currentObject = &rootObject;
@@ -162,7 +160,6 @@ void LinkCrawler::crawlPlacementChain(std::vector<Base::Placement>& plmStack,
 //! return the last term of a dot separated string - A.B.C returns C
 std::string LinkCrawler::getLastTerm(const std::string& inString)
 {
-    // Base::Console().Message("LC::getLastTerm()\n");
     auto result{inString};
     size_t lastDot = inString.rfind('.');
     if (lastDot != std::string::npos) {
@@ -174,7 +171,6 @@ std::string LinkCrawler::getLastTerm(const std::string& inString)
 //! return a dot separated string without its last term - A.B.C returns A.B
 std::string LinkCrawler::pruneLastTerm(const std::string& inString)
 {
-//    Base::Console().Message("LC::pruneLastTerm()\n");
     auto result{inString};
     if (result.back() == '.') {
         // skip a trailing '.'
@@ -188,14 +184,15 @@ std::string LinkCrawler::pruneLastTerm(const std::string& inString)
 }
 
 //! return the Vertex part of a subName like Vertex1
+// TODO: this method already exists in TechDraw, but we can't call that as it would set up a
+//       circular dependency between Measure and TD
 std::string LinkCrawler::getGeomTypeFromName(const std::string& geomName)
 {
-    // Base::Console().Message("LC::getGeomTypeFromName()\n");
     if (geomName.empty()) {
         throw Base::ValueError("getGeomTypeFromName - empty geometry name");
     }
 
-    boost::regex re("^[a-zA-Z]*");//one or more letters at start of string
+    boost::regex re("^[a-zA-Z]*");      //one or more letters at start of string
     boost::match_results<std::string::const_iterator> what;
     boost::match_flag_type flags = boost::match_default;
     std::string::const_iterator begin = geomName.begin();
@@ -215,6 +212,7 @@ std::string LinkCrawler::getGeomTypeFromName(const std::string& geomName)
 }
 
 //! debugging routine that returns a string representation of a placement.
+// TODO: this should be in Base::Placement?
 std::string LinkCrawler::PlacementAsString(const Base::Placement& inPlacement)
 {
     auto position = inPlacement.getPosition();
