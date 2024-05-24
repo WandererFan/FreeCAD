@@ -42,9 +42,12 @@
 
 #include <Base/Console.h>
 #include <Base/Exception.h>
+#include <Base/Tools.h>
+
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Part/App/TopoShape.h>
 
+#include "ShapeFinder.h"
 #include "Measurement.h"
 #include "MeasurementPy.h"
 
@@ -289,41 +292,8 @@ MeasureType Measurement::getType()
 
 TopoDS_Shape Measurement::getShape(App::DocumentObject *obj , const char *subName) const
 {
-    //temporary fix to get "Vertex7" from "Body003.Pocket020.Vertex7"
-    //when selected, Body features are provided as featureName and subNameAndIndex
-    //other sources provide the full extended name with index
-    if (strcmp(subName, "") == 0) {
-        return Part::Feature::getShape(obj);
-    }
-    std::string workingSubName(subName);
-    size_t lastDot = workingSubName.rfind('.');
-    if (lastDot != std::string::npos) {
-        workingSubName = workingSubName.substr(lastDot + 1);
-    }
-
-    try {
-        Part::TopoShape partShape = Part::Feature::getTopoShape(obj);
-        App::GeoFeature* geoFeat =  dynamic_cast<App::GeoFeature*>(obj);
-        if (geoFeat) {
-            partShape.setPlacement(geoFeat->globalPlacement());
-        }
-        TopoDS_Shape shape = partShape.getSubShape(workingSubName.c_str());
-        if(shape.IsNull()) {
-            throw Part::NullShapeException("null shape in measurement");
-        }
-        return shape;
-    }
-    catch (const Base::Exception&) {
-        // re-throw original exception
-        throw;
-    }
-    catch (Standard_Failure& e) {
-        throw Base::CADKernelError(e.GetMessageString());
-    }
-    catch (...) {
-        throw Base::RuntimeError("Measurement: Unknown error retrieving shape");
-    }
-
+    // Base::Console().Message("Meas::getShape(%s, %s)\n", obj->getNameInDocument(), subName);
+    return ShapeFinder::getLocatedShape(*obj, subName);
 }
 
 //TODO:: add lengthX, lengthY (and lengthZ??) support
@@ -358,8 +328,6 @@ double Measurement::length() const
             std::vector<std::string>::const_iterator subEl = subElements.begin();
 
             for (;obj != objects.end(); ++obj, ++subEl) {
-                //const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
-                //const Part::TopoShape& refShape = refObj->Shape.getShape();
                 // Get the length of one edge
                 TopoDS_Shape shape = getShape(*obj, (*subEl).c_str());
                 const TopoDS_Edge& edge = TopoDS::Edge(shape);
@@ -522,22 +490,20 @@ double Measurement::angle(const Base::Vector3d & /*param*/) const
                 gp_Dir dir2 = curve2.Line().Direction();
                 gp_Dir dir2r = curve2.Line().Direction().Reversed();
 
-                gp_Lin l1 = gp_Lin(pnt1First, dir1); // (A)
-                gp_Lin l2 = gp_Lin(pnt1First, dir2); // (B)
-                gp_Lin l2r = gp_Lin(pnt1First, dir2r);  // (B')
-                Standard_Real aRad = l1.Angle(l2);
-                double aRadr = l1.Angle(l2r);
-                return std::min(aRad, aRadr) * 180  / M_PI;
+                 gp_Lin l1 = gp_Lin(pnt1First, dir1); // (A)
+                 gp_Lin l2 = gp_Lin(pnt1First, dir2); // (B)
+                 gp_Lin l2r = gp_Lin(pnt1First, dir2r);  // (B')
+                 Standard_Real aRad = l1.Angle(l2);
+                 double aRadRev = l1.Angle(l2r);
+                 return Base::toDegrees(std::min(aRad, aRadRev));
             }
             else {
                 throw Base::RuntimeError("Measurement references must both be lines");
             }
+        } else {
+            throw Base::RuntimeError("Can not compute angle measurement - wrong number of edge references");
         }
-        else {
-            throw Base::RuntimeError("Can not compute angle measurement - too many references");
-        }
-    }
-    else if (measureType == MeasureType::Points) {
+    } else if (measureType == MeasureType::Points) {
         //NOTE: we are calculating the 3d angle here, not the projected angle
         //ASSUMPTION: the references are in end-apex-end order
         if(numRefs == 3) {
@@ -557,7 +523,10 @@ double Measurement::angle(const Base::Vector3d & /*param*/) const
             gp_Lin line0 = gp_Lin(gEnd0, gDir0);
             gp_Lin line1 = gp_Lin(gEnd1, gDir1);
             double radians = line0.Angle(line1);
-            return radians * 180  / M_PI;
+            return Base::toDegrees(radians);
+        }
+        else {
+            throw Base::RuntimeError("Can not compute angle measurement - wrong number of point references");
         }
     }
     throw Base::RuntimeError("Unexpected error for angle measurement");
@@ -643,7 +612,7 @@ Base::Vector3d Measurement::delta() const
                     gp_Pnt P1 = extrema.PointOnShape1(1);
                     gp_Pnt P2 = extrema.PointOnShape2(1);
                     gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                    result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                    return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                 }
             }
         }
@@ -658,7 +627,7 @@ Base::Vector3d Measurement::delta() const
                       gp_Pnt P1 = curve.Value(curve.FirstParameter());
                       gp_Pnt P2 = curve.Value(curve.LastParameter());
                       gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                      result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                      return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                 }
             }
             else if(numRefs == 2) {
@@ -679,7 +648,7 @@ Base::Vector3d Measurement::delta() const
                         gp_Pnt P1 = extrema.PointOnShape1(1);
                         gp_Pnt P2 = extrema.PointOnShape2(1);
                         gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                        result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                        return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                     }
                 }
             }
