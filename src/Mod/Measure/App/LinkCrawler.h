@@ -32,6 +32,8 @@
 #include <App/DocumentObserver.h>
 #include <Base/Placement.h>
 
+#include <Mod/Part/App/TopoShape.h>
+
 namespace Measure {
 
 //! a class to hold the result of resolving a selection into the actual target object
@@ -58,6 +60,7 @@ class MeasureExport LinkCrawler
 {
 public:
     static TopoDS_Shape getLocatedShape(const App::DocumentObject& rootObject, const std::string& leafSub);
+    static Part::TopoShape getLocatedTopoShape(const App::DocumentObject& rootObject, const std::string& leafSub);
 
     static void crawlPlacementChain(std::vector<Base::Placement>& plmStack,
                                                             const App::DocumentObject& rootObj, const

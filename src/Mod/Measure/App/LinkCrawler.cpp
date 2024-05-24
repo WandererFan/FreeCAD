@@ -123,6 +123,11 @@ TopoDS_Shape LinkCrawler::getLocatedShape(const App::DocumentObject& rootObject,
     return outShape.getShape();
 }
 
+Part::TopoShape LinkCrawler::getLocatedTopoShape(const App::DocumentObject& rootObject, const std::string& leafSub)
+{
+    return {getLocatedShape(rootObject, leafSub)};
+}
+
 //! traverse the tree from leafSub up to rootObject, obtaining placements along the way.  Note that
 //! the placements will need to be applied in the reverse order (ie top down) of what is delivered in
 //! plm stack

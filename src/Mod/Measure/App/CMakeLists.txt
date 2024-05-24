@@ -3,12 +3,15 @@ include_directories(
     ${CMAKE_BINARY_DIR}/src
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
     ${OCC_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${PYTHON_INCLUDE_DIRS}
     ${XercesC_INCLUDE_DIRS}
 )
+
 link_directories(${OCC_LIBRARY_DIR})
 
 set(Measure_LIBS
@@ -31,6 +34,7 @@ SET(MeasureModule_SRCS
     PreCompiled.cpp
     PreCompiled.h
     AppMeasure.cpp
+    AppMeasurePy.cpp
 
 # original service routines
     Measurement.cpp

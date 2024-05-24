@@ -53,24 +53,7 @@ template class MeasureExport MeasureBaseExtendable<Part::MeasureLengthInfo>;
 template class MeasureExport MeasureBaseExtendable<Part::MeasurePositionInfo>;
 template class MeasureExport MeasureBaseExtendable<Part::MeasureRadiusInfo>;
 
-
-class Module : public Py::ExtensionModule<Module>
-{
-public:
-    Module() : Py::ExtensionModule<Module>("Measure")
-    {
-        initialize("This module is the Measure module."); // register with Python
-    }
-
-private:
-};
-
-PyObject* initModule()
-{
-    return Base::Interpreter().addModule(new Module);
-}
-
-} // namespace Measure
+extern PyObject* initModule();
 
 using namespace Measure;
 
@@ -187,3 +170,5 @@ void debugprint(const std::string& text)
 {
     Base::Console().Log("%s", text.c_str());
 }
+
+}   // end namespace Measure
