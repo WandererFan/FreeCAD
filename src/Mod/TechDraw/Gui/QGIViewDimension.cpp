@@ -2234,7 +2234,6 @@ void QGIViewDimension::drawAreaExecutive(const Base::Vector2d& centerPoint, doub
     Q_UNUSED(area)
     Q_UNUSED(centerOverhang)
     Q_UNUSED(renderExtent)
-
     QPainterPath areaPath;
 
     Base::Vector2d labelCenter(labelRectangle.GetCenter());
