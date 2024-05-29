@@ -29,6 +29,8 @@
 
 #include <App/Link.h>
 #include <App/GeoFeature.h>
+#include <Base/Tools.h>
+
 #include <Mod/Part/App/PartFeature.h>
 
 #include "ShapeFinder.h"
@@ -60,7 +62,7 @@ App::DocumentObject& ResolveResult::getTargetParent() const
 
 
 
-//! LinKCrawler is a class to obtain the located shape pointed at by a DocumentObject and a
+//! ShapeFinder is a class to obtain the located shape pointed at by a DocumentObject and a
 //! "new-style" long subelement name. It hides the complexities of obtaining the correct object
 //! and its placement.
 
@@ -116,6 +118,8 @@ TopoDS_Shape ShapeFinder::getLocatedShape(const App::DocumentObject& rootObject,
 
     Part::TopoShape outShape = Part::Feature::getTopoShape(&resolved.getTarget());
     outShape.setPlacement(netPlm);
+    // isn't resolved always going to have non-empty short sub? test should be for geometry types of
+    // interest - vertex, edge, [wire], face, ??
     if (!shortSub.empty()) {
         outShape = outShape.getSubTopoShape(shortSub.c_str());
     }
@@ -227,7 +231,7 @@ std::string ShapeFinder::PlacementAsString(const Base::Placement& inPlacement)
     rotation.getValue(axis, angle);
     std::stringstream  ss;
     ss << "pos: (" << position.x << ", " << position.y << ", " << position.z <<
-        ")  axis: (" << axis.x << ", " << axis.y << ", " << axis.z << ")  angle: " << angle;
+        ")  axis: (" << axis.x << ", " << axis.y << ", " << axis.z << ")  angle: " << Base::toDegrees(angle);
     return ss.str();
 }
 

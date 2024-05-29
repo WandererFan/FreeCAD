@@ -46,7 +46,9 @@
 #include <Mod/Part/App/PrimitiveFeature.h>
 #include <Mod/Part/App/FeaturePartCircle.h>
 #include <Mod/Part/App/TopoShapePy.h>
+#include <Mod/Measure/App/ShapeFinder.h>
 //#include <Mod/Sketcher/App/SketchObject.h>
+
 
 #include "ShapeExtractor.h"
 #include "DrawUtil.h"
@@ -54,22 +56,23 @@
 
 
 using namespace TechDraw;
+using namespace Measure;
 using DU = DrawUtil;
 using SU = ShapeUtils;
 
 
-//! pick out the 2d document objects in the list of links and return a vector of their shapes
+//! pick out the 2d document objects in  inDocumentObjects and return a vector of their shapes
 //! Note that point objects will not make it through the hlr/projection process.
-std::vector<TopoDS_Shape> ShapeExtractor::getShapes2d(const std::vector<App::DocumentObject*> links)
+std::vector<TopoDS_Shape> ShapeExtractor::getShapes2d(const std::vector<App::DocumentObject*> inDocumentObjects)
 {
-//    Base::Console().Message("SE::getShapes2d() - links: %d\n", links.size());
+//    Base::Console().Message("SE::getShapes2d() - inDocumentObjects: %d\n", inDocumentObjects.size());
 
     std::vector<TopoDS_Shape> shapes2d;
 
-    for (auto& l:links) {
-        if (is2dObject(l)) {
-            if (l->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
-                TopoDS_Shape temp = getLocatedShape(l);
+    for (auto& obj : inDocumentObjects) {
+        if (is2dObject(obj)) {
+            if (obj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
+                TopoDS_Shape temp = getLocatedShape(obj);
                 if (!temp.IsNull()) {
                     shapes2d.push_back(temp);
                 }
@@ -79,56 +82,43 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapes2d(const std::vector<App::Doc
     return shapes2d;
 }
 
-//! get the located and oriented shapes corresponding to the the links. If the shapes are to be
-//! fused, include2d should be false as 2d & 3d shapes may not fuse.
-TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> links, bool include2d)
+//! get the located and oriented shapes corresponding to each object in inDocumentObjects as a compound
+//! shape.
+//! If the shapes are to be fused, include2d should be false as 2d & 3d shapes may not fuse.
+TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> inDocumentObjects, bool include2d)
 {
-    // Base::Console().Message("SE::getShapes() - links in: %d\n", links.size());
+    Base::Console().Message("SE::getShapes() - inDocumentObjects in: %d\n", inDocumentObjects.size());
     std::vector<TopoDS_Shape> sourceShapes;
 
-    for (auto& l:links) {
-        if (is2dObject(l) && !include2d) {
-            // Base::Console().Message("SE::getShapes - skipping 2d link: %s\n", l->Label.getValue());
+    for (auto& origObj : inDocumentObjects) {
+        Base::Console().Message("SE::getShapes - a DocObj: %s/%s\n", origObj->getNameInDocument(), origObj->Label.getValue());
+
+        if (is2dObject(origObj) && !include2d) {
+            // Base::Console().Message("SE::getShapes - skipping 2d link: %s\n", origObj->Label.getValue());
             continue;
         }
-
-        // Copy the pointer as not const so it can be changed if needed.
-        App::DocumentObject* obj = l;
-
-        bool isExplodedView = false;
-        auto proxy = dynamic_cast<App::PropertyPythonObject*>(l->getPropertyByName("Proxy"));
-        Base::PyGILStateLocker lock;
-        if (proxy && proxy->getValue().hasAttr("saveAssemblyAndExplode")) {
-            isExplodedView = true;
-
-            Py::Object explodedViewPy = proxy->getValue();
-            Py::Object attr = explodedViewPy.getAttr("saveAssemblyAndExplode");
-
-            if (attr.ptr() && attr.isCallable()) {
-                Py::Tuple args(1);
-                args.setItem(0, Py::asObject(l->getPyObject()));
-                Py::Callable methode(attr);
-                Py::Object pyResult = methode.apply(args);
-
-                if (PyObject_TypeCheck(pyResult.ptr(), &(Part::TopoShapePy::Type))) {
-                    auto* shapepy = static_cast<Part::TopoShapePy*>(pyResult.ptr());
-                    const TopoDS_Shape& shape = shapepy->getTopoShapePtr()->getShape();
-                    sourceShapes.push_back(shape);
-                }
-            }
-
-            for (auto* inObj : l->getInList()) {
-                if (inObj->isDerivedFrom(App::Part::getClassTypeId())) {
-                    // we replace obj by the assembly
-                    obj = inObj;
-                    break;
-                }
-            }
+        auto firstParent = origObj->getFirstParent();
+        Base::Console().Message("SE::getShapes - first parent: %s\n", firstParent ? firstParent->Label.getValue() :  "None");
+        // afaict getParents returns the ancestry of the subject
+        auto manyParents = origObj->getParents();
+        for (auto& parent : manyParents) {
+            Base::Console().Message("SE::getShapes - a parent: %s / %s\n", parent.first->Label.getValue(), parent.second.c_str());
         }
 
-        if (obj->isDerivedFrom<App::Link>()) {
-            App::Link* xLink = dynamic_cast<App::Link*>(obj);
-            std::vector<TopoDS_Shape> xShapes = getXShapes(xLink);
+
+        // Copy the pointer as not const so it can be changed if needed.
+        App::DocumentObject* obj = origObj;
+        if (isExplodedAssembly(obj)) {
+            obj = getExplodedAssembly(sourceShapes, origObj);
+        }
+
+        if (isLinkLike(obj)) {
+            // note that some links act as their linked object and type tests based on ancestry will not
+            // detect these links?
+            Base::Console().Message("SE::getShapes - an App::Link\n");
+            std::vector<TopoDS_Shape> xShapes = getShapesFromXRoot(obj);
+            Base::Console().Message("SE::getShapes - xShapes: %d\n", xShapes.size());
+
             if (!xShapes.empty()) {
                 sourceShapes.insert(sourceShapes.end(), xShapes.begin(), xShapes.end());
                 continue;
@@ -137,29 +127,25 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> l
         else {
             auto shape = Part::Feature::getShape(obj);
             // if link obj has a shape, we use that shape.
-            if(!SU::isShapeReallyNull((shape))) {
+            if(!SU::isShapeReallyNull(shape)) {
+                Base::Console().Message("SE::getShapes - a shape\n");
                 sourceShapes.push_back(getLocatedShape(obj));
             } else {
+                Base::Console().Message("SE::getShapes - dig deeper\n");
                 std::vector<TopoDS_Shape> shapeList = getShapesFromObject(obj);
                 sourceShapes.insert(sourceShapes.end(), shapeList.begin(), shapeList.end());
             }
         }
 
-        if (isExplodedView) {
-            Py::Object explodedViewPy = proxy->getValue();
-            
-            Py::Object attr = explodedViewPy.getAttr("restoreAssembly");
-            if (attr.ptr() && attr.isCallable()) {
-                Py::Tuple args(1);
-                args.setItem(0, Py::asObject(l->getPyObject()));
-                Py::Callable(attr).apply(args);
-            }
+        if (isExplodedAssembly(origObj)) {
+            restoreExplodedAssembly(origObj);
         }
     }
 
     BRep_Builder builder;
     TopoDS_Compound comp;
     builder.MakeCompound(comp);
+    Base::Console().Message("SE::getShapes - returning %d sourceShapes\n", sourceShapes.size());
     for (auto& s:sourceShapes) {
         if (SU::isShapeReallyNull(s)) {
             continue;
@@ -182,99 +168,124 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> l
         return comp;
     }
 
-//    Base::Console().Error("DEVEL: ShapeExtractor failed to get any shape.\n");
     return TopoDS_Shape();
 }
 
-std::vector<TopoDS_Shape> ShapeExtractor::getXShapes(const App::Link* xLink)
+//! get all the shapes in the sub tree at xLinkRootRoot
+std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::DocumentObject *xLinkRoot)
 {
-    // Base::Console().Message("SE::getXShapes() - %s\n", xLink->getNameInDocument());
+    Base::Console().Message("SE::getShapesFromXRoot()\n");
+    if (!xLinkRoot) {
+        Base::Console().Message("SE::getShapesFromXRoot - parameter is null\n");
+        return {};
+    }
+
+    Base::Console().Message("SE::getShapesFromXRoot() - %s\n", xLinkRoot->getNameInDocument());
+
     std::vector<TopoDS_Shape> xSourceShapes;
-    if (!xLink) {
-        return xSourceShapes;
-    }
+    std::string rootName = xLinkRoot->getNameInDocument();
 
-    bool needsTransform = false;
-    std::vector<App::DocumentObject*> children = xLink->getLinkedChildren();
-    Base::Placement xLinkPlacement;  // default constructor is an identity placement, i.e. no rotation nor translation
-    if (xLink->hasPlacement()) {
-        xLinkPlacement = xLink->getLinkPlacementProperty()->getValue();
-        needsTransform = true;
-    }
-    Base::Matrix4D linkScale;  // default constructor is an identity matrix, possibly scale it with link's scale
-    if(xLink->getScaleProperty() || xLink->getScaleVectorProperty()) {
-        linkScale.scale(xLink->getScaleVector());
-        needsTransform = true;
-    }
+    // look up
+    auto xLinkRootGlobalTransform = getGlobalTransform(xLinkRoot);
+    Base::Console().Message("SE::getShapesFromXRoot - global Placement: %s\n",  Measure::ShapeFinder::PlacementAsString(xLinkRootGlobalTransform.first));
 
-    Base::Matrix4D netTransform;
-    if (!children.empty()) {
-        // this link points to other links???
-        for (auto& l:children) {
-            bool childNeedsTransform = false;
-            Base::Placement childPlm;
-            Base::Matrix4D childScale;
-            if (l->isDerivedFrom<App::LinkElement>()) {
-                App::LinkElement* cLinkElem = static_cast<App::LinkElement*>(l);
-                if (cLinkElem->hasPlacement()) {
-                    childPlm = cLinkElem->getLinkPlacementProperty()->getValue();
-                    childNeedsTransform = true;
-                }
-                if(cLinkElem->getScaleProperty() || cLinkElem->getScaleVectorProperty()) {
-                    childScale.scale(cLinkElem->getScaleVector());
-                    childNeedsTransform = true;
-                }
-            }
-            auto shape = Part::Feature::getShape(l);
-            Part::TopoShape ts(shape);
-            if (ts.isInfinite()) {
-                shape = stripInfiniteShapes(shape);
-            }
-            // copying the shape prevents "non-orthogonal GTrsf" errors in some versions
-            // of OCC.  Something to do with triangulation of shape??
-            // it may be that incremental mesh would work here too.
-            BRepBuilderAPI_Copy copier(shape);
-            ts = Part::TopoShape(copier.Shape());
-            if(!ts.isNull()) {
-                if (needsTransform || childNeedsTransform) {
-                    // Multiplication is associative, but the braces show the idea of combining the two transforms:
-                    // ( link placement and scale ) combined to ( child placement and scale )
-                    netTransform = (xLinkPlacement.toMatrix() * linkScale) * (childPlm.toMatrix() * childScale);
-                    ts.transformGeometry(netTransform);
-                    shape = ts.getShape();
-                }
-                xSourceShapes.push_back(shape);
-            } else {
-                Base::Console().Message("SE::getXShapes - no shape from getXShape\n");
-            }
-        }
-    } else {
+    std::vector<App::DocumentObject*> linkedChildren = getLinkedChildren(xLinkRoot);
+    auto linkedObject = getLinkedObject(xLinkRoot);
+    if (linkedChildren.empty()) {
+        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has NO children - object is Link: %d\n", isLinkLike(linkedObject));
+
+//        if (linkedObject && isLinkLike(linkedObject)) {
+//            // this root points to another link, so we need to follow the linked object??  simple case
+//            // seems to work without doing anything special.
+//            Base::Console().Message("SE::getShapesFromXRoot - following linked object: %s/%s\n", linkedObject->getNameInDocument(), linkedObject->Label.getValue());
+//            auto linkedPaths = nodeVisitor2(linkedObject, 0, 0);
+//            for (auto& p : linkedPaths){
+//                Base::Console().Message("SE::getShapesFromXRoot - a path: %s\n", p.c_str());
+//                // something = doSomething(linkedPaths)
+//            }
+//        }
+
         // link points to a regular object, not another link? no sublinks?
-        TopoDS_Shape xLinkShape = getShapeFromXLink(xLink);
-        if (!xLinkShape.IsNull()) {
-            // copying the shape prevents "non-orthogonal GTrsf" errors in some versions
-            // of OCC.  Something to do with triangulation of shape??
-            BRepBuilderAPI_Copy copier(xLinkShape);
-            xSourceShapes.push_back(copier.Shape());
-        }
+        TopoDS_Shape xLinkRootShape = getShapeFromChildlessXLink(xLinkRoot);
+        xSourceShapes.push_back(xLinkRootShape);
+
+    } else {
+        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has children\n");
+        // is it worthwhile to special case child that is the end of the chain?
+        for (auto& child : linkedChildren) {
+            Base::Console().Message("SE::getShapesFromXRoot - a linked child: %s / %s\n",
+                                                    child->getNameInDocument(), child->Label.getValue());
+            auto childGlobalTransform = getGlobalTransform(child);
+            Base::Console().Message("SE::getShapesFromXRoot - child global Placement: %s\n",  Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first));
+            // get the unlocated, unscaled shape for child.  Does getShape always get a shape for a Link?
+            // can each branch have a different shape?
+            // is this shape a compound of the leaves?  wf: this appears to be the case, at least sometimes.
+
+            // this has to be the shape at the end of the branch, if we use an intermediate shape,
+            // we will get duplicates?  intermediate shapes don't seem to have everything positioned
+            // correctly?
+//            auto shape = Part::Feature::getShape(child);    //
+//            Part::TopoShape tshape(shape);
+//            if (tshape.isInfinite()) {
+//                shape = stripInfiniteShapes(shape);
+//            }
+            auto transforms = nodeVisitor3(child, child, 0, 0);
+            Base::Console().Message("SE::getShapesFromXRoot - nodeVisitor branch transforms: %d\n", transforms.size());
+            for (auto& tx : transforms) {
+                // we should get a leaf shape and a net transform for each branch
+                TopoDS_Shape shape = tx.shape();
+                Base::Console().Message("SE::getShapesFromXRoot - tx.shape isnull: %d  really: %d\n",
+                                        shape.IsNull(), SU::isShapeReallyNull(shape));
+                if (SU::isShapeReallyNull(shape))  {
+                    continue;
+                }
+                Part::TopoShape tshape{shape};
+                if (tshape.isInfinite()) {
+                    shape = stripInfiniteShapes(tx.shape());
+                }
+
+                // copying the shape prevents "non-orthogonal GTrsf" errors in some versions
+                // of OCC.  Something to do with triangulation of shape??
+                // it may be that incremental mesh would work here too.
+                BRepBuilderAPI_Copy copier(shape);
+                tshape = Part::TopoShape(copier.Shape());
+                if(tshape.isNull()) {
+                    Base::Console().Message("SE::getShapesFromXRoot - no shape from getXShape\n");
+                    continue;
+                }
+                Base::Placement branchNetPlm = tx.placement();
+                Base::Matrix4D branchNetScale = tx.scale();
+                Base::Console().Message("SE::getShapesFromXRoot - child Placement: %s\n", Measure::ShapeFinder::PlacementAsString(branchNetPlm));
+                Base::Console().Message("SE::getShapesFromXRoot - branchPlacement: %s\n", Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first * branchNetPlm));
+                try {
+                    tshape.transformGeometry(childGlobalTransform.second * branchNetScale);
+                    tshape.setPlacement(childGlobalTransform.first * branchNetPlm);
+                }
+                catch (...) {
+                    Base::Console().Error("ShapeExtractor failed to retrieve shape from %s\n", child->getNameInDocument());
+                    continue;
+                }
+                xSourceShapes.push_back(tshape.getShape());
+            }   // transform
+        }  // children
     }
     return xSourceShapes;
 }
 
-// get the located shape for a single childless App::Link
-TopoDS_Shape ShapeExtractor::getShapeFromXLink(const App::Link* xLink)
+// get the located shape for a single childless App::Link. (A link to an object in another
+// document?)
+
+TopoDS_Shape ShapeExtractor::getShapeFromChildlessXLink(const App::DocumentObject* xLink)
 {
-    // Base::Console().Message("SE::getShapeFromXLink()\n");
-    Base::Placement xLinkPlacement;
-    if (xLink->hasPlacement()) {
-        xLinkPlacement = xLink->getLinkPlacementProperty()->getValue();
+    Base::Console().Message("SE::getShapeFromChildlessXLink()\n");
+    if (!xLink) {
+        Base::Console().Message("SE::getShapeFromChildlessXLink - xLink is null\n");
+        return {};
     }
-    Base::Matrix4D linkScale;  // default constructor is an identity matrix, possibly scale it with link's scale
-    if(xLink->getScaleProperty() || xLink->getScaleVectorProperty()) {
-        linkScale.scale(xLink->getScaleVector());
-    }
-    int depth = 0;   //0 is default value, related to recursion of Links???
-    App::DocumentObject* linkedObject = xLink->getLink(depth);
+
+    // the linked object might have a placement?
+    auto globalTransform = getGlobalTransform(xLink);
+    App::DocumentObject* linkedObject = getLinkedObject(xLink);
     if (linkedObject) {
         // have a linked object, get the shape
         TopoDS_Shape shape = Part::Feature::getShape(linkedObject);
@@ -282,29 +293,41 @@ TopoDS_Shape ShapeExtractor::getShapeFromXLink(const App::Link* xLink)
             // this is where we need to parse the target for objects with a shape??
             return TopoDS_Shape();
         }
-        Part::TopoShape ts(shape);
-        if (ts.isInfinite()) {
+        Part::TopoShape tshape(shape);
+        if (tshape.isInfinite()) {
             shape = stripInfiniteShapes(shape);
-            ts = Part::TopoShape(shape);
+            tshape = Part::TopoShape(shape);
         }
-        //ts might be garbage now, better check
+        //tshape might be garbage now, better check
+        if (tshape.isNull()) {
+            return {};
+        }
+        // copying the shape prevents "non-orthogonal GTrsf" errors in some versions
+        // of OCC.  Something to do with triangulation of shape??
+        BRepBuilderAPI_Copy copier(tshape.getShape());
+        tshape = Part::TopoShape(copier.Shape());
+
+        auto linkedObjectPlacement = getPlacement(linkedObject);
+        auto linkedObjectScale = getScale(linkedObject);  // this is likely a noop
+        Base::Console().Message("SE::getShapeFromChildlessXLink - netPlacement: %s\n",
+                ShapeFinder::PlacementAsString(globalTransform.first * linkedObjectPlacement));
+
         try {
-            if (!ts.isNull()) {
-                ts.setPlacement(xLinkPlacement);
-            }
+            tshape.transformGeometry(globalTransform.second * linkedObjectScale);
+            tshape.setPlacement(globalTransform.first * linkedObjectPlacement);
         }
         catch (...) {
             Base::Console().Error("ShapeExtractor failed to retrieve shape from %s\n", xLink->getNameInDocument());
             return TopoDS_Shape();
         }
-        return ts.getShape();
+        return tshape.getShape();
     }
     return TopoDS_Shape();
 }
 
 std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromObject(const App::DocumentObject* docObj)
 {
-//    Base::Console().Message("SE::getShapesFromObject(%s)\n", docObj->getNameInDocument());
+    Base::Console().Message("SE::getShapesFromObject(%s)\n", docObj->getNameInDocument());
     std::vector<TopoDS_Shape> result;
 
     const App::GroupExtension* gex = dynamic_cast<const App::GroupExtension*>(docObj);
@@ -377,6 +400,63 @@ TopoDS_Shape ShapeExtractor::getShapesFused(const std::vector<App::DocumentObjec
     }
 
     return baseShape;
+}
+
+
+//! special retrieval method for handling the steps in an exploded assembly.  The intermediate shapes
+//! are created dynamically in the Assembly module, but we only draw still pictures so we need a
+//! copy of eache step.
+App::DocumentObject* ShapeExtractor::getExplodedAssembly(std::vector<TopoDS_Shape>& sourceShapes, App::DocumentObject* link)
+{
+    // Copy the pointer as not const so it can be changed if needed.
+    // wf: ???
+    App::DocumentObject* obj = link;
+
+    auto proxy = dynamic_cast<App::PropertyPythonObject*>(link->getPropertyByName("Proxy"));
+    Base::PyGILStateLocker lock;
+    if (proxy && proxy->getValue().hasAttr("saveAssemblyAndExplode")) {
+        Py::Object explodedViewPy = proxy->getValue();
+        Py::Object attr = explodedViewPy.getAttr("saveAssemblyAndExplode");
+
+        if (attr.ptr() && attr.isCallable()) {
+            Py::Tuple args(1);
+            args.setItem(0, Py::asObject(link->getPyObject()));
+            Py::Callable methode(attr);
+            Py::Object pyResult = methode.apply(args);
+
+            if (PyObject_TypeCheck(pyResult.ptr(), &(Part::TopoShapePy::Type))) {
+                auto* shapepy = static_cast<Part::TopoShapePy*>(pyResult.ptr());
+                const TopoDS_Shape& shape = shapepy->getTopoShapePtr()->getShape();
+                sourceShapes.push_back(shape);
+            }
+        }
+
+        for (auto* inObj : link->getInList()) {
+            if (inObj->isDerivedFrom(App::Part::getClassTypeId())) {
+                // we replace obj by the assembly
+                obj = inObj;
+                break;
+            }
+        }
+    }
+    return obj;
+}
+
+//! put the assembly (link) back the way it was
+void ShapeExtractor::restoreExplodedAssembly(App::DocumentObject* link)
+{
+    auto proxy = dynamic_cast<App::PropertyPythonObject*>(link->getPropertyByName("Proxy"));
+    Base::PyGILStateLocker lock;
+    if (proxy  && proxy->getValue().hasAttr("saveAssemblyAndExplode")) {
+        Py::Object explodedViewPy = proxy->getValue();
+
+        Py::Object attr = explodedViewPy.getAttr("restoreAssembly");
+        if (attr.ptr() && attr.isCallable()) {
+            Py::Tuple args(1);
+            args.setItem(0, Py::asObject(link->getPyObject()));
+            Py::Callable(attr).apply(args);
+        }
+    }
 }
 
 //inShape is a compound
@@ -475,6 +555,26 @@ bool ShapeExtractor::isDatumPoint(const App::DocumentObject* obj)
     return false;
 }
 
+//! true if the link is an exploded assembly
+bool ShapeExtractor::isExplodedAssembly(const App::DocumentObject* link)
+{
+    auto proxy = dynamic_cast<App::PropertyPythonObject*>(link->getPropertyByName("Proxy"));
+    Base::PyGILStateLocker lock;
+    if (!proxy) {
+        return false;
+    }
+
+    auto proxyValue = proxy->getValue();
+    if (proxyValue == Py::None()) {
+        return false;
+    }
+
+    if (proxy->getValue().hasAttr("saveAssemblyAndExplode")) {
+        return true;
+    }
+    return false;
+}
+
 
 //! get the location of a point object
 Base::Vector3d ShapeExtractor::getLocation3dFromFeat(const App::DocumentObject* obj)
@@ -498,18 +598,18 @@ Base::Vector3d ShapeExtractor::getLocation3dFromFeat(const App::DocumentObject* 
         }
     }
 
-//    Base::Console().Message("SE::getLocation3dFromFeat - returns: %s\n",
-//                            DrawUtil::formatVector(result).c_str());
     return Base::Vector3d(0.0, 0.0, 0.0);
 }
 
-//! get the located and oriented version of docObj shape
+
+//! get the located and oriented version of docObj's shape.  globalPlacement only works for
+//! objects derived from App::GeoFeature.
 TopoDS_Shape ShapeExtractor::getLocatedShape(const App::DocumentObject* docObj)
 {
         Part::TopoShape shape = Part::Feature::getShape(docObj);
-        const Part::Feature* pf = dynamic_cast<const Part::Feature*>(docObj);
-        if (pf) {
-            shape.setPlacement(pf->globalPlacement());
+        auto  geoFeat = dynamic_cast<const App::GeoFeature*>(docObj);
+        if (geoFeat) {
+            shape.setPlacement(geoFeat->globalPlacement());
         }
         return shape.getShape();
 }
@@ -529,3 +629,270 @@ bool ShapeExtractor::isSketchObject(const App::DocumentObject* obj)
     return false;
 }
 
+// visits each node below "node" in a sub tree of link dependencies.
+void ShapeExtractor::nodeVisitor(const App::DocumentObject* node, int level, int sibling)
+{
+    Base::Console().Message("SE::nodeVisitor(%s/%s, %d, %d)\n", node->getNameInDocument(), node->Label.getValue(), level, sibling);
+    std::vector<App::DocumentObject*> linkedChildren;
+    auto namedProperty = node->getPropertyByName("ElementList");
+    auto elementListProperty = dynamic_cast<App::PropertyLinkList*>(namedProperty);
+    if (namedProperty && elementListProperty) {
+        linkedChildren = elementListProperty->getValues();
+    }
+    if (linkedChildren.empty()) {
+        Base::Console().Message("SE::nodeVisitor - end of branch\n");
+        return;
+    }
+
+    int iSibling{0};
+    int newLevel = level + 1;
+    for (auto& child : linkedChildren) {
+        nodeVisitor(child, newLevel, iSibling);
+        iSibling++;
+    }
+}
+
+// visits each node below "node" in a sub tree of link dependencies.
+std::vector<std::string> ShapeExtractor::nodeVisitor2(const App::DocumentObject* node, int level, int sibling)
+{
+    if (!node) {
+        return {};
+    }
+
+    Base::Console().Message("SE::nodeVisitor2(%s/%s, %d, %d)\n", node->getNameInDocument(), node->Label.getValue(), level, sibling);
+    std::vector<std::string> result;
+    std::string nodeName = node->getNameInDocument();
+
+    std::vector<App::DocumentObject*> linkedChildren = getLinkedChildren(node);
+    if (linkedChildren.empty()) {
+        Base::Console().Message("SE::nodeVisitor2 - end of branch\n");
+        result.emplace_back(nodeName + ".");
+        return result;
+    }
+
+    int iSibling{0};
+    int newLevel = level + 1;
+    for (auto& child : linkedChildren) {
+        auto childPaths = nodeVisitor2(child, newLevel, iSibling);
+        for (auto& path : childPaths) {
+            result.emplace_back(nodeName + "." + path);
+        }
+        iSibling++;
+    }
+    return result;
+}
+
+//! getters for link like objects
+
+
+std::vector<App::DocumentObject*> ShapeExtractor::getLinkedChildren(const App::DocumentObject* root)
+{
+    if (!isLinkLike(root)) {
+        return {};
+    }
+
+    auto namedProperty = root->getPropertyByName("ElementList");
+    auto elementListProperty = dynamic_cast<App::PropertyLinkList*>(namedProperty);
+    if (namedProperty && elementListProperty) {
+        return elementListProperty->getValues();
+    }
+    return {};
+}
+
+
+//! this getter should work for any object, not just links
+Base::Placement ShapeExtractor::getPlacement(const App::DocumentObject* root)
+{
+    auto namedProperty = root->getPropertyByName("Placement");
+    auto placementProperty = dynamic_cast<App::PropertyPlacement*>(namedProperty);
+    if (namedProperty && placementProperty) {
+        return placementProperty->getValue();
+    }
+    return {};
+}
+
+//! get root's scale property.  If root is not a Link related object, then the identity matrrix will
+//! be returned.
+Base::Matrix4D ShapeExtractor::getScale(const App::DocumentObject* root)
+{
+    if (!isLinkLike(root)) {
+        return {};
+    }
+
+    Base::Matrix4D linkScale;
+    auto namedProperty = root->getPropertyByName("ScaleVector");
+    auto scaleVectorProperty = dynamic_cast<App::PropertyVector*>(namedProperty);
+    if (scaleVectorProperty) {
+        linkScale.scale(scaleVectorProperty->getValue());
+    }
+    return linkScale;
+}
+
+
+//! get root's LinkedObject.  If root is not a Link related object, then nullptr will be returned.
+App::DocumentObject* ShapeExtractor::getLinkedObject(const App::DocumentObject* root)
+{
+    if (!isLinkLike(root)) {
+        return {};
+    }
+
+    App::DocumentObject* linkedObject{nullptr};
+    auto namedProperty = root->getPropertyByName("LinkedObject");
+    auto linkedObjectProperty = dynamic_cast<App::PropertyLink*>(namedProperty);
+    if (linkedObjectProperty) {
+        linkedObject = linkedObjectProperty->getValue();
+    }
+    return linkedObject;
+}
+
+
+//! there isn't convenient common ancestor for the members of the Link family.  We use isLinkLike(obj)
+//! instead of obj->isDerivedFrom<ConvenientCommonAncestor>().  Some links have proxy objects and will
+//! not be detected by isDerivedFrom().
+bool ShapeExtractor::isLinkLike(const App::DocumentObject* obj)
+{
+    if (!obj) {
+        return false;
+    }
+
+    if (obj->isDerivedFrom<App::Link>() ||
+        obj->isDerivedFrom<App::LinkElement>() ||
+        obj->isDerivedFrom<App::LinkGroup>()) {
+        return true;
+    }
+
+    auto namedProperty = obj->getPropertyByName("LinkedObject");
+    auto linkedObjectProperty = dynamic_cast<App::PropertyLink*>(namedProperty);
+    if (linkedObjectProperty) {
+        return true;
+    }
+
+    namedProperty = obj->getPropertyByName("ElementList");
+    auto elementListProperty = dynamic_cast<App::PropertyLinkList*>(namedProperty);
+    if (elementListProperty) {
+        return true;
+    }
+
+    return false;
+}
+
+//! get the net placement and net scale that should be applied to cursorObject due to all the objects above it
+//! in the tree.
+std::pair<Base::Placement, Base::Matrix4D> ShapeExtractor::getGlobalTransform(const App::DocumentObject* cursorObject)
+{
+    Base::Console().Message("SE::getGlobalTransform()\n");
+    if (!cursorObject) {
+        return {};
+    }
+    // plain ordinary geometry objects (App::Part, PartWB, PartDesignWB, Sketcher, ...)
+    if (cursorObject->isDerivedFrom<App::GeoFeature>()) {
+        auto geoCursor = dynamic_cast<const App::GeoFeature*>(cursorObject);
+        return {geoCursor->globalPlacement(), {}};
+    }
+
+    // group of plain ordinary geometry
+    if (cursorObject->hasExtension(App::GeoFeatureGroupExtension::getExtensionClassTypeId())) {
+        auto geoCursorGroupConst = dynamic_cast<const App::GeoFeatureGroupExtension*>(cursorObject);
+        App::GeoFeatureGroupExtension* geoCursorGroup = const_cast<App::GeoFeatureGroupExtension*>(geoCursorGroupConst);
+        return {geoCursorGroup->globalGroupPlacement(), {} };
+    }
+
+    // link related objects
+    auto cursorParents = cursorObject->getParents();
+    // an object is always its own parent in this situation(?) so cursorParents will never be empty?
+    if (cursorParents.size() == 1  &&
+        cursorParents.front().first == cursorObject) {
+        // cursorObject is a top level object and there are no placements above it
+        return { getPlacement(cursorObject), getScale(cursorObject)};
+    }
+
+    for (auto& parent : cursorParents) {
+        Base::Console().Message("SE::getGlobalTransform - a cursorParent: %s / %s\n", parent.first->Label.getValue(), parent.second.c_str());
+        if (parent.first->getDocument() != cursorObject->getDocument()) {
+            // not in our document, so can't be our parent?  Links can cross documents no?
+            continue;
+        }
+
+        auto resolve = ShapeFinder::resolveSelection(*(parent.first), parent.second);
+        if (&(resolve.getTarget()) == cursorObject) {
+            // this is the parent path we want to gather transforms from
+            auto pathObjects = parent.first->getSubObjectList(parent.second.c_str());
+            Base::Placement netPlacement;
+            Base::Matrix4D netScale;
+            Base::Console().Message("SE::getGlobalTransform - combining transforms for: %s/%s\n", cursorObject->getNameInDocument(), cursorObject->Label.getValue());
+            combineTransforms(pathObjects, netPlacement, netScale);
+            return { netPlacement, netScale };
+        }
+   }
+
+    return {};
+}
+
+
+//! gather the placements and scale transforms of the item in pathObjects and sum them top-down.
+void ShapeExtractor::combineTransforms(const std::vector<App::DocumentObject*>& pathObjects, Base::Placement& netPlacement, Base::Matrix4D& netScale)
+{
+    // apply the placements from the top down to us
+    for (auto& obj : pathObjects) {
+        if (!obj) {
+            continue;
+        }
+        Base::Console().Message("SE::combineTransforms - a path object: %s/%s\n", obj->getNameInDocument(), obj->Label.getValue());
+        netPlacement *= getPlacement(obj);
+        netScale *= getScale(obj);
+   }
+}
+
+
+//! visits each node below "node" in a sub tree of link dependencies.  Returns a transform for each
+//! branch below "node".
+TransformVector ShapeExtractor::nodeVisitor3(const App::DocumentObject* pathRoot, const App::DocumentObject *currentNode, int level, int sibling)
+{
+    if (!pathRoot || !pathRoot->isAttachedToDocument() ||
+        !currentNode || !currentNode->isAttachedToDocument()) {
+        Base::Console().Message("SE::nodeVisitor3 - bailing early\n");
+        return {};
+    }
+
+    Base::Console().Message("SE::nodeVisitor3(%s/%s, %d, %d)\n", currentNode->getNameInDocument(), currentNode->Label.getValue(), level, sibling);
+    TransformVector result;
+
+    std::vector<App::DocumentObject*> linkedChildren = getLinkedChildren(currentNode);
+    if (linkedChildren.empty()) {
+        auto shape = getShapeFromChildlessXLink(currentNode);
+        Base::Console().Message("SE::nodeVisitor3 - %s/%s isNull: %d\n", currentNode->getNameInDocument(), currentNode->Label.getValue(), shape.IsNull());
+        if (SU::isShapeReallyNull(shape)) {
+            // this is not an expected condition.
+            throw Base::RuntimeError("Unexpected null shape in nodeVisitor3");
+        }
+        // if this the first and last node in the branch, we should not add currentNode's transform as it
+        // was accounted for in the calculation of global placement for currentNode.
+        // if (node == root) then we are the first and if no children then we are alsothe last.
+        Base::Console().Message("SE::nodeVisitor3 - end of branch\n");
+        if (pathRoot == currentNode)  {
+            // TODO: is pointer comparison right here? better to compare names?
+            // pathRoot is the start and end of this branch.  We do not want to add pathRoot's transform
+            // as it has been accounted for in getGlobalPlacement.  We return identity transform here.
+            TransformItem newTransform{ shape, {}, {} };
+            result.emplace_back(newTransform);
+            return result;
+        }
+
+        TransformItem newTransform{shape, getPlacement(currentNode), getScale(currentNode)};
+        result.emplace_back(newTransform);
+        return result;
+    }
+
+    int iSibling{0};
+    int newLevel = level + 1;
+    for (auto& child : linkedChildren) {
+        auto childPaths = nodeVisitor3(currentNode, child, newLevel, iSibling);
+        for (auto& path : childPaths) {
+            // we keep the shape found by lower levels
+            TransformItem newTransform{path.shape(), path.placement(), path.scale()};
+            result.emplace_back(newTransform);
+        }
+        iSibling++;
+    }
+    return result;
+}

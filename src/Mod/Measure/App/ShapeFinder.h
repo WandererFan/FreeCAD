@@ -69,10 +69,11 @@ public:
     static ResolveResult resolveSelection(const App::DocumentObject& selectObj, const std::string& selectLongSub);
     static std::string getLastTerm(const std::string& inString);
 
+    static std::string PlacementAsString(const Base::Placement& inPlacement);
+
 private:
     static std::string pruneLastTerm(const std::string& inString);
     static std::string getGeomTypeFromName(const std::string& geomName);
-    static std::string PlacementAsString(const Base::Placement& inPlacement);
 };
 
 } // namespace Measure
