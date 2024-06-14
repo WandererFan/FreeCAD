@@ -31,6 +31,7 @@
 #include <App/DocumentObject.h>
 #include <App/DocumentObserver.h>
 #include <Base/Placement.h>
+#include <Base/Matrix.h>
 
 #include <Mod/Part/App/TopoShape.h>
 
@@ -63,17 +64,43 @@ public:
     static Part::TopoShape getLocatedTopoShape(const App::DocumentObject& rootObject, const std::string& leafSub);
 
     static void crawlPlacementChain(std::vector<Base::Placement>& plmStack,
-                                                            const App::DocumentObject& rootObj, const
-                                                            std::string& leafSub);
+                                    std::vector<Base::Matrix4D>& scaleStack,
+                                    const App::DocumentObject& rootObj, const
+                                    std::string& leafSub);
 
     static ResolveResult resolveSelection(const App::DocumentObject& selectObj, const std::string& selectLongSub);
     static std::string getLastTerm(const std::string& inString);
+    static std::string getFirstTerm(const std::string& inString);
+
 
     static std::string PlacementAsString(const Base::Placement& inPlacement);
 
+    static bool isLinkLike(const App::DocumentObject* obj);
+    static Base::Placement getPlacement(const App::DocumentObject* root);
+    static Base::Matrix4D getScale(const App::DocumentObject* root);
+    static std::pair<Base::Placement, Base::Matrix4D> getGlobalTransform(const App::DocumentObject* cursorObject);
+
+    static TopoDS_Shape stripInfiniteShapes(TopoDS_Shape inShape);
+    static bool isShapeReallyNull(TopoDS_Shape shape);
+    static App::DocumentObject* getTopLevelObject(const App::DocumentObject* descendant);
+
+    static std::vector<App::DocumentObject*> getRootObjects(const App::Document* doc);
+    static std::string pathToLongSub(std::list<App::DocumentObject*> path);
+    static std::string getFullPath(const App::DocumentObject* object);
+
+    static TopoDS_Shape transformShape(TopoDS_Shape inShape,
+                                       const Base::Placement& placement,
+                                       const Base::Matrix4D scaler);
 private:
+    static std::string namesToLongSub(const std::vector<std::string>& pathElementNames);
+    static bool ignoreModule(const std::string& moduleName);
+    static std::vector<App::DocumentObject*> tidyInList(const std::vector<App::DocumentObject*>& inlist);
+    static void combineTransforms(const std::vector<App::DocumentObject*>& pathObjects, Base::Placement& netPlacement, Base::Matrix4D& netScale);
     static std::string pruneLastTerm(const std::string& inString);
+    static std::string pruneFirstTerm(const std::string& inString);
     static std::string getGeomTypeFromName(const std::string& geomName);
+    static std::string removeGeometryTerm(const std::string& longSubname);
+
 };
 
 } // namespace Measure

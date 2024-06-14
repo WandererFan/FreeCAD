@@ -1549,7 +1549,15 @@ bool GeometryUtils::isCircle(TopoDS_Edge occEdge)
     double radius;
     Base::Vector3d center;
     bool isArc = false;
-    return GeometryUtils::getCircleParms(occEdge, radius, center, isArc);
+    bool isCircle{false};
+    try {
+       isCircle = GeometryUtils::getCircleParms(occEdge, radius, center, isArc);
+    }
+    catch (...) {
+       return false;
+    }
+
+    return isCircle;
 }
 
 //tries to interpret a BSpline edge as a circle. Used by DVDim for approximate dimensions.

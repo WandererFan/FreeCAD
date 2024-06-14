@@ -98,6 +98,7 @@ bool ReferenceEntry::operator==(const ReferenceEntry& otherRef) const
 
 TopoDS_Shape ReferenceEntry::getGeometry() const
 {
+    Base::Console().Message("RE::getGeometry() - obj: %s  sub: %s\n", getObjectName().c_str(), getSubName(true).c_str());
     // first, make sure the object has not been deleted!
     App::DocumentObject* obj = getDocument()->getObject(getObjectName().c_str());
     if (!obj) {
@@ -114,6 +115,8 @@ TopoDS_Shape ReferenceEntry::getGeometry() const
     }
 
     // 3d geometry
+    Base::Console().Message("RE::getGeometry - 3d obj: %s / %s  sub: %s\n", (*getObject()).getNameInDocument(),
+                            (*getObject()).Label.getValue(), getSubName(true).c_str());
     return ShapeFinder::getLocatedShape(*getObject(), getSubName(true));
 }
 

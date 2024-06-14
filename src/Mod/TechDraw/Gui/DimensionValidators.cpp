@@ -69,12 +69,13 @@ TechDraw::DrawViewPart* TechDraw::getReferencesFromSelection(ReferenceVector& re
                 continue;
             }
             for (auto& sub : selItem.getSubNames()) {
+                // plain ordinary 2d view + geometry reference
                 ReferenceEntry ref(dvp, ShapeFinder::getLastTerm(sub));
                 references2d.push_back(ref);
             }
         } else if (!selItem.getObject()->isDerivedFrom(TechDraw::DrawView::getClassTypeId())) {
             App::DocumentObject* obj3d = selItem.getObject();
-            // this is a regular reference in form obj+subelement
+            // this is a regular 3d reference in form obj + long subelement
             for (auto& sub3d : selItem.getSubNames()) {
                 ReferenceEntry ref(obj3d, sub3d);
                 references3d.push_back(ref);
@@ -445,6 +446,8 @@ DimensionGeometryType TechDraw::isValidSingleEdge3d(DrawViewPart* dvp, Reference
     } else if (adapt.GetType() == GeomAbs_BSplineCurve) {
         if (GeometryUtils::isCircle(occEdge)) {
             return isBSplineCircle;
+        } else  if (GeometryUtils::isLine(occEdge)) {
+            return isDiagonal;
         } else {
             return isBSpline;
         }

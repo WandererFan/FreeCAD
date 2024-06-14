@@ -72,7 +72,7 @@ public:
     static bool isDatumPoint(const App::DocumentObject* obj);
     static bool isSketchObject(const App::DocumentObject* obj);
     static bool isExplodedAssembly(const App::DocumentObject* obj);
-    static bool isLinkLike(const App::DocumentObject* obj);
+
 
     static Base::Vector3d getLocation3dFromFeat(const App::DocumentObject *obj);
 
@@ -80,18 +80,19 @@ public:
 
     static TopoDS_Shape getLocatedShape(const App::DocumentObject* docObj);
 
-    static App::DocumentObject* getExplodedAssembly(std::vector<TopoDS_Shape>& sourceShapes, App::DocumentObject* link);
+    static App::DocumentObject* getExplodedAssembly(std::vector<TopoDS_Shape>& sourceShapes,
+                                                    App::DocumentObject* link);
     static void restoreExplodedAssembly(App::DocumentObject* link);
 
     static void nodeVisitor(const App::DocumentObject* node, int level, int sibling);
     static std::vector<std::string> nodeVisitor2(const App::DocumentObject* node, int level, int sibling);
-    static TransformVector nodeVisitor3(const App::DocumentObject* pathRoot, const App::DocumentObject* currentNode, int level, int sibling);
+    static TransformVector nodeVisitor3(const App::DocumentObject* pathRoot,
+                                        const App::DocumentObject* currentNode = nullptr,
+                                        int level = 0,
+                                        int sibling = 0);
     static std::vector<App::DocumentObject*> getLinkedChildren(const App::DocumentObject* root);
-    static Base::Placement getPlacement(const App::DocumentObject* root);
-    static Base::Matrix4D getScale(const App::DocumentObject* root);
     static App::DocumentObject* getLinkedObject(const App::DocumentObject* root);
-    static std::pair<Base::Placement, Base::Matrix4D> getGlobalTransform(const App::DocumentObject* cursorObject);
-    static void combineTransforms(const std::vector<App::DocumentObject*>& pathObjects, Base::Placement& netPlacement, Base::Matrix4D& netScale);
+
 
 protected:
 
