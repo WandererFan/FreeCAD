@@ -143,7 +143,7 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> i
             continue;
         } else if (s.ShapeType() < TopAbs_SOLID) {
             //clean up composite shapes
-            TopoDS_Shape cleanShape = stripInfiniteShapes(s);
+            TopoDS_Shape cleanShape = ShapeFinder::stripInfiniteShapes(s);
             if (!cleanShape.IsNull()) {
                 builder.Add(comp, cleanShape);
             }
@@ -173,43 +173,51 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
     std::vector<TopoDS_Shape> xSourceShapes;
     std::string rootName = xLinkRoot->getNameInDocument();
 
-
-    std::vector<App::DocumentObject*> linkedChildren = getLinkedChildren(xLinkRoot);
-    auto linkedObject = getLinkedObject(xLinkRoot);
-    if (linkedChildren.empty()) {
-        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has NO children - isLink? %d\n", ShapeFinder::isLinkLike(linkedObject));
-        // link points to a regular object, not another link? no sublinks?
-        TopoDS_Shape xLinkRootShape = getShapeFromChildlessXLink(xLinkRoot);
-        xSourceShapes.push_back(xLinkRootShape);
-    } else {
-        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has children\n");
-        for (auto& child : linkedChildren) {
-            auto childGlobalTransform = ShapeFinder::getGlobalTransform(child);
-            Base::Console().Message("SE::getShapesFromXRoot - a linked child: %s / %s plm: %s\n", child->getNameInDocument(), child->Label.getValue(),
-                                    Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first));
-
-            // this has to be the shape at the end of the branch, if we use an intermediate shape,
-            // we will get duplicates?  intermediate shapes don't seem to have everything positioned
-            // correctly?
-            // at least in theory, each leaf shape could be a different shape due to the scaling transforms.
-            // follow the branches of child's subtree and bring back the leaf shape and accummulated transforms
-            auto transforms = nodeVisitor3(child);
-            Base::Console().Message("SE::getShapesFromXRoot - nodeVisitor branch transforms: %d\n", transforms.size());
-            for (auto& tx : transforms) {
-                // we should get a leaf shape and a net transform for each branch
-                Base::Placement branchNetPlm = tx.placement();
-                Base::Matrix4D branchNetScale = tx.scale();
-                Base::Console().Message("SE::getShapesFromXRoot - child Placement: %s\n", Measure::ShapeFinder::PlacementAsString(branchNetPlm));
-                Base::Console().Message("SE::getShapesFromXRoot - branchPlacement: %s\n", Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first * branchNetPlm));
-
-                auto netPlm = childGlobalTransform.first * branchNetPlm;
-                auto netScale = childGlobalTransform.second * branchNetScale;
-                auto cleanShape = ShapeFinder::transformShape(tx.shape(), netPlm, netScale);
-                xSourceShapes.push_back(cleanShape);
-            }   // transform
-        }  // children
+    TopoDS_Shape xLinkRootShape = Part::Feature::getShape(xLinkRoot);
+    if (SU::isShapeReallyNull(xLinkRootShape)) {
+        return {};
     }
+    auto transform = ShapeFinder::getGlobalTransform(xLinkRoot);
+    xLinkRootShape = ShapeFinder::transformShape(xLinkRootShape, transform.first, transform.second);
+    xSourceShapes.push_back(xLinkRootShape);
     return xSourceShapes;
+
+//    std::vector<App::DocumentObject*> linkedChildren = getLinkedChildren(xLinkRoot);
+//    auto linkedObject = getLinkedObject(xLinkRoot);
+//    if (linkedChildren.empty()) {
+//        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has NO children - isLink? %d\n", ShapeFinder::isLinkLike(linkedObject));
+//        // link points to a regular object, not another link? no sublinks?
+//        TopoDS_Shape xLinkRootShape = getShapeFromChildlessXLink(xLinkRoot);
+//        xSourceShapes.push_back(xLinkRootShape);
+//    } else {
+//        Base::Console().Message("SE::getShapesFromXRoot - xLinkRoot has children\n");
+//        for (auto& child : linkedChildren) {
+//            auto childGlobalTransform = ShapeFinder::getGlobalTransform(child);
+//            Base::Console().Message("SE::getShapesFromXRoot - a linked child: %s / %s plm: %s\n", child->getNameInDocument(), child->Label.getValue(),
+//                                    Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first));
+
+//            // this has to be the shape at the end of the branch, if we use an intermediate shape,
+//            // we will get duplicates?  intermediate shapes don't seem to have everything positioned
+//            // correctly?
+//            // at least in theory, each leaf shape could be a different shape due to the scaling transforms.
+//            // follow the branches of child's subtree and bring back the leaf shape and accummulated transforms
+//            auto transforms = nodeVisitor3(child);
+//            Base::Console().Message("SE::getShapesFromXRoot - nodeVisitor branch transforms: %d\n", transforms.size());
+//            for (auto& tx : transforms) {
+//                // we should get a leaf shape and a net transform for each branch
+//                Base::Placement branchNetPlm = tx.placement();
+//                Base::Matrix4D branchNetScale = tx.scale();
+//                Base::Console().Message("SE::getShapesFromXRoot - child Placement: %s\n", Measure::ShapeFinder::PlacementAsString(branchNetPlm));
+//                Base::Console().Message("SE::getShapesFromXRoot - branchPlacement: %s\n", Measure::ShapeFinder::PlacementAsString(childGlobalTransform.first * branchNetPlm));
+
+//                auto netPlm = childGlobalTransform.first * branchNetPlm;
+//                auto netScale = childGlobalTransform.second * branchNetScale;
+//                auto cleanShape = ShapeFinder::transformShape(tx.shape(), netPlm, netScale);
+//                xSourceShapes.push_back(cleanShape);
+//            }   // transform
+//        }  // children
+//    }
+//    return xSourceShapes;
 }
 
 //! get the located shape for a single childless App::Link. (A link to an object in another
@@ -229,7 +237,7 @@ TopoDS_Shape ShapeExtractor::getShapeFromChildlessXLink(const App::DocumentObjec
             return {};
         }
 
-        // sometimes we need to apply to linked object's transform??
+        // sometimes we need to apply to linked object's transform?
         // if (xLink->LinkTransform.getValue())
         // auto linkedObjectPlacement = getPlacement(linkedObject);
         // auto linkedObjectScale = getScale(linkedObject);
@@ -377,31 +385,6 @@ void ShapeExtractor::restoreExplodedAssembly(App::DocumentObject* link)
     }
 }
 
-//inShape is a composite shape.
-//The shapes of datum features (Axis, Plan and CS) are infinite.
-//Infinite shapes can not be projected, so they need to be removed.
-TopoDS_Shape ShapeExtractor::stripInfiniteShapes(TopoDS_Shape inShape)
-{
-    Base::Console().Message("SE::stripInfiniteShapes()\n");
-    BRep_Builder builder;
-    TopoDS_Compound comp;
-    builder.MakeCompound(comp);
-
-    TopoDS_Iterator it(inShape);
-    for (; it.More(); it.Next()) {
-        TopoDS_Shape s = it.Value();
-        if (s.ShapeType() < TopAbs_SOLID) {
-            //look inside composite shapes
-            s = stripInfiniteShapes(s);
-        } else if (Part::TopoShape(s).isInfinite()) {
-            continue;
-        } else {
-            //simple shape
-        }
-        builder.Add(comp, s);
-    }
-    return TopoDS_Shape(std::move(comp));
-}
 
 bool ShapeExtractor::is2dObject(const App::DocumentObject* obj)
 {

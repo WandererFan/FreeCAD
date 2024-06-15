@@ -76,8 +76,6 @@ public:
 
     static Base::Vector3d getLocation3dFromFeat(const App::DocumentObject *obj);
 
-    static TopoDS_Shape stripInfiniteShapes(TopoDS_Shape inShape);
-
     static TopoDS_Shape getLocatedShape(const App::DocumentObject* docObj);
 
     static App::DocumentObject* getExplodedAssembly(std::vector<TopoDS_Shape>& sourceShapes,
