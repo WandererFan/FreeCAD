@@ -83,7 +83,8 @@ public:
     static Base::Matrix4D getScale(const App::DocumentObject* root);
 
     static std::string getFullPath(const App::DocumentObject* object);
-    static std::vector<App::DocumentObject*> getRootObjects(const App::Document* doc);
+    static std::vector<App::DocumentObject*> getGeometryRootObjects(const App::Document* doc);
+    static std::vector<std::list<App::DocumentObject*> >  getGeometryPathsFromOutList(const App::DocumentObject* object);
 
     static TopoDS_Shape transformShape(TopoDS_Shape inShape,
                                        const Base::Placement& placement,
@@ -97,9 +98,11 @@ public:
     static TopoDS_Shape stripInfiniteShapes(TopoDS_Shape inShape);
     static bool isShapeReallyNull(TopoDS_Shape shape);
 
+    static std::pair<Base::Placement, Base::Matrix4D> sumTransforms(const std::vector<Base::Placement>& plmStack,
+                                                                    const std::vector<Base::Matrix4D>& scaleStack);
+
+
 private:
-
-
     static std::string getFirstTerm(const std::string& inString);
     static std::string namesToLongSub(const std::vector<std::string>& pathElementNames);
     static std::string pruneLastTerm(const std::string& inString);
@@ -108,6 +111,7 @@ private:
     static std::string pathToLongSub(std::list<App::DocumentObject*> path);
 
     static bool ignoreModule(const std::string& moduleName);
+    static bool ignoreObject(const App::DocumentObject* object);
 
     static std::vector<App::DocumentObject*>
     tidyInList(const std::vector<App::DocumentObject*>& inlist);

@@ -1124,6 +1124,9 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
     }
     else if (adapt.GetType() == GeomAbs_BSplineCurve) {
         if (GeometryUtils::isCircle(occEdge)) {
+            //                   isCircle = GeometryUtils::getCircleParms(occEdge, radius, center,
+            //                   isArc);
+
             bool isArc(false);
             TopoDS_Edge circleEdge = GeometryUtils::asCircle(occEdge, isArc);
             pts.isArc = isArc;
