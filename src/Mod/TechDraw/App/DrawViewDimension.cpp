@@ -1069,6 +1069,8 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
     arcPoints pts;
     pts.isArc = !BRep_Tool::IsClosed(occEdge);
     pts.arcCW = false;
+
+    // get all the common information for circle, ellipse and bspline conversions
     BRepAdaptor_Curve adapt(occEdge);
     double pFirst = adapt.FirstParameter();
     double pLast = adapt.LastParameter();
@@ -1088,10 +1090,7 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
         pts.radius = circle.Radius();
         if (pts.isArc) {
             // part of circle
-            gp_Ax1 axis = circle.Axis();
-            gp_Vec startVec = DrawUtil::togp_Vec(pts.arcEnds.first() - pts.center);
-            gp_Vec endVec = DrawUtil::togp_Vec(pts.arcEnds.second() - pts.center);
-            double angle = startVec.AngleWithRef(endVec, axis.Direction().XYZ());
+            double angle = getArcAngle(pts.center, pts.arcEnds.first(), pts.arcEnds.second());
             pts.arcCW = (angle < 0.0);
         }
         else {
@@ -1108,10 +1107,7 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
         pts.radius = (ellipse.MajorRadius() + ellipse.MinorRadius()) / 2;
         if (pts.isArc) {
             // part of ellipse
-            gp_Ax1 axis = ellipse.Axis();
-            gp_Vec startVec = DrawUtil::togp_Vec(pts.arcEnds.first() - pts.center);
-            gp_Vec endVec = DrawUtil::togp_Vec(pts.arcEnds.second() - pts.center);
-            double angle = startVec.AngleWithRef(endVec, axis.Direction().XYZ());
+            double angle = getArcAngle(pts.center, pts.arcEnds.first(), pts.arcEnds.second());
             pts.arcCW = (angle < 0.0);
         }
         else {
@@ -1123,27 +1119,17 @@ arcPoints DrawViewDimension::arcPointsFromEdge(TopoDS_Edge occEdge)
         }
     }
     else if (adapt.GetType() == GeomAbs_BSplineCurve) {
-        if (GeometryUtils::isCircle(occEdge)) {
-            //                   isCircle = GeometryUtils::getCircleParms(occEdge, radius, center,
-            //                   isArc);
+        double radius;
+        Base::Vector3d center;
+        bool isArc(false);
 
-            bool isArc(false);
-            TopoDS_Edge circleEdge = GeometryUtils::asCircle(occEdge, isArc);
+        if (GeometryUtils::getCircleParms(occEdge, radius, center, isArc)) {
+            pts.center = center;
+            pts.radius = radius;
             pts.isArc = isArc;
-            BRepAdaptor_Curve adaptCircle(circleEdge);
-            if (adaptCircle.GetType() != GeomAbs_Circle) {
-                throw Base::RuntimeError("failed to get circle from bspline");
-            }
-            gp_Circ circle = adapt.Circle();
-            // TODO: same code as above. reuse opportunity.
-            pts.center = DrawUtil::toVector3d(circle.Location());
-            pts.radius = circle.Radius();
             if (pts.isArc) {
                 // part of circle
-                gp_Ax1 axis = circle.Axis();
-                gp_Vec startVec = DrawUtil::togp_Vec(pts.arcEnds.first() - pts.center);
-                gp_Vec endVec = DrawUtil::togp_Vec(pts.arcEnds.second() - pts.center);
-                double angle = startVec.AngleWithRef(endVec, axis.Direction().XYZ());
+                double angle = getArcAngle(center, pts.arcEnds.first(), pts.arcEnds.second());
                 pts.arcCW = (angle < 0.0);
             }
             else {
@@ -1627,6 +1613,20 @@ std::vector<TopoShape> DrawViewDimension::getVertexes(const TopoShape& inShape)
 
     return ret;
 }
+
+//! returns the angle subtended by an arc from 3 points.
+double DrawViewDimension::getArcAngle(Base::Vector3d center, Base::Vector3d startPoint, Base::Vector3d endPoint)
+{
+    auto leg0 = startPoint - center;
+    auto leg1 = endPoint - startPoint;
+    auto referenceDirection = leg0.Cross(leg1);
+    gp_Ax1 axis{DU::togp_Pnt(center), DU::togp_Vec(referenceDirection)};
+    gp_Vec startVec = DrawUtil::togp_Vec(leg0);
+    gp_Vec endVec = DrawUtil::togp_Vec(leg1);
+    double angle = startVec.AngleWithRef(endVec, axis.Direction().XYZ());
+    return angle;
+}
+
 
 pointPair DrawViewDimension::closestPoints(TopoDS_Shape s1, TopoDS_Shape s2) const
 {
