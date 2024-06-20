@@ -28,6 +28,8 @@
 # include <BRepExtrema_DistShapeShape.hxx>
 # include <BRepGProp.hxx>
 # include <GCPnts_AbscissaPoint.hxx>
+# include <Geom_BSplineCurve.hxx>
+# include <GeomLProp_CLProps.hxx>
 # include <gp_Pln.hxx>
 # include <gp_Circ.hxx>
 # include <gp_Torus.hxx>
@@ -546,8 +548,19 @@ double Measurement::radius() const
         const TopoDS_Edge& edge = TopoDS::Edge(shape);
 
         BRepAdaptor_Curve curve(edge);
-        if(curve.GetType() == GeomAbs_Circle) {
+        if (curve.GetType() == GeomAbs_Circle) {
             return (double) curve.Circle().Radius();
+        }
+
+        // this is an approximation.  do we need a parameter to permit substitution of a circle for
+        // a bspline?  Or is it on the caller to not ask for the radius of a bspline?
+        if (curve.GetType() == GeomAbs_BSplineCurve) {
+            double radius;
+            Base::Vector3d center;
+            bool isArc(false);
+            if (getCircleParms(edge, radius, center, isArc)) {
+                return radius;
+            }
         }
     }
     else if (measureType == MeasureType::Cylinder || measureType == MeasureType::Sphere || measureType == MeasureType::Torus) {
@@ -829,6 +842,69 @@ bool Measurement::linesAreParallel() const {
 
     return false;
 }
+
+//! tries to interpret a BSpline edge as a circle. Same code used in TechDraw by DVDim for approximate dimensions.
+bool Measurement::getCircleParms(TopoDS_Edge occEdge, double& radius, Base::Vector3d& center, bool& isArc, double tolerance)
+{
+    double curveLimit = tolerance;
+    BRepAdaptor_Curve c(occEdge);
+    Handle(Geom_BSplineCurve) spline = c.BSpline();
+    double f, l;
+    f = c.FirstParameter();
+    l = c.LastParameter();
+    double parmRange = fabs(l - f);
+    int testCount = 6;
+    double parmStep = parmRange/testCount;
+    std::vector<double> curvatures;
+    std::vector<gp_Pnt> centers;
+    gp_Pnt curveCenter;
+    double sumCurvature = 0;
+    Base::Vector3d sumCenter, valueAt;
+    try {
+        GeomLProp_CLProps prop(spline, f, 3, Precision::Confusion());
+        curvatures.push_back(prop.Curvature());
+        sumCurvature += prop.Curvature();
+        prop.CentreOfCurvature(curveCenter);
+        centers.push_back(curveCenter);
+        sumCenter += toVector3d(curveCenter);
+
+        for (int i = 1; i < (testCount - 1); i++) {
+            prop.SetParameter(parmStep * i);
+            curvatures.push_back(prop.Curvature());
+            sumCurvature += prop.Curvature();
+            prop.CentreOfCurvature(curveCenter);
+            centers.push_back(curveCenter);
+            sumCenter += toVector3d(curveCenter);
+        }
+        prop.SetParameter(l);
+        curvatures.push_back(prop.Curvature());
+        sumCurvature += prop.Curvature();
+        prop.CentreOfCurvature(curveCenter);
+        centers.push_back(curveCenter);
+        sumCenter += toVector3d(curveCenter);
+    }
+    catch (Standard_Failure&) {
+        return false;
+    }
+    Base::Vector3d avgCenter = sumCenter/testCount;
+
+    double avgCurve = sumCurvature/testCount;
+    double errorCurve  = 0;
+    for (auto& cv: curvatures) {
+        errorCurve += fabs(avgCurve - cv);    //fabs???
+    }
+    errorCurve  = errorCurve/testCount;
+
+    isArc = !c.IsClosed();
+    bool isCircle(false);
+    if ( errorCurve < curveLimit ) {
+        isCircle = true;
+        radius = 1.0/avgCurve;
+        center = avgCenter;
+    }
+    return isCircle;
+}
+
 
 unsigned int Measurement::getMemSize() const
 {
