@@ -101,7 +101,6 @@ public:
     static std::pair<Base::Placement, Base::Matrix4D> sumTransforms(const std::vector<Base::Placement>& plmStack,
                                                                     const std::vector<Base::Matrix4D>& scaleStack);
 
-
 private:
     static std::string getFirstTerm(const std::string& inString);
     static std::string namesToLongSub(const std::vector<std::string>& pathElementNames);
@@ -112,9 +111,14 @@ private:
 
     static bool ignoreModule(const std::string& moduleName);
     static bool ignoreObject(const App::DocumentObject* object);
-
+    static bool ignoreAttachedObject(const App::DocumentObject* object,
+                                     const App::DocumentObject* inlistObject);
+    static App::DocumentObject* getAttachParent(const App::DocumentObject* attachedObject);
     static std::vector<App::DocumentObject*>
     tidyInList(const std::vector<App::DocumentObject*>& inlist);
+    static std::vector<App::DocumentObject*> tidyInListAttachment(const App::DocumentObject* owner,
+                                                                  const std::vector<App::DocumentObject*>& inlist);
+
 
     static void combineTransforms(const std::vector<App::DocumentObject*>& pathObjects,
                                   Base::Placement& netPlacement,

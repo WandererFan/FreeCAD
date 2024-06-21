@@ -42,6 +42,8 @@
 #include <Base/Tools.h>
 
 #include <Mod/Part/App/PartFeature.h>
+#include <Mod/Part/App/AttachExtension.h>
+#include <Mod/Part/App/Attacher.h>
 
 #include "ShapeFinder.h"
 
@@ -322,13 +324,22 @@ std::pair<Base::Placement, Base::Matrix4D> ShapeFinder::getGlobalTransform(const
     auto pathToCursor = getFullPath(cursorObject);
 
     if (pathToCursor.empty()) {
+        Base::Console().Message("SF::getGlobalTransform - no path Plm: %s\n", PlacementAsString(getPlacement(cursorObject)).c_str());
         return { getPlacement(cursorObject), getScale(cursorObject) };
     }
+
+    Base::Console().Message("SF::getGlobalTransform - pathToCursor: %s\n", pathToCursor.c_str());
 
     auto rootName = getFirstTerm(pathToCursor);
     auto doc = cursorObject->getDocument();
     // rootObject is a top level object thanks to getFullPath()
     auto rootObject = doc->getObject(rootName.c_str());
+    if (rootObject == cursorObject) {
+        // we are root.
+        Base::Console().Message("SF::getGlobalTransform - root Plm: %s\n", PlacementAsString(getPlacement(cursorObject)).c_str());
+        return {getPlacement(rootObject), getScale(rootObject)};
+    }
+
     pathToCursor = pruneFirstTerm(pathToCursor);
 
     std::vector<Base::Placement> plmStack;
@@ -360,10 +371,12 @@ std::pair<Base::Placement, Base::Matrix4D> ShapeFinder::getGlobalTransform(const
 //! get a dot separated path from a root level object to the input object.  result starts at a root
 //! and ends at object - root.intermediate1.intermediate2.object
 //! since we have no real way of deciding when there are multiple paths from a root to object,
-//! we will use shortest path as a selection heuristic
+//! we will use shortest path as a temporary selection heuristic
 // "and a miracle occurs here"
 std::string ShapeFinder::getFullPath(const App::DocumentObject* object)
 {
+
+    Base::Console().Message("SF::getFullPath(%s / %s)\n", object->getNameInDocument(), object->Label.getValue());
     auto doc = object->getDocument();
     auto rootObjects = getGeometryRootObjects(doc);
     for (auto& root : rootObjects) {
@@ -377,6 +390,7 @@ std::string ShapeFinder::getFullPath(const App::DocumentObject* object)
 
     // object is not a root object
     auto candidatePaths = getGeometryPathsFromOutList(object);
+    Base::Console().Message("SF::getFullPath - candidates: %d\n", candidatePaths.size());
 
     // placeholder algo for best path
     size_t shortestCount{INT_MAX};
@@ -400,10 +414,17 @@ std::vector<App::DocumentObject*> ShapeFinder::getGeometryRootObjects(const App:
     std::vector < App::DocumentObject* > ret;
     auto objectsAll = doc->getObjects();
     for (auto object : objectsAll) {
+        // skip anything from a non-geometric module
         if (ignoreObject(object)) {
             continue;
         }
+
         auto inlist = tidyInList(object->getInList());
+        if (inlist.empty()) {
+            ret.push_back(object);
+        }
+
+        inlist = tidyInListAttachment(object, inlist);
         if (inlist.empty()) {
             ret.push_back(object);
         }
@@ -466,6 +487,7 @@ std::vector<std::list<App::DocumentObject*> >  ShapeFinder::getGeometryPathsFrom
 
 //! remove objects to be ignored from inlist.  These are objects that have links to a potential root
 //! object, but are not relevant to establishing the root objects place in the dependency tree.
+// not sure this does the intended job.
 std::vector<App::DocumentObject*> ShapeFinder::tidyInList(const std::vector<App::DocumentObject*>& inlist)
 {
     std::vector<App::DocumentObject*> cleanList;
@@ -473,6 +495,26 @@ std::vector<App::DocumentObject*> ShapeFinder::tidyInList(const std::vector<App:
         if (ignoreObject(obj)) {
                 continue;
         }
+
+        cleanList.emplace_back(obj);
+    }
+    return cleanList;
+}
+
+
+//! remove objects to be ignored from inlist.  These are objects that have attacher connections
+//! to a potential root object, but are not relevant to establishing the root objects place in
+//! the dependency tree.
+// not sure this does the intended job.
+std::vector<App::DocumentObject*> ShapeFinder::tidyInListAttachment(const App::DocumentObject* owner,
+                                                                    const std::vector<App::DocumentObject*>& inlist)
+{
+    std::vector<App::DocumentObject*> cleanList;
+    for (auto& obj : inlist) {
+        if (ignoreAttachedObject(owner, obj)) {
+                continue;
+        }
+
         cleanList.emplace_back(obj);
     }
     return cleanList;
@@ -500,7 +542,6 @@ bool ShapeFinder::ignoreObject(const App::DocumentObject* object)
     if (!object) {
         return true;
     }
-
     auto className = object->getTypeId().getName();
     auto objModule = Base::Type::getModuleName(className);
     if (ignoreModule(objModule)) {
@@ -510,7 +551,42 @@ bool ShapeFinder::ignoreObject(const App::DocumentObject* object)
 }
 
 
+//! true if inlistObject is attached to cursorObject.  In this case the attachment creates a inlist
+//! entry that prevents it from being considered a root object.
+bool ShapeFinder::ignoreAttachedObject(const App::DocumentObject* object,
+                                       const App::DocumentObject* inlistObject)
+{
+    if (!object || !inlistObject) {
+        return true;  // ????
+    }
+
+    auto parent = getAttachParent(inlistObject);
+    if (parent == object) {
+        return true;
+    }
+    return false;
+}
+
+
+App::DocumentObject* ShapeFinder::getAttachParent(const App::DocumentObject* attachedObject)
+{
+    auto namedProperty = attachedObject->getPropertyByName("a1AttParent");
+    auto attachProperty = dynamic_cast<App::PropertyLink*>(namedProperty);
+    if (namedProperty && attachProperty) {
+        Base::Console().Message("SF::getAttachParent - namedProperty: %s\n", namedProperty ? namedProperty->getTypeId().getName() : "none");
+        return attachProperty->getValue();
+    }
+    return {};
+}
+
+
+
 // long subname manipulators
+
+
+
+// class TechDrawExport ShapeFinder : SubnameManipulator {}
+// class TechDrawExport SubnameManipulator {}
 
 std::string ShapeFinder::pathToLongSub(std::list<App::DocumentObject*> path)
 {
