@@ -32,6 +32,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
+#include <TopLoc_Location.hxx>
 
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
@@ -98,6 +99,7 @@ ResolveResult ShapeFinder::resolveSelection(const App::DocumentObject& selectObj
 //! leafSub are typically obtained from Selection as it provides the appropriate longSubname.  The leaf
 //! sub string can also be constructed by walking the tree.
 // this is just getshape, getglobaltransform, apply & return?
+// TODO: to truly locate the shape, we need to consider attachments?
 TopoDS_Shape ShapeFinder::getLocatedShape(const App::DocumentObject& rootObject, const std::string& leafSub)
 {
     auto resolved = resolveSelection(rootObject, leafSub);
@@ -181,17 +183,21 @@ void ShapeFinder::crawlPlacementChain(std::vector<Base::Placement>& plmStack,
 
 //! return inShape with placement and scaler applied.  If inShape contains any infinite subshapes
 //! (such as Datum planes), the infinite shapes will not be included in the result.
-TopoDS_Shape ShapeFinder::transformShape(TopoDS_Shape inShape,
+TopoDS_Shape ShapeFinder::transformShape(TopoDS_Shape& inShape,
                                          const Base::Placement& placement,
                                          const Base::Matrix4D scaler)
 {
     if (isShapeReallyNull(inShape))  {
         return {};
     }
+    // we modify the parameter shape here.  we don't claim to be const, but may be better to copy the
+    // shape?
     Part::TopoShape tshape{inShape};
     if (tshape.isInfinite()) {
         inShape = stripInfiniteShapes(inShape);
     }
+    Base::Console().Message("SF::transformShape - plm: %s  loc: %s\n", PlacementAsString(placement).c_str(),
+                            LocationAsString(inShape.Location()).c_str());
 
     // copying the shape prevents "non-orthogonal GTrsf" errors in some versions
     // of OCC.  Something to do with triangulation of shape??
@@ -275,6 +281,11 @@ bool ShapeFinder::isLinkLike(const App::DocumentObject* obj)
 //! Datum features (Axis, Plane and CS) are examples of infinite shapes.
 TopoDS_Shape ShapeFinder::stripInfiniteShapes(TopoDS_Shape inShape)
 {
+    // if this is a compound, the children will lose their location as it will not be combined with
+    // that of the senior shapes.
+    TopLoc_Location inLocation{inShape.Location()};
+    Base::Console().Message("SF::stripInfiniteShapes - inShape - loc: %s\n", LocationAsString(inLocation).c_str());
+
     BRep_Builder builder;
     TopoDS_Compound comp;
     builder.MakeCompound(comp);
@@ -282,15 +293,22 @@ TopoDS_Shape ShapeFinder::stripInfiniteShapes(TopoDS_Shape inShape)
     TopoDS_Iterator it(inShape);
     for (; it.More(); it.Next()) {
         TopoDS_Shape s = it.Value();
+        Base::Console().Message("SF::stripInfiniteShapes - a shape before - loc: %s\n", LocationAsString(s.Location()).c_str());
         if (s.ShapeType() < TopAbs_SOLID) {
             //look inside composite shapes
             s = stripInfiniteShapes(s);
         } else if (Part::TopoShape(s).isInfinite()) {
+            Base::Console().Message("SF::stripInfiniteShapes - skipping infinite\n");
             continue;
         }
         //simple shape & finite
+        Base::Console().Message("SF::stripInfiniteShapes - a shape after - loc: %s\n", LocationAsString(s.Location()).c_str());
         builder.Add(comp, s);
     }
+
+    // rebuilding the shape loses its location, so we need to reapply here.
+    comp.Location(inLocation);
+
     return TopoDS_Shape(std::move(comp));
 }
 
@@ -336,7 +354,7 @@ std::pair<Base::Placement, Base::Matrix4D> ShapeFinder::getGlobalTransform(const
     auto rootObject = doc->getObject(rootName.c_str());
     if (rootObject == cursorObject) {
         // we are root.
-        Base::Console().Message("SF::getGlobalTransform - root Plm: %s\n", PlacementAsString(getPlacement(cursorObject)).c_str());
+        Base::Console().Message("SF::getGlobalTransform - **** root Plm: %s\n", PlacementAsString(getPlacement(rootObject)).c_str());
         return {getPlacement(rootObject), getScale(rootObject)};
     }
 
@@ -560,7 +578,7 @@ bool ShapeFinder::ignoreAttachedObject(const App::DocumentObject* object,
         return true;  // ????
     }
 
-    auto parent = getAttachParent(inlistObject);
+    auto parent = getLinkAttachParent(inlistObject);
     if (parent == object) {
         return true;
     }
@@ -568,18 +586,90 @@ bool ShapeFinder::ignoreAttachedObject(const App::DocumentObject* object,
 }
 
 
-App::DocumentObject* ShapeFinder::getAttachParent(const App::DocumentObject* attachedObject)
+App::DocumentObject* ShapeFinder::getLinkAttachParent(const App::DocumentObject* attachedObject)
 {
     auto namedProperty = attachedObject->getPropertyByName("a1AttParent");
     auto attachProperty = dynamic_cast<App::PropertyLink*>(namedProperty);
     if (namedProperty && attachProperty) {
-        Base::Console().Message("SF::getAttachParent - namedProperty: %s\n", namedProperty ? namedProperty->getTypeId().getName() : "none");
         return attachProperty->getValue();
     }
     return {};
 }
 
 
+Base::Placement ShapeFinder::getAttachedPlacement(const App::DocumentObject* cursorObject)
+{
+    auto extension = cursorObject->getExtensionByType<Part::AttachExtension>();
+    if (!extension) {
+        Base::Console().Message("SF::getAttachedPlacement - no extension\n");
+        return {};
+    }
+    auto attachExt = dynamic_cast<Part::AttachExtension*>(extension);
+    if (!attachExt  ||
+        !attachExt->isAttacherActive())  {
+        Base::Console().Message("SF::getAttachedPlacement - no AttachExtension or not active\n");
+        return {};
+    }
+
+//    App::PropertyPlacement placementProperty;
+//    placementProperty = attachExt->getPlacement();
+    auto origPlacement = getPlacement(cursorObject);
+    Base::Console().Message("SF::getAttachedPlacement - original Plm: %s\n", PlacementAsString(origPlacement));
+
+    bool subChanged{false};
+    auto attachedPlm = attachExt->attacher().calculateAttachedPlacement(origPlacement, &subChanged);
+
+    Base::Console().Message("SF::getAttachedPlacement - result: %s\n", PlacementAsString(attachedPlm));
+    return attachedPlm;
+}
+
+
+//! unravel the mysteries of attachment as implemented by Links.  Not the same as Part::AttachExtension.
+Base::Placement ShapeFinder::getLinkAttachPlacement(const App::DocumentObject* attachedLinkObject)
+{
+    if (!isLinkLike(attachedLinkObject)) {
+        Base::Console().Message("SF::getLinkAttachPlacement - %s is not a link\n", attachedLinkObject->Label.getValue());
+        return {};
+    }
+
+    // are we really attached
+    auto namedProperty = attachedLinkObject->getPropertyByName("a1AttParent");
+    auto attachProperty = dynamic_cast<App::PropertyLink*>(namedProperty);
+    if (!namedProperty || !attachProperty) {
+        Base::Console().Message("SF::getLinkAttachPlacement - %s has no a1AttParent\n", attachedLinkObject->Label.getValue());
+        return {};
+    }
+    auto parentObj = attachProperty->getValue();
+    auto parentObjPlm = getPlacement(parentObj);
+
+    // the placement of the cs to which we are attached
+    namedProperty = attachedLinkObject->getPropertyByName("a3AttParentSubobjPlacement");
+    auto parentPlmProperty = dynamic_cast<App::PropertyPlacement*>(namedProperty);
+    if (!namedProperty || !parentPlmProperty) {
+        Base::Console().Message("SF::getLinkAttachPlacement - %s has no a3AttParentSubobjPlacement\n", attachedLinkObject->Label.getValue());
+        return {};
+    }
+    auto parentConnectPlm = parentPlmProperty->getValue();
+
+    // the placement of our end of the attachment
+    // namedProperty = attachedLinkObject->getPropertyByName("c3AttChildResultPlc");
+    namedProperty = attachedLinkObject->getPropertyByName("b3AttChildSubobjPlacement");
+    auto childPlmProperty = dynamic_cast<App::PropertyPlacement*>(namedProperty);
+    if (!namedProperty || !childPlmProperty) {
+//        Base::Console().Message("SF::getLinkAttachPlacement - %s has no c3AttChildResultPlc\n", attachedLinkObject->Label.getValue());
+        Base::Console().Message("SF::getLinkAttachPlacement - %s has no b3AttChildSubobjPlacement\n", attachedLinkObject->Label.getValue());
+        return {};
+    }
+    auto childConnectPlm = childPlmProperty->getValue();
+
+    auto childObjPlm = getPlacement(attachedLinkObject);
+
+//    Base::Console().Message("SP::getLinkAttachPlacement - parentPlm: %s\n", PlacementAsString(parentPlm).c_str());
+//    Base::Console().Message("SP::getLinkAttachPlacement - childPlm: %s\n", PlacementAsString(childPlm).c_str());
+//    Base::Console().Message("SP::getLinkAttachPlacement - netPlm: %s\n", PlacementAsString(parentPlm * childPlm).c_str());
+
+    return parentObjPlm * parentConnectPlm * childObjPlm * childConnectPlm;
+}
 
 // long subname manipulators
 
@@ -723,4 +813,23 @@ std::string ShapeFinder::PlacementAsString(const Base::Placement& inPlacement)
         ")  axis: (" << axis.x << ", " << axis.y << ", " << axis.z << ")  angle: " << Base::toDegrees(angle);
     return ss.str();
 }
+
+
+//! debug routine. return readable form of TopLoc_Location from OCC
+std::string ShapeFinder::LocationAsString(TopLoc_Location location)
+{
+    auto position = Base::Vector3d{location.Transformation().TranslationPart().X(),
+                                   location.Transformation().TranslationPart().Y(),
+                                    location.Transformation().TranslationPart().Z()};
+    gp_XYZ axisDir;
+    double angle;
+    auto isRotation = location.Transformation().GetRotation(axisDir, angle);
+    Base::Vector3d axis{axisDir.X(), axisDir.Y(), axisDir.Z()};
+
+    std::stringstream  ss;
+    ss << "isRotation: " << isRotation << "  pos: (" << position.x << ", " << position.y << ", " << position.z <<
+        ")  axis: (" << axisDir.X() << ", " << axisDir.Y() << ", " << axisDir.Z() << ")  angle: " << Base::toDegrees(angle);
+    return ss.str();
+}
+
 

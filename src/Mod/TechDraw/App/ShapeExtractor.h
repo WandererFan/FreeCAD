@@ -63,7 +63,7 @@ public:
 
     static std::vector<TopoDS_Shape> getShapesFromXRoot(const App::DocumentObject *xLinkRoot);
     static std::vector<TopoDS_Shape> getShapesFromObject(const App::DocumentObject* docObj);
-    static TopoDS_Shape getShapeFromChildlessXLink(const App::DocumentObject* xLink);
+//    +static TopoDS_Shape getShapeFromChildlessXLink(const App::DocumentObject* xLink);
 
     static bool is2dObject(const App::DocumentObject* obj);
     static bool isEdgeType(const App::DocumentObject* obj);
@@ -84,10 +84,10 @@ public:
 
     static void nodeVisitor(const App::DocumentObject* node, int level, int sibling);
     static std::vector<std::string> nodeVisitor2(const App::DocumentObject* node, int level, int sibling);
-    static TransformVector nodeVisitor3(const App::DocumentObject* pathRoot,
-                                        const App::DocumentObject* currentNode = nullptr,
-                                        int level = 0,
-                                        int sibling = 0);
+//    static TransformVector nodeVisitor3(const App::DocumentObject* pathRoot,
+//                                        const App::DocumentObject* currentNode = nullptr,
+//                                        int level = 0,
+//                                        int sibling = 0);
     static std::vector<App::DocumentObject*> getLinkedChildren(const App::DocumentObject* root);
     static App::DocumentObject* getLinkedObject(const App::DocumentObject* root);
 

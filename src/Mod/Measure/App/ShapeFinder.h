@@ -86,12 +86,13 @@ public:
     static std::vector<App::DocumentObject*> getGeometryRootObjects(const App::Document* doc);
     static std::vector<std::list<App::DocumentObject*> >  getGeometryPathsFromOutList(const App::DocumentObject* object);
 
-    static TopoDS_Shape transformShape(TopoDS_Shape inShape,
+    static TopoDS_Shape transformShape(TopoDS_Shape& inShape,
                                        const Base::Placement& placement,
                                        const Base::Matrix4D scaler);
 
     static bool isLinkLike(const App::DocumentObject* obj);
     static std::string PlacementAsString(const Base::Placement& inPlacement);
+    static std::string LocationAsString(TopLoc_Location location);
 
 
     static std::string getLastTerm(const std::string& inString);
@@ -100,6 +101,11 @@ public:
 
     static std::pair<Base::Placement, Base::Matrix4D> sumTransforms(const std::vector<Base::Placement>& plmStack,
                                                                     const std::vector<Base::Matrix4D>& scaleStack);
+    static App::DocumentObject* getLinkAttachParent(const App::DocumentObject* attachedObject);
+    static Base::Placement getLinkAttachPlacement(const App::DocumentObject* attachedLinkObject);
+
+    static Base::Placement getAttachedPlacement(const App::DocumentObject* cursorObject);
+
 
 private:
     static std::string getFirstTerm(const std::string& inString);
@@ -113,7 +119,6 @@ private:
     static bool ignoreObject(const App::DocumentObject* object);
     static bool ignoreAttachedObject(const App::DocumentObject* object,
                                      const App::DocumentObject* inlistObject);
-    static App::DocumentObject* getAttachParent(const App::DocumentObject* attachedObject);
     static std::vector<App::DocumentObject*>
     tidyInList(const std::vector<App::DocumentObject*>& inlist);
     static std::vector<App::DocumentObject*> tidyInListAttachment(const App::DocumentObject* owner,
