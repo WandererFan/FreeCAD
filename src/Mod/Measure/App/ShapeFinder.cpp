@@ -279,37 +279,26 @@ bool ShapeFinder::isLinkLike(const App::DocumentObject* obj)
 
 //! Infinite shapes can not be projected, so they need to be removed. inShape is usually a compound.
 //! Datum features (Axis, Plane and CS) are examples of infinite shapes.
-TopoDS_Shape ShapeFinder::stripInfiniteShapes(TopoDS_Shape inShape)
+TopoDS_Shape ShapeFinder::stripInfiniteShapes(const TopoDS_Shape &inShape)
 {
-    // if this is a compound, the children will lose their location as it will not be combined with
-    // that of the senior shapes.
-    TopLoc_Location inLocation{inShape.Location()};
-    Base::Console().Message("SF::stripInfiniteShapes - inShape - loc: %s\n", LocationAsString(inLocation).c_str());
-
     BRep_Builder builder;
     TopoDS_Compound comp;
     builder.MakeCompound(comp);
 
     TopoDS_Iterator it(inShape);
     for (; it.More(); it.Next()) {
-        TopoDS_Shape s = it.Value();
-        Base::Console().Message("SF::stripInfiniteShapes - a shape before - loc: %s\n", LocationAsString(s.Location()).c_str());
-        if (s.ShapeType() < TopAbs_SOLID) {
+        TopoDS_Shape shape = it.Value();
+        if (shape.ShapeType() < TopAbs_SOLID) {
             //look inside composite shapes
-            s = stripInfiniteShapes(s);
-        } else if (Part::TopoShape(s).isInfinite()) {
-            Base::Console().Message("SF::stripInfiniteShapes - skipping infinite\n");
+            shape = stripInfiniteShapes(shape);
+        } else if (Part::TopoShape(shape).isInfinite()) {
             continue;
         }
         //simple shape & finite
-        Base::Console().Message("SF::stripInfiniteShapes - a shape after - loc: %s\n", LocationAsString(s.Location()).c_str());
-        builder.Add(comp, s);
+        builder.Add(comp, shape);
     }
 
-    // rebuilding the shape loses its location, so we need to reapply here.
-    comp.Location(inLocation);
-
-    return TopoDS_Shape(std::move(comp));
+    return {std::move(comp)};
 }
 
 
@@ -529,7 +518,7 @@ std::vector<App::DocumentObject*> ShapeFinder::tidyInListAttachment(const App::D
 {
     std::vector<App::DocumentObject*> cleanList;
     for (auto& obj : inlist) {
-        if (ignoreAttachedObject(owner, obj)) {
+        if (ignoreLinkAttachedObject(owner, obj)) {
                 continue;
         }
 
@@ -562,16 +551,13 @@ bool ShapeFinder::ignoreObject(const App::DocumentObject* object)
     }
     auto className = object->getTypeId().getName();
     auto objModule = Base::Type::getModuleName(className);
-    if (ignoreModule(objModule)) {
-        return true;
-    }
-    return false;
+    return ignoreModule(objModule);
 }
 
 
-//! true if inlistObject is attached to cursorObject.  In this case the attachment creates a inlist
-//! entry that prevents it from being considered a root object.
-bool ShapeFinder::ignoreAttachedObject(const App::DocumentObject* object,
+//! true if inlistObject is attached to cursorObject using links.  In this case the attachment
+//! creates a inlist entry that prevents it from being considered a root object.
+bool ShapeFinder::ignoreLinkAttachedObject(const App::DocumentObject* object,
                                        const App::DocumentObject* inlistObject)
 {
     if (!object || !inlistObject) {
@@ -579,13 +565,11 @@ bool ShapeFinder::ignoreAttachedObject(const App::DocumentObject* object,
     }
 
     auto parent = getLinkAttachParent(inlistObject);
-    if (parent == object) {
-        return true;
-    }
-    return false;
+    return parent == object;
 }
 
 
+//! get the parent to which attachObject is attached via Links (not regular Part::Attacher attachment)
 App::DocumentObject* ShapeFinder::getLinkAttachParent(const App::DocumentObject* attachedObject)
 {
     auto namedProperty = attachedObject->getPropertyByName("a1AttParent");
@@ -597,6 +581,7 @@ App::DocumentObject* ShapeFinder::getLinkAttachParent(const App::DocumentObject*
 }
 
 
+//! get the placement of an object which is attached to a support using Part::Attacher
 Base::Placement ShapeFinder::getAttachedPlacement(const App::DocumentObject* cursorObject)
 {
     auto extension = cursorObject->getExtensionByType<Part::AttachExtension>();
@@ -611,20 +596,17 @@ Base::Placement ShapeFinder::getAttachedPlacement(const App::DocumentObject* cur
         return {};
     }
 
-//    App::PropertyPlacement placementProperty;
-//    placementProperty = attachExt->getPlacement();
     auto origPlacement = getPlacement(cursorObject);
-    Base::Console().Message("SF::getAttachedPlacement - original Plm: %s\n", PlacementAsString(origPlacement));
 
     bool subChanged{false};
     auto attachedPlm = attachExt->attacher().calculateAttachedPlacement(origPlacement, &subChanged);
 
-    Base::Console().Message("SF::getAttachedPlacement - result: %s\n", PlacementAsString(attachedPlm));
     return attachedPlm;
 }
 
 
 //! unravel the mysteries of attachment as implemented by Links.  Not the same as Part::AttachExtension.
+//! this may be superfluous as getShape returns a transformed shape.
 Base::Placement ShapeFinder::getLinkAttachPlacement(const App::DocumentObject* attachedLinkObject)
 {
     if (!isLinkLike(attachedLinkObject)) {

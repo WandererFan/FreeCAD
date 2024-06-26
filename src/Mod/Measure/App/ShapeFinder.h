@@ -96,7 +96,7 @@ public:
 
 
     static std::string getLastTerm(const std::string& inString);
-    static TopoDS_Shape stripInfiniteShapes(TopoDS_Shape inShape);
+    static TopoDS_Shape stripInfiniteShapes(const TopoDS_Shape &inShape);
     static bool isShapeReallyNull(TopoDS_Shape shape);
 
     static std::pair<Base::Placement, Base::Matrix4D> sumTransforms(const std::vector<Base::Placement>& plmStack,
@@ -117,7 +117,7 @@ private:
 
     static bool ignoreModule(const std::string& moduleName);
     static bool ignoreObject(const App::DocumentObject* object);
-    static bool ignoreAttachedObject(const App::DocumentObject* object,
+    static bool ignoreLinkAttachedObject(const App::DocumentObject* object,
                                      const App::DocumentObject* inlistObject);
     static std::vector<App::DocumentObject*>
     tidyInList(const std::vector<App::DocumentObject*>& inlist);

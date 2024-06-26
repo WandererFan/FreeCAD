@@ -139,39 +139,32 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> i
     TopoDS_Compound comp;
     builder.MakeCompound(comp);
     Base::Console().Message("SE::getShapes - returning %d sourceShapes\n", sourceShapes.size());
-     int iShape{0};
     for (auto& s:sourceShapes) {
         if (SU::isShapeReallyNull(s)) {
-            iShape++;
             continue;
-        } else if (s.ShapeType() < TopAbs_SOLID) {
+        }
+
+        if (s.ShapeType() < TopAbs_SOLID) {
             //clean up composite shapes
             TopoDS_Shape cleanShape = ShapeFinder::stripInfiniteShapes(s);
-            std::stringstream ss;
-            ss << "SEcleanShape" << iShape << ".brep";
-            BRepTools::Write(cleanShape, ss.str().c_str());
             if (!cleanShape.IsNull()) {
                 builder.Add(comp, cleanShape);
             }
-        } else if (Part::TopoShape(s).isInfinite()) {
-            iShape++;
-            continue;    //simple shape is infinite
         } else {
             //a simple shape - add to compound
-            std::stringstream ss;
-            ss << "SEsimpleShape" << iShape << ".brep";
-            BRepTools::Write(s, ss.str().c_str());
+            if (Part::TopoShape(s).isInfinite()) {
+                continue;    //simple shape is infinite
+            }
+
             builder.Add(comp, s);
         }
     }
     //it appears that an empty compound is !IsNull(), so we need to check a different way
     if (!SU::isShapeReallyNull(comp)) {
-        BRepTools::Write(comp, "SEShapeReturned.brep");
-
         return comp;
     }
 
-    return TopoDS_Shape();
+    return {};
 }
 
 //! get all the shapes in the sub tree starting at xLinkRoot.
@@ -180,7 +173,6 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
     if (!xLinkRoot) {
         return {};
     }
-    Base::Console().Message("SE::getShapesFromXRoot(%s/%s)\n", xLinkRoot->getNameInDocument(), xLinkRoot->Label.getValue());
 
     std::vector<TopoDS_Shape> xSourceShapes;
     std::string rootName = xLinkRoot->getNameInDocument();
@@ -190,100 +182,68 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
         return {};
     }
 
-    auto transform = ShapeFinder::getGlobalTransform(xLinkRoot);
-    Base::Console().Message("SE::getShapesFromXRoot - xlink global plm: %s\n", ShapeFinder::PlacementAsString(transform.first));
-
-    // sometimes(??), Part::Feature::getShape returns a shape that already has a part of its global
-    // position applied (possibly its own placement?).  if this is reliable, we can change the
-    // globalTransform algo to handle it.  if this is not reliable, then we should reverse the shape's
-    // transform and use the calculated one.
-    // the default behaviour of get shape is to apply
+    // in the case of an attachment created by links (using properties such as b3AttChildSubobjPlacement
+    // and c3AttChildResultPlc), Part::Feature::getShape returns the shape with transforms already
+    // applied.
     auto attachedParent = ShapeFinder::getLinkAttachParent(xLinkRoot);      // there is probably a better test
     if (attachedParent) {
-//        Base::Console().Message("SE::getShapesFromXRoot - attached parent - shape loc: %s\n",
-//                                ShapeFinder::LocationAsString(xLinkRootShape.Location()));
-        // we can not use xLinkObject's shape as it already has some transforms applied to it.
-        auto linkedObject = getLinkedObject(xLinkRoot);
-        if (!linkedObject) {
-            return {};
-        }
-
-        xLinkRootShape = Part::Feature::getShape(linkedObject);
-        BRepTools::Write(xLinkRootShape, "SELinkedObjectShape.brep");   // ok to here
-
-        auto attachPlm = ShapeFinder::getLinkAttachPlacement(xLinkRoot);
-        Base::Console().Message("SE::getShapesFromXRoot - attached parent - linkAttachPlm: %s\n",
-                                ShapeFinder::PlacementAsString(attachPlm));
+        xSourceShapes.push_back(xLinkRootShape);
+        return xSourceShapes;
     }
 
-    xLinkRootShape = ShapeFinder::transformShape(xLinkRootShape, transform.first, transform.second);
-    BRepTools::Write(xLinkRootShape, "SEtransformedShape.brep");    // ok to here
+    // cases other than link attachments
 
-    Base::Console().Message("SE::getShapesFromXRoot - on exit - shape loc: %s\n",
-                            ShapeFinder::LocationAsString(xLinkRootShape.Location()));
+    // case: link -> link -> shape
+    auto linkedObject = xLinkRoot->getLinkedObject();
+    if (ShapeFinder::isLinkLike(linkedObject)) {
+        Base::Console().Message("SE::getShapesFromXRoot - linked object is link\n");
+            // static TopoDS_Shape getShape(const App::DocumentObject *obj,
+            // const char *subname=nullptr, bool needSubElement=false, Base::Matrix4D *pmat=nullptr,
+            // App::DocumentObject **owner=nullptr, bool resolveLink=true, bool transform=true);
+        // auto linkShape = Part::Feature::getShape(linkedObject, nullptr, false, nullptr, nullptr, false, true);
+        auto linkShape = Part::Feature::getShape(linkedObject);
+        xSourceShapes.push_back(linkShape);
+        return xSourceShapes;
+
+    }
+
+    // the common case
+    auto transform = ShapeFinder::getGlobalTransform(xLinkRoot);
+
+    xLinkRootShape = ShapeFinder::transformShape(xLinkRootShape, transform.first, transform.second);
+
     xSourceShapes.push_back(xLinkRootShape);
     return xSourceShapes;
 }
 
-//! get the located shape for a single childless App::Link. (A link to an object in another
-//! document?)
-//TopoDS_Shape ShapeExtractor::getShapeFromChildlessXLink(const App::DocumentObject* xLink)
-//{
-//    Base::Console().Message("SE::getShapeFromChildlessXLink(%s/%s)\n", xLink->getNameInDocument(), xLink->Label.getValue());
-//    if (!xLink) {
-//        return {};
-//    }
-
-//    auto globalTransform = ShapeFinder::getGlobalTransform(xLink);
-//    App::DocumentObject* linkedObject = getLinkedObject(xLink);
-//    if (linkedObject) {
-//        TopoDS_Shape shape = Part::Feature::getShape(linkedObject);
-//        if (shape.IsNull()) {
-//            return {};
-//        }
-
-//        // sometimes we need to apply to linked object's transform?
-//        // if (xLink->LinkTransform.getValue())
-//        // auto linkedObjectPlacement = getPlacement(linkedObject);
-//        // auto linkedObjectScale = getScale(linkedObject);
-
-
-//        Base::Console().Message("SE::getShapeFromChildlessXLink - globalPlacement: %s\n",
-//                ShapeFinder::PlacementAsString(globalTransform.first));
-//        // if the linked object is a link, then we should apply the placement?
-//        auto cleanShape = ShapeFinder::transformShape(shape, globalTransform.first, globalTransform.second);
-//        return cleanShape;
-//    }
-//    return {};
-//}
 
 std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromObject(const App::DocumentObject* docObj)
 {
     Base::Console().Message("SE::getShapesFromObject(%s)\n", docObj->getNameInDocument());
     std::vector<TopoDS_Shape> result;
 
-    const App::GroupExtension* gex = dynamic_cast<const App::GroupExtension*>(docObj);
+    auto gex = dynamic_cast<const App::GroupExtension*>(docObj);
     App::Property* gProp = docObj->getPropertyByName("Group");
     App::Property* sProp = docObj->getPropertyByName("Shape");
     if (docObj->isDerivedFrom<Part::Feature>()) {
         result.push_back(getLocatedShape(docObj));
     } else if (gex) {           //is a group extension
-        std::vector<App::DocumentObject*> objs = gex->Group.getValues();
+        std::vector<App::DocumentObject*> groupObjects = gex->Group.getValues();
         std::vector<TopoDS_Shape> shapes;
-        for (auto& d: objs) {
-            shapes = getShapesFromObject(d);
+        for (auto& obj: groupObjects) {
+            shapes = getShapesFromObject(obj );
             if (!shapes.empty()) {
                 result.insert(result.end(), shapes.begin(), shapes.end());
             }
         }
     //the next 2 bits are mostly for Arch module objects
     } else if (gProp) {       //has a Group property
-        App::PropertyLinkList* list = dynamic_cast<App::PropertyLinkList*>(gProp);
+        auto list = dynamic_cast<App::PropertyLinkList*>(gProp);
         if (list) {
-            std::vector<App::DocumentObject*> objs = list->getValues();
+            std::vector<App::DocumentObject*> groupObjects = list->getValues();
             std::vector<TopoDS_Shape> shapes;
-            for (auto& d: objs) {
-                shapes = getShapesFromObject(d);
+            for (auto& obj: groupObjects) {
+                shapes = getShapesFromObject(obj);
                 if (!shapes.empty()) {
                     result.insert(result.end(), shapes.begin(), shapes.end());
                 }
