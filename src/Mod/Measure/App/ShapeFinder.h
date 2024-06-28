@@ -77,33 +77,33 @@ public:
                                           const std::string& selectLongSub);
 
     static std::pair<Base::Placement, Base::Matrix4D>
-    getGlobalTransform(const App::DocumentObject* cursorObject);
+                                        getGlobalTransform(const App::DocumentObject* cursorObject);
 
     static Base::Placement getPlacement(const App::DocumentObject* root);
     static Base::Matrix4D getScale(const App::DocumentObject* root);
 
     static std::string getFullPath(const App::DocumentObject* object);
     static std::vector<App::DocumentObject*> getGeometryRootObjects(const App::Document* doc);
-    static std::vector<std::list<App::DocumentObject*> >  getGeometryPathsFromOutList(const App::DocumentObject* object);
+    static std::vector<std::list<App::DocumentObject*> >
+                                getGeometryPathsFromOutList(const App::DocumentObject* object);
 
     static TopoDS_Shape transformShape(TopoDS_Shape& inShape,
                                        const Base::Placement& placement,
-                                       const Base::Matrix4D scaler);
+                                       const Base::Matrix4D& scaler);
 
     static bool isLinkLike(const App::DocumentObject* obj);
     static std::string PlacementAsString(const Base::Placement& inPlacement);
-    static std::string LocationAsString(TopLoc_Location location);
+    static std::string LocationAsString(const TopLoc_Location &location);
 
 
     static std::string getLastTerm(const std::string& inString);
     static TopoDS_Shape stripInfiniteShapes(const TopoDS_Shape &inShape);
-    static bool isShapeReallyNull(TopoDS_Shape shape);
+    static bool isShapeReallyNull(const TopoDS_Shape &shape);
 
-    static std::pair<Base::Placement, Base::Matrix4D> sumTransforms(const std::vector<Base::Placement>& plmStack,
-                                                                    const std::vector<Base::Matrix4D>& scaleStack);
+    static std::pair<Base::Placement, Base::Matrix4D>
+                                       sumTransforms(const std::vector<Base::Placement>& plmStack,
+                                                     const std::vector<Base::Matrix4D>& scaleStack);
     static App::DocumentObject* getLinkAttachParent(const App::DocumentObject* attachedObject);
-    static Base::Placement getLinkAttachPlacement(const App::DocumentObject* attachedLinkObject);
-
     static Base::Placement getAttachedPlacement(const App::DocumentObject* cursorObject);
 
 
@@ -121,13 +121,10 @@ private:
                                      const App::DocumentObject* inlistObject);
     static std::vector<App::DocumentObject*>
     tidyInList(const std::vector<App::DocumentObject*>& inlist);
-    static std::vector<App::DocumentObject*> tidyInListAttachment(const App::DocumentObject* owner,
-                                                                  const std::vector<App::DocumentObject*>& inlist);
+    static std::vector<App::DocumentObject*> tidyInListAttachment(
+                                                            const App::DocumentObject* owner,
+                                                            const std::vector<App::DocumentObject*>& inlist);
 
-
-    static void combineTransforms(const std::vector<App::DocumentObject*>& pathObjects,
-                                  Base::Placement& netPlacement,
-                                  Base::Matrix4D& netScale);
 };
 
 }  // namespace Measure

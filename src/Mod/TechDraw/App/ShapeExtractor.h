@@ -36,24 +36,6 @@
 namespace TechDraw
 {
 
-class TechDrawExport TransformItem
-{
-public:
-    TransformItem(TopoDS_Shape shape, Base::Placement placement, Base::Matrix4D scale) :
-        m_shape(shape), m_placement(placement), m_scale(scale)  {}
-
-    TopoDS_Shape shape() const   { return m_shape; }
-    Base::Placement placement() const { return m_placement; }
-    Base::Matrix4D scale() const  { return m_scale; }
-
-private:
-    TopoDS_Shape m_shape;
-    Base::Placement m_placement;
-    Base::Matrix4D m_scale;
-};
-using TransformVector = std::vector<TransformItem>;
-
-
 class TechDrawExport ShapeExtractor
 {
 public:
@@ -63,7 +45,6 @@ public:
 
     static std::vector<TopoDS_Shape> getShapesFromXRoot(const App::DocumentObject *xLinkRoot);
     static std::vector<TopoDS_Shape> getShapesFromObject(const App::DocumentObject* docObj);
-//    +static TopoDS_Shape getShapeFromChildlessXLink(const App::DocumentObject* xLink);
 
     static bool is2dObject(const App::DocumentObject* obj);
     static bool isEdgeType(const App::DocumentObject* obj);
@@ -73,24 +54,14 @@ public:
     static bool isSketchObject(const App::DocumentObject* obj);
     static bool isExplodedAssembly(const App::DocumentObject* obj);
 
-
     static Base::Vector3d getLocation3dFromFeat(const App::DocumentObject *obj);
-
     static TopoDS_Shape getLocatedShape(const App::DocumentObject* docObj);
 
     static App::DocumentObject* getExplodedAssembly(std::vector<TopoDS_Shape>& sourceShapes,
                                                     App::DocumentObject* link);
     static void restoreExplodedAssembly(App::DocumentObject* link);
 
-    static void nodeVisitor(const App::DocumentObject* node, int level, int sibling);
-    static std::vector<std::string> nodeVisitor2(const App::DocumentObject* node, int level, int sibling);
-//    static TransformVector nodeVisitor3(const App::DocumentObject* pathRoot,
-//                                        const App::DocumentObject* currentNode = nullptr,
-//                                        int level = 0,
-//                                        int sibling = 0);
-    static std::vector<App::DocumentObject*> getLinkedChildren(const App::DocumentObject* root);
     static App::DocumentObject* getLinkedObject(const App::DocumentObject* root);
-
 
 protected:
 

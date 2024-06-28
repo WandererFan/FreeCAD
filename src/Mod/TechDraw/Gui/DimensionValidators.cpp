@@ -47,10 +47,11 @@ TechDraw::DrawViewPart* TechDraw::getReferencesFromSelection(ReferenceVector& re
     TechDraw::DrawViewPart* dvp(nullptr);
     TechDraw::DrawViewDimension* dim(nullptr);
     constexpr bool allowOnlySingle{false};
-    std::vector<Gui::SelectionObject> selectionAll = Gui::Selection().getSelectionEx("*",
-                                                                                     App::DocumentObject::getClassTypeId(),
-                                                                                     Gui::ResolveMode::NoResolve,
-                                                                                     allowOnlySingle);
+    std::vector<Gui::SelectionObject> selectionAll =
+            Gui::Selection().getSelectionEx("*",
+                                            App::DocumentObject::getClassTypeId(),
+                                            Gui::ResolveMode::NoResolve,
+                                            allowOnlySingle);
 
     for (auto& selItem : selectionAll) {
         if (selItem.getObject()->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
