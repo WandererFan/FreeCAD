@@ -28,6 +28,8 @@
 # include <BRepExtrema_DistShapeShape.hxx>
 # include <BRepGProp.hxx>
 # include <GCPnts_AbscissaPoint.hxx>
+# include <Geom_BSplineCurve.hxx>
+# include <GeomLProp_CLProps.hxx>
 # include <gp_Pln.hxx>
 # include <gp_Circ.hxx>
 # include <gp_Torus.hxx>
@@ -42,9 +44,12 @@
 
 #include <Base/Console.h>
 #include <Base/Exception.h>
+#include <Base/Tools.h>
+
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Part/App/TopoShape.h>
 
+#include "ShapeFinder.h"
 #include "Measurement.h"
 #include "MeasurementPy.h"
 
@@ -289,41 +294,8 @@ MeasureType Measurement::getType()
 
 TopoDS_Shape Measurement::getShape(App::DocumentObject *obj , const char *subName) const
 {
-    //temporary fix to get "Vertex7" from "Body003.Pocket020.Vertex7"
-    //when selected, Body features are provided as featureName and subNameAndIndex
-    //other sources provide the full extended name with index
-    if (strcmp(subName, "") == 0) {
-        return Part::Feature::getShape(obj);
-    }
-    std::string workingSubName(subName);
-    size_t lastDot = workingSubName.rfind('.');
-    if (lastDot != std::string::npos) {
-        workingSubName = workingSubName.substr(lastDot + 1);
-    }
-
-    try {
-        Part::TopoShape partShape = Part::Feature::getTopoShape(obj);
-        App::GeoFeature* geoFeat =  dynamic_cast<App::GeoFeature*>(obj);
-        if (geoFeat) {
-            partShape.setPlacement(geoFeat->globalPlacement());
-        }
-        TopoDS_Shape shape = partShape.getSubShape(workingSubName.c_str());
-        if(shape.IsNull()) {
-            throw Part::NullShapeException("null shape in measurement");
-        }
-        return shape;
-    }
-    catch (const Base::Exception&) {
-        // re-throw original exception
-        throw;
-    }
-    catch (Standard_Failure& e) {
-        throw Base::CADKernelError(e.GetMessageString());
-    }
-    catch (...) {
-        throw Base::RuntimeError("Measurement: Unknown error retrieving shape");
-    }
-
+    // Base::Console().Message("Meas::getShape(%s, %s)\n", obj->getNameInDocument(), subName);
+    return ShapeFinder::getLocatedShape(*obj, subName);
 }
 
 //TODO:: add lengthX, lengthY (and lengthZ??) support
@@ -358,8 +330,6 @@ double Measurement::length() const
             std::vector<std::string>::const_iterator subEl = subElements.begin();
 
             for (;obj != objects.end(); ++obj, ++subEl) {
-                //const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
-                //const Part::TopoShape& refShape = refObj->Shape.getShape();
                 // Get the length of one edge
                 TopoDS_Shape shape = getShape(*obj, (*subEl).c_str());
                 const TopoDS_Edge& edge = TopoDS::Edge(shape);
@@ -522,22 +492,20 @@ double Measurement::angle(const Base::Vector3d & /*param*/) const
                 gp_Dir dir2 = curve2.Line().Direction();
                 gp_Dir dir2r = curve2.Line().Direction().Reversed();
 
-                gp_Lin l1 = gp_Lin(pnt1First, dir1); // (A)
-                gp_Lin l2 = gp_Lin(pnt1First, dir2); // (B)
-                gp_Lin l2r = gp_Lin(pnt1First, dir2r);  // (B')
-                Standard_Real aRad = l1.Angle(l2);
-                double aRadr = l1.Angle(l2r);
-                return std::min(aRad, aRadr) * 180  / M_PI;
+                 gp_Lin l1 = gp_Lin(pnt1First, dir1); // (A)
+                 gp_Lin l2 = gp_Lin(pnt1First, dir2); // (B)
+                 gp_Lin l2r = gp_Lin(pnt1First, dir2r);  // (B')
+                 Standard_Real aRad = l1.Angle(l2);
+                 double aRadRev = l1.Angle(l2r);
+                 return Base::toDegrees(std::min(aRad, aRadRev));
             }
             else {
                 throw Base::RuntimeError("Measurement references must both be lines");
             }
+        } else {
+            throw Base::RuntimeError("Can not compute angle measurement - wrong number of edge references");
         }
-        else {
-            throw Base::RuntimeError("Can not compute angle measurement - too many references");
-        }
-    }
-    else if (measureType == MeasureType::Points) {
+    } else if (measureType == MeasureType::Points) {
         //NOTE: we are calculating the 3d angle here, not the projected angle
         //ASSUMPTION: the references are in end-apex-end order
         if(numRefs == 3) {
@@ -557,7 +525,10 @@ double Measurement::angle(const Base::Vector3d & /*param*/) const
             gp_Lin line0 = gp_Lin(gEnd0, gDir0);
             gp_Lin line1 = gp_Lin(gEnd1, gDir1);
             double radians = line0.Angle(line1);
-            return radians * 180  / M_PI;
+            return Base::toDegrees(radians);
+        }
+        else {
+            throw Base::RuntimeError("Can not compute angle measurement - wrong number of point references");
         }
     }
     throw Base::RuntimeError("Unexpected error for angle measurement");
@@ -577,8 +548,19 @@ double Measurement::radius() const
         const TopoDS_Edge& edge = TopoDS::Edge(shape);
 
         BRepAdaptor_Curve curve(edge);
-        if(curve.GetType() == GeomAbs_Circle) {
+        if (curve.GetType() == GeomAbs_Circle) {
             return (double) curve.Circle().Radius();
+        }
+
+        // this is an approximation.  do we need a parameter to permit substitution of a circle for
+        // a bspline?  Or is it on the caller to not ask for the radius of a bspline?
+        if (curve.GetType() == GeomAbs_BSplineCurve) {
+            double radius;
+            Base::Vector3d center;
+            bool isArc(false);
+            if (getCircleParms(edge, radius, center, isArc)) {
+                return radius;
+            }
         }
     }
     else if (measureType == MeasureType::Cylinder || measureType == MeasureType::Sphere || measureType == MeasureType::Torus) {
@@ -596,7 +578,6 @@ double Measurement::radius() const
             return sf.Torus().MinorRadius();
         }
     }
-    Base::Console().Error("Measurement::radius - Invalid References3D Provided\n");
     return 0.0;
 }
 
@@ -643,7 +624,7 @@ Base::Vector3d Measurement::delta() const
                     gp_Pnt P1 = extrema.PointOnShape1(1);
                     gp_Pnt P2 = extrema.PointOnShape2(1);
                     gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                    result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                    return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                 }
             }
         }
@@ -658,7 +639,7 @@ Base::Vector3d Measurement::delta() const
                       gp_Pnt P1 = curve.Value(curve.FirstParameter());
                       gp_Pnt P2 = curve.Value(curve.LastParameter());
                       gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                      result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                      return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                 }
             }
             else if(numRefs == 2) {
@@ -679,7 +660,7 @@ Base::Vector3d Measurement::delta() const
                         gp_Pnt P1 = extrema.PointOnShape1(1);
                         gp_Pnt P2 = extrema.PointOnShape2(1);
                         gp_XYZ diff = P2.XYZ() - P1.XYZ();
-                        result = Base::Vector3d(diff.X(), diff.Y(), diff.Z());
+                        return Base::Vector3d(diff.X(), diff.Y(), diff.Z());
                     }
                 }
             }
@@ -760,11 +741,7 @@ Base::Vector3d Measurement::massCenter() const
             std::vector<std::string>::const_iterator subEl = subElements.begin();
 
             for (;obj != objects.end(); ++obj, ++subEl) {
-                //const Part::Feature *refObj = static_cast<const Part::Feature*>((*obj));
-                //const Part::TopoShape& refShape = refObj->Shape.getShape();
-
                 // Compute inertia properties
-
                 GProp_GProps props = GProp_GProps();
                 BRepGProp::VolumeProperties(getShape((*obj), ""), props);
                 gprops.Add(props);
@@ -778,7 +755,6 @@ Base::Vector3d Measurement::massCenter() const
         }
         else {
             Base::Console().Error("Measurement::massCenter - measureType is not recognized\n");
-//          throw Base::ValueError("Measurement - massCenter - Invalid References3D Provided");
         }
     }
     return result;
@@ -860,6 +836,69 @@ bool Measurement::linesAreParallel() const {
 
     return false;
 }
+
+//! tries to interpret a BSpline edge as a circle. Same code used in TechDraw by DVDim for approximate dimensions.
+bool Measurement::getCircleParms(TopoDS_Edge occEdge, double& radius, Base::Vector3d& center, bool& isArc, double tolerance)
+{
+    double curveLimit = tolerance;
+    BRepAdaptor_Curve c(occEdge);
+    Handle(Geom_BSplineCurve) spline = c.BSpline();
+    double f, l;
+    f = c.FirstParameter();
+    l = c.LastParameter();
+    double parmRange = fabs(l - f);
+    int testCount = 6;
+    double parmStep = parmRange/testCount;
+    std::vector<double> curvatures;
+    std::vector<gp_Pnt> centers;
+    gp_Pnt curveCenter;
+    double sumCurvature = 0;
+    Base::Vector3d sumCenter, valueAt;
+    try {
+        GeomLProp_CLProps prop(spline, f, 3, Precision::Confusion());
+        curvatures.push_back(prop.Curvature());
+        sumCurvature += prop.Curvature();
+        prop.CentreOfCurvature(curveCenter);
+        centers.push_back(curveCenter);
+        sumCenter += toVector3d(curveCenter);
+
+        for (int i = 1; i < (testCount - 1); i++) {
+            prop.SetParameter(parmStep * i);
+            curvatures.push_back(prop.Curvature());
+            sumCurvature += prop.Curvature();
+            prop.CentreOfCurvature(curveCenter);
+            centers.push_back(curveCenter);
+            sumCenter += toVector3d(curveCenter);
+        }
+        prop.SetParameter(l);
+        curvatures.push_back(prop.Curvature());
+        sumCurvature += prop.Curvature();
+        prop.CentreOfCurvature(curveCenter);
+        centers.push_back(curveCenter);
+        sumCenter += toVector3d(curveCenter);
+    }
+    catch (Standard_Failure&) {
+        return false;
+    }
+    Base::Vector3d avgCenter = sumCenter/testCount;
+
+    double avgCurve = sumCurvature/testCount;
+    double errorCurve  = 0;
+    for (auto& cv: curvatures) {
+        errorCurve += fabs(avgCurve - cv);    //fabs???
+    }
+    errorCurve  = errorCurve/testCount;
+
+    isArc = !c.IsClosed();
+    bool isCircle(false);
+    if ( errorCurve < curveLimit ) {
+        isCircle = true;
+        radius = 1.0/avgCurve;
+        center = avgCenter;
+    }
+    return isCircle;
+}
+
 
 unsigned int Measurement::getMemSize() const
 {

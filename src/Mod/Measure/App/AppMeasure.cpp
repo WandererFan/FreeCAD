@@ -65,6 +65,7 @@ public:
 private:
 };
 
+
 PyObject* initModule()
 {
     return Base::Interpreter().addModule(new Module);

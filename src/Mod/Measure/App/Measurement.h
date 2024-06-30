@@ -34,6 +34,8 @@
 
 
 class TopoDS_Shape;
+class TopoDS_Edge;
+
 namespace Measure
 {
  enum class MeasureType {
@@ -103,10 +105,12 @@ public:
   // Calculate the area of selection
   double area() const;
 
-  static Base::Vector3d toVector3d(const gp_Pnt gp) { return Base::Vector3d(gp.X(), gp.Y(), gp.Z()); }
-
   bool planesAreParallel() const;
   bool linesAreParallel() const;
+
+  static Base::Vector3d toVector3d(const gp_Pnt gp) { return Base::Vector3d(gp.X(), gp.Y(), gp.Z()); }
+  static bool getCircleParms(TopoDS_Edge occEdge, double& radius, Base::Vector3d& center, bool& isArc, double tolerance = 0.001);
+
 
 protected:
   TopoDS_Shape getShape(App::DocumentObject *obj , const char *subName) const;
