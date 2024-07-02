@@ -21,8 +21,8 @@
  *                                                                          *
  ***************************************************************************/
 
-#ifndef MEASURE_LINKCRAWLER_H
-#define MEASURE_LINKCRAWLER_H
+#ifndef MEASURE_SHAPEFINDER_H
+#define MEASURE_SHAPEFINDER_H
 
 #include <Mod/Measure/MeasureGlobal.h>
 
@@ -34,6 +34,8 @@
 #include <Base/Matrix.h>
 
 #include <Mod/Part/App/TopoShape.h>
+
+#include "SubnameHelper.h"
 
 namespace Measure
 {
@@ -60,13 +62,17 @@ private:
 
 
 //! a class to obtain the located shape pointed at by a selection
-class MeasureExport ShapeFinder
+class MeasureExport ShapeFinder : public SubnameHelper
 {
 public:
     static TopoDS_Shape getLocatedShape(const App::DocumentObject& rootObject,
                                         const std::string& leafSub);
     static Part::TopoShape getLocatedTopoShape(const App::DocumentObject& rootObject,
                                                const std::string& leafSub);
+    static std::pair<Base::Placement, Base::Matrix4D>
+                                        getGlobalTransform(const App::DocumentObject* cursorObject);
+
+
 
     static void crawlPlacementChain(std::vector<Base::Placement>& plmStack,
                                     std::vector<Base::Matrix4D>& scaleStack,
@@ -75,9 +81,6 @@ public:
 
     static ResolveResult resolveSelection(const App::DocumentObject& selectObj,
                                           const std::string& selectLongSub);
-
-    static std::pair<Base::Placement, Base::Matrix4D>
-                                        getGlobalTransform(const App::DocumentObject* cursorObject);
 
     static Base::Placement getPlacement(const App::DocumentObject* root);
     static Base::Matrix4D getScale(const App::DocumentObject* root);
@@ -96,7 +99,6 @@ public:
     static std::string LocationAsString(const TopLoc_Location &location);
 
 
-    static std::string getLastTerm(const std::string& inString);
     static TopoDS_Shape stripInfiniteShapes(const TopoDS_Shape &inShape);
     static bool isShapeReallyNull(const TopoDS_Shape &shape);
 
@@ -108,13 +110,6 @@ public:
 
 
 private:
-    static std::string getFirstTerm(const std::string& inString);
-    static std::string namesToLongSub(const std::vector<std::string>& pathElementNames);
-    static std::string pruneLastTerm(const std::string& inString);
-    static std::string pruneFirstTerm(const std::string& inString);
-    static std::string removeGeometryTerm(const std::string& longSubname);
-    static std::string pathToLongSub(std::list<App::DocumentObject*> path);
-
     static bool ignoreModule(const std::string& moduleName);
     static bool ignoreObject(const App::DocumentObject* object);
     static bool ignoreLinkAttachedObject(const App::DocumentObject* object,
@@ -129,4 +124,4 @@ private:
 
 }  // namespace Measure
 
-#endif  // MEASURE_LINKCRAWLER_H
+#endif  // MEASURE_SHAPEFINDER_H

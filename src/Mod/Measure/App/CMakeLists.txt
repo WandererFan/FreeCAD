@@ -61,6 +61,8 @@ SET(MeasureModule_SRCS
 
     ShapeFinder.cpp
     ShapeFinder.h
+    SubnameHelper.cpp
+    SubnameHelper.h
 )
 
 SOURCE_GROUP("Module" FILES ${MeasureModule_SRCS})
