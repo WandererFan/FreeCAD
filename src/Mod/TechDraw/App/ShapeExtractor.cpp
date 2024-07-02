@@ -100,7 +100,6 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> i
         if (ShapeFinder::isLinkLike(obj)) {
             // note that some links act as their linked object and type tests based on ancestry will not
             // detect these links?
-            Base::Console().Message("SE::getShapes - a link shape: %s/%s\n", obj->getNameInDocument(), obj->Label.getValue());
             std::vector<TopoDS_Shape> xShapes = getShapesFromXRoot(obj);
 
             if (!xShapes.empty()) {
@@ -109,7 +108,6 @@ TopoDS_Shape ShapeExtractor::getShapes(const std::vector<App::DocumentObject*> i
             }
         }
         else {
-            Base::Console().Message("SE::getShapes - a regular shape: %s/%s\n", obj->getNameInDocument(), obj->Label.getValue());
             auto shape = Part::Feature::getShape(obj);
             // if obj has a shape, we use that shape.  if not we try to get the shapes contained
             // within the obj.
@@ -429,9 +427,9 @@ bool ShapeExtractor::isExplodedAssembly(const App::DocumentObject* link)
 
 
 //! get the location of a point object
+// mostly obsolete. still used by LandmarkDimension which is itself deprecated.
 Base::Vector3d ShapeExtractor::getLocation3dFromFeat(const App::DocumentObject* obj)
 {
-    // Base::Console().Message("SE::getLocation3dFromFeat()\n");
     if (!isPointType(obj)) {
         return Base::Vector3d(0.0, 0.0, 0.0);
     }
@@ -462,8 +460,6 @@ TopoDS_Shape ShapeExtractor::getLocatedShape(const App::DocumentObject* docObj)
         Part::TopoShape shape = Part::Feature::getShape(docObj);
         auto  geoFeat = dynamic_cast<const App::GeoFeature*>(docObj);
         if (geoFeat) {
-            Base::Console().Message("SE::getLocatedShape - plm: %s\n",
-                                    ShapeFinder::PlacementAsString(geoFeat->globalPlacement()));
             shape.setPlacement(geoFeat->globalPlacement());
         }
         return shape.getShape();
