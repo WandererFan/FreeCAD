@@ -90,15 +90,13 @@ public:
     static std::vector<std::list<App::DocumentObject*> >
                                 getGeometryPathsFromOutList(const App::DocumentObject* object);
 
-    static TopoDS_Shape transformShape(TopoDS_Shape& inShape,
-                                       const Base::Placement& placement,
-                                       const Base::Matrix4D& scaler);
-
     static bool isLinkLike(const App::DocumentObject* obj);
     static std::string PlacementAsString(const Base::Placement& inPlacement);
     static std::string LocationAsString(const TopLoc_Location &location);
 
-
+    static TopoDS_Shape transformShape(TopoDS_Shape& inShape,
+                                       const Base::Placement& placement,
+                                       const Base::Matrix4D& scaler);
     static TopoDS_Shape stripInfiniteShapes(const TopoDS_Shape &inShape);
     static bool isShapeReallyNull(const TopoDS_Shape &shape);
 
