@@ -102,11 +102,11 @@ ResolveResult ShapeFinder::resolveSelection(const App::DocumentObject& selectObj
 //! to leafSub are applied to the shape.
 //! leafSub is typically obtained from Selection as it provides the appropriate longSubname.  The leaf
 //! sub string can also be constructed by walking the tree.
-// this is just getshape, getglobaltransform, apply & return?
 // TODO: to truly locate the shape, we need to consider attachments - see ShapeExtractor::getShapesFromXRoot()
 //       and ShapeFinder::getLinkAttachParent()
 TopoDS_Shape ShapeFinder::getLocatedShape(const App::DocumentObject& rootObject, const std::string& leafSub)
 {
+    Base::Console().Message("SF::getLocatedShape(%s/%s, %s)\n", rootObject.getNameInDocument(), rootObject.Label.getValue(), leafSub.c_str());
     auto resolved = resolveSelection(rootObject, leafSub);
     auto target = &resolved.getTarget();
     auto shortSub = resolved.getShortSub();
@@ -119,23 +119,9 @@ TopoDS_Shape ShapeFinder::getLocatedShape(const App::DocumentObject& rootObject,
         return {};
     }
 
-    // we prune the last term if it is a vertex, edge or face
-    std::string newSub = removeGeometryTerm(leafSub);
+    auto transform = getGlobalTransform(rootObject, leafSub);
 
-    std::vector<Base::Placement> plmStack;
-    std::vector<Base::Matrix4D> scaleStack;
-    // get transforms below rootObject
-    // Note: root object is provided by the caller and may or may not be a top level object
-    crawlPlacementChain(plmStack, scaleStack, rootObject, newSub);
-    auto pathTransform = sumTransforms(plmStack, scaleStack);
-
-    // apply the placements in reverse order - top to bottom
-    // should this be rootObject's local transform?
-    auto rootTransform = getGlobalTransform(&rootObject);
-    auto netPlm = rootTransform.first * pathTransform.first;
-    auto netScale = rootTransform.second * pathTransform.second;
-
-    shape = transformShape(shape, netPlm, netScale);
+    shape = transformShape(shape, transform.first, transform.second);
     Part::TopoShape tShape{shape};
     if (!shortSub.empty()) {
         return tShape.getSubTopoShape(shortSub.c_str()).getShape();
@@ -309,9 +295,41 @@ bool  ShapeFinder::isShapeReallyNull(const TopoDS_Shape& shape)
 }
 
 
+//! Returns the net transformation of a path from rootObject to leafSub. rootObject's transform
+//! is included in the result.
+std::pair<Base::Placement, Base::Matrix4D> ShapeFinder::getGlobalTransform(const App::DocumentObject& rootObject, const std::string& leafSub)
+{
+    Base::Console().Message("SF::getGlobalTransform 2 (%s/%s, %s)\n", rootObject.getNameInDocument(), rootObject.Label.getValue(), leafSub.c_str());
+
+    // we prune the last term if it is a vertex, edge or face
+    std::string newSub = removeGeometryTerm(leafSub);
+
+    std::vector<Base::Placement> plmStack;
+    std::vector<Base::Matrix4D> scaleStack;
+    // get transforms below rootObject
+    // Note: root object is provided by the caller and may or may not be a top level object
+    crawlPlacementChain(plmStack, scaleStack, rootObject, newSub);
+    Base::Console().Message("SF::getGlobalTransform 2 - plm stack count: %d\n", plmStack.size());
+
+    auto pathTransform = sumTransforms(plmStack, scaleStack);
+
+    // apply the placements in reverse order - top to bottom
+    // should this be rootObject's local transform?
+    auto rootTransform = getGlobalTransform(&rootObject);
+    auto netPlm = rootTransform.first * pathTransform.first;
+    auto netScale = rootTransform.second * pathTransform.second;
+    Base::Console().Message("SF::getGlobalTransform 2 - netPlm: %s\n", PlacementAsString(netPlm));
+    Base::Console().Message("SF::getGlobalTransform 2 - rootTransform plm: %s\n", PlacementAsString(rootTransform.first));
+    Base::Console().Message("SF::getGlobalTransform 2 - pathTransform plm: %s\n", PlacementAsString(pathTransform.first));
+
+    return { netPlm, netScale};
+}
+
+
 //! temporary solution.  depends on getFullPath's ability to find the right path from a root level
 //! object down the tree to cursorObject. works ok in test suite, but may not cover everything.
-//! Returns the net transformation of a path from root level to cursor object.
+//! Returns the net transformation of a path from root level to cursor object. The cursor object's
+//! transform is included in the result.
 std::pair<Base::Placement, Base::Matrix4D>
                 ShapeFinder::getGlobalTransform(const App::DocumentObject* cursorObject)
 {
@@ -322,6 +340,7 @@ std::pair<Base::Placement, Base::Matrix4D>
     // if it is a link that is pretending to be a geoFeature() then globalPosition will not be correct.
 
     auto pathToCursor = getFullPath(cursorObject);
+    Base::Console().Message("SF::getGlobalTransform - pathToCursor: %s\n", pathToCursor.c_str());
 
     if (pathToCursor.empty()) {
         return { getPlacement(cursorObject), getScale(cursorObject) };
@@ -343,6 +362,7 @@ std::pair<Base::Placement, Base::Matrix4D>
     if (!pathToCursor.empty()) {
         crawlPlacementChain(plmStack, scaleStack, *rootObject, pathToCursor);
     }
+    Base::Console().Message("SF::getGlobalTransform - plm count: %d\n", plmStack.size());
 
     auto pathTransform = sumTransforms(plmStack, scaleStack);
     Base::Placement netPlm = getPlacement(rootObject) * pathTransform.first;
@@ -365,11 +385,14 @@ std::pair<Base::Placement, Base::Matrix4D>
 // "and a miracle occurs here"
 std::string ShapeFinder::getFullPath(const App::DocumentObject* object)
 {
+    Base::Console().Message("SF::getFullPath(%s/%s)\n", object->getNameInDocument(), object->Label.getValue());
+
     auto doc = object->getDocument();
     auto rootObjects = getGeometryRootObjects(doc);
     for (auto& root : rootObjects) {
         if (root == object) {
             // easy case, object is a root.
+            Base::Console().Message("SF::getFullPath - object is root\n");
             std::string objName{ object->getNameInDocument() };
             objName += ".";
             return { objName };
@@ -378,11 +401,13 @@ std::string ShapeFinder::getFullPath(const App::DocumentObject* object)
 
     // object is not a root object
     auto candidatePaths = getGeometryPathsFromOutList(object);
+    Base::Console().Message("SF::getFullPath - %d candidates\n", candidatePaths.size());
 
     // placeholder algo for best path
     size_t shortestCount{INT_MAX};
     std::list<App::DocumentObject*> shortestPath;
     for (auto& path : candidatePaths) {
+        Base::Console().Message("SF::getFullPath - a path - size: %d\n", path.size());
         if (path.size() < shortestCount) {
             shortestCount = path.size();
             shortestPath = path;

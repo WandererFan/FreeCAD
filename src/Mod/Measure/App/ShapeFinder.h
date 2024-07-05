@@ -70,8 +70,9 @@ public:
     static Part::TopoShape getLocatedTopoShape(const App::DocumentObject& rootObject,
                                                const std::string& leafSub);
     static std::pair<Base::Placement, Base::Matrix4D>
-                                        getGlobalTransform(const App::DocumentObject* cursorObject);
-
+                            getGlobalTransform(const App::DocumentObject* cursorObject);
+    static std::pair<Base::Placement, Base::Matrix4D>
+                            getGlobalTransform(const App::DocumentObject& rootObject, const std::string& leafSub);
 
 
     static void crawlPlacementChain(std::vector<Base::Placement>& plmStack,

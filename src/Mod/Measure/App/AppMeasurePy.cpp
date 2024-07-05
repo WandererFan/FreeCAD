@@ -86,7 +86,7 @@ public:
             "Part.TopoShape = Measure.getLocatedTopoShape(DocumentObject, longSubElement) Resolves the net placement of DocumentObject and returns the object's shape/subshape with the net placement applied.  Link scaling operations along the path are also applied."
         );
         add_varargs_method("getGlobalTransform", &Module::getGlobalTransform,
-            "Placement, Matrix4d = Measure.getGlobalTransform(DocumentObject) Returns the combined placements and Link scales along a path from document root to the object"
+            "Placement, Matrix4d = Measure.getGlobalTransform(DocumentObject, [leafSubname]) 1) Returns the combined placements and Link scales along a path from document root to the document object.  2) returns the combined placements and Link scales along a path from  documentObject to leaf subelement."
         );
         initialize("This is a module for measuring"); // register with Python
     }
@@ -159,26 +159,41 @@ private:
     Py::Object getGlobalTransform(const Py::Tuple& args)
     {
         PyObject *pyRootObject{nullptr};
+        PyObject *pyLeafSubName{nullptr};
         App::DocumentObject* rootObject{nullptr};
         std::string leafSub;
-        if (!PyArg_ParseTuple(args.ptr(), "O", &pyRootObject)) {
-            throw Py::TypeError("expected (rootObject)");
+        std::pair<Base::Placement, Base::Matrix4D> transform;
+        if (PyArg_ParseTuple(args.ptr(), "OO", &pyRootObject, &pyLeafSubName)) {
+            if (PyObject_TypeCheck(pyRootObject, &(App::DocumentObjectPy::Type))) {
+                rootObject = static_cast<App::DocumentObjectPy*>(pyRootObject)->getDocumentObjectPtr();
+            }
+
+            if (PyUnicode_Check(pyLeafSubName) ) {
+                leafSub = PyUnicode_AsUTF8(pyLeafSubName);
+            }
+
+            if (!rootObject) {
+                return Py::None();
+            }
+            transform = ShapeFinder::getGlobalTransform(*rootObject, leafSub);
+
         }
 
-        if (PyObject_TypeCheck(pyRootObject, &(App::DocumentObjectPy::Type))) {
-            rootObject = static_cast<App::DocumentObjectPy*>(pyRootObject)->getDocumentObjectPtr();
+        if (PyArg_ParseTuple(args.ptr(), "O", &pyRootObject)) {
+            if (PyObject_TypeCheck(pyRootObject, &(App::DocumentObjectPy::Type))) {
+                rootObject = static_cast<App::DocumentObjectPy*>(pyRootObject)->getDocumentObjectPtr();
+            }
+
+            if (!rootObject) {
+                return Py::None();
+            }
+
+            transform = ShapeFinder::getGlobalTransform(rootObject);
         }
 
-
-        if (!rootObject) {
-            return Py::None();
-        }
-
-        // this is on the stack
-        auto temp = ShapeFinder::getGlobalTransform(rootObject);
         // need new in here to make the twin object on the heap
-        auto placementPy = new Base::PlacementPy(new Base::Placement(temp.first));
-        auto scalePy = new Base::MatrixPy(new Base::Matrix4D(temp.second));
+        auto placementPy = new Base::PlacementPy(new Base::Placement(transform.first));
+        auto scalePy = new Base::MatrixPy(new Base::Matrix4D(transform.second));
         Py::Tuple tuple;
         tuple.setItem(0, Py::asObject(placementPy));
         tuple.setItem(1, Py::asObject(scalePy));

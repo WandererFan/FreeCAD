@@ -163,6 +163,8 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
         return {};
     }
 
+    Base::Console().Message("SE::getShapesFromXRoot(%s/%s)\n", xLinkRoot->getNameInDocument(), xLinkRoot->Label.getValue());
+
     std::vector<TopoDS_Shape> xSourceShapes;
     std::string rootName = xLinkRoot->getNameInDocument();
 
@@ -183,8 +185,10 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
     // cases other than link attachments
 
     // case: link -> link -> shape
-    auto linkedObject = xLinkRoot->getLinkedObject();
+    auto linkedObject = getLinkedObject(xLinkRoot);
     if (ShapeFinder::isLinkLike(linkedObject)) {
+        // Part::Feature::getShape() returns a transformed shape in this case.
+        Base::Console().Message("SE::getShapesFromXRoot - link to link\n");
         auto linkShape = Part::Feature::getShape(linkedObject);
         xSourceShapes.push_back(linkShape);
         return xSourceShapes;
@@ -193,7 +197,8 @@ std::vector<TopoDS_Shape> ShapeExtractor::getShapesFromXRoot(const App::Document
 
     // the common case
     auto transform = ShapeFinder::getGlobalTransform(xLinkRoot);
-
+    Base::Console().Message("SE::getShapesFromXRoot - transform plm: %s\n",
+                            ShapeFinder::PlacementAsString(transform.first));
     xLinkRootShape = ShapeFinder::transformShape(xLinkRootShape, transform.first, transform.second);
 
     xSourceShapes.push_back(xLinkRootShape);
