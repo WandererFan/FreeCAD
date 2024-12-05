@@ -193,6 +193,7 @@ void QGSPage::addChildrenToPage()
     setDimensionGroups();
     setBalloonGroups();
     setLeaderParentage();
+    setRichAnnoParentage();
 
     App::DocumentObject* obj = m_vpPage->getDrawPage()->Template.getValue();
     auto pageTemplate(dynamic_cast<TechDraw::DrawTemplate*>(obj));
@@ -693,11 +694,35 @@ void QGSPage::addLeaderToParent(QGILeaderLine* leader, QGIView* parent)
 
 QGIView* QGSPage::addRichAnno(TechDraw::DrawRichAnno* richFeat)
 {
-    QGIRichAnno *richView = new QGIRichAnno;
+    auto richView = new QGIRichAnno;
+    addItem(richView);
     richView->setViewFeature(richFeat);
 
-    addQView(richView);
+    // Find if it belongs to a parent
+    QGIView* parent = nullptr;
+    parent = findParent(richView);
+
+    if (parent) {
+        addRichAnnoToParent(richView, parent);
+    }
+
     return richView;
+}
+
+
+void QGSPage::addRichAnnoToParent(QGIRichAnno* anno, QGIView* parent)
+{
+    assert(anno);
+    assert(parent);//blow up if we don't have Anno or Parent
+    QPointF posRef(0., 0.);
+    QPointF parentOrigin = anno->mapToItem(parent, posRef);
+    // this is not right for a DPGI?  Needs the usual calculation?
+    QPointF annoPositionInParent{ anno->getViewObject()->X.getValue(),
+                                    anno->getViewObject()->Y.getValue()};
+    QPointF moveToPosition = parentOrigin + annoPositionInParent;
+    anno->moveBy(-moveToPosition.x(), -moveToPosition.y());
+    parent->addToGroup(anno);
+    anno->setZValue(ZVALUE::DIMENSION);
 }
 
 QGIView* QGSPage::addWeldSymbol(TechDraw::DrawWeldSymbol* weldFeat)
@@ -753,6 +778,23 @@ void QGSPage::setLeaderParentage()
             if (parent) {
                 QGILeaderLine* leader = dynamic_cast<QGILeaderLine*>(item);
                 addLeaderToParent(leader, parent);
+            }
+        }
+    }
+}
+
+//! ensure that all RichAnno QGItems are parented correctly
+void QGSPage::setRichAnnoParentage()
+{
+    const std::vector<QGIView*>& allItems = getViews();
+    int RichAnnoItemType = QGraphicsItem::UserType + 233;
+
+    for (auto& item : allItems) {
+        if (item->type() == RichAnnoItemType && !item->group()) {
+            QGIView* parent = findParent(item);
+            if (parent) {
+                auto* anno = dynamic_cast<QGIRichAnno*>(item);
+                addRichAnnoToParent(anno, parent);
             }
         }
     }

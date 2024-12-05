@@ -67,6 +67,7 @@ class ViewProviderPage;
 class QGIViewBalloon;
 class QGITile;
 class QGILeaderLine;
+class QGIRichAnno;
 
 class TechDrawGuiExport QGSPage: public QGraphicsScene
 {
@@ -112,6 +113,7 @@ public:
 
     void addDimToParent(QGIViewDimension* dim, QGIView* parent);
     void addLeaderToParent(QGILeaderLine* leader, QGIView* parent);
+    void addRichAnnoToParent(QGIRichAnno* anno, QGIView* parent);
 
     std::vector<QGIView*> getViews() const;
 
@@ -146,6 +148,7 @@ public:
     void setDimensionGroups();
     void setBalloonGroups();
     void setLeaderParentage();
+    void setRichAnnoParentage();
 
     static bool itemClearsSelection(int itemTypeIn);
     static Qt::KeyboardModifiers cleanModifierList(Qt::KeyboardModifiers mods);
