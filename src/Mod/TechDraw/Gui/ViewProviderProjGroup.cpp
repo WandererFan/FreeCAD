@@ -151,8 +151,9 @@ bool ViewProviderProjGroup::onDelete(const std::vector<std::string> & parms)
         bodyMessageStream << qApp->translate("Std_Delete",
             "The projection group is not empty, therefore\nthe following referencing objects might be lost:");
         bodyMessageStream << '\n';
-        for (auto ObjIterator : objs)
+        for (auto ObjIterator : objs) {
             bodyMessageStream << '\n' << QString::fromUtf8(ObjIterator->Label.getValue());
+        }
         bodyMessageStream << "\n\n" << QObject::tr("Are you sure you want to continue?");
         // show and evaluate dialog
         int DialogResult = QMessageBox::warning(Gui::getMainWindow(),
@@ -160,9 +161,7 @@ bool ViewProviderProjGroup::onDelete(const std::vector<std::string> & parms)
             QMessageBox::Yes, QMessageBox::No);
         return (DialogResult == QMessageBox::Yes);
     }
-    else {
-        return true;
-    }
+    return true;
 }
 
 bool ViewProviderProjGroup::canDelete(App::DocumentObject *obj) const
