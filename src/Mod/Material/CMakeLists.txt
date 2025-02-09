@@ -10,6 +10,7 @@ SET(MaterialScripts_Files
     importFCMat.py
     MaterialEditor.py
     TestMaterialsApp.py
+    TestMaterialsGui.py
     Templatematerial.yml
 )
 
@@ -140,6 +141,7 @@ SET(MaterialLib_Files
     Resources/Materials/Standard/Thermoplast/PP-Generic.FCMat
     Resources/Materials/Standard/Thermoplast/PTFE-Generic.FCMat
     Resources/Materials/Standard/Thermoplast/PVC-Generic.FCMat
+    Resources/Materials/Standard/Thermoplast/PC-Molded.FCMat
     Resources/Materials/Standard/Wood/Wood-Generic.FCMat
 )
 
@@ -292,6 +294,7 @@ set(MaterialTest_Files
     materialtests/TestModels.py
     materialtests/TestMaterials.py
     materialtests/TestMaterialCreation.py
+    materialtests/TestMaterialDocument.py
     materialtests/TestMaterialFilter.py
 )
 

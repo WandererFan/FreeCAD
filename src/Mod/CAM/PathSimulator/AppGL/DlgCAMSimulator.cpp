@@ -24,6 +24,7 @@
 
 #include "DlgCAMSimulator.h"
 #include "MillSimulation.h"
+#include "Gui/View3DInventorViewer.h"
 #include <Mod/Part/App/BRepMesh.h>
 #include <QDateTime>
 #include <QSurfaceFormat>
@@ -35,6 +36,8 @@ using namespace MillSim;
 
 namespace CAMSimulator
 {
+
+static const float MouseScrollDelta = 120.0F;
 
 DlgCAMSimulator::DlgCAMSimulator(QWindow* parent)
     : QWindow(parent)
@@ -81,34 +84,52 @@ void DlgCAMSimulator::exposeEvent(QExposeEvent* event)
 
 void DlgCAMSimulator::mouseMoveEvent(QMouseEvent* ev)
 {
-    mMillSimulator->MouseMove(ev->x(), ev->y());
+    int modifiers = (ev->modifiers() & Qt::ShiftModifier) != 0 ? MS_KBD_SHIFT : 0;
+    modifiers |= (ev->modifiers() & Qt::ControlModifier) != 0 ? MS_KBD_CONTROL : 0;
+    modifiers |= (ev->modifiers() & Qt::AltModifier) != 0 ? MS_KBD_ALT : 0;
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QPoint pnt = ev->pos();
+#else
+    QPoint pnt = ev->position().toPoint();
+#endif
+    mMillSimulator->MouseMove(pnt.x(), pnt.y(), modifiers);
 }
 
 void DlgCAMSimulator::mousePressEvent(QMouseEvent* ev)
 {
-    mMillSimulator->MousePress(ev->button(), true, ev->x(), ev->y());
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QPoint pnt = ev->pos();
+#else
+    QPoint pnt = ev->position().toPoint();
+#endif
+    mMillSimulator->MousePress(ev->button(), true, pnt.x(), pnt.y());
 }
 
 void DlgCAMSimulator::mouseReleaseEvent(QMouseEvent* ev)
 {
-    mMillSimulator->MousePress(ev->button(), false, ev->x(), ev->y());
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QPoint pnt = ev->pos();
+#else
+    QPoint pnt = ev->position().toPoint();
+#endif
+    mMillSimulator->MousePress(ev->button(), false, pnt.x(), pnt.y());
 }
 
 void DlgCAMSimulator::wheelEvent(QWheelEvent* ev)
 {
-    mMillSimulator->MouseScroll((float)ev->angleDelta().y() / 120.0f);
+    mMillSimulator->MouseScroll((float)ev->angleDelta().y() / MouseScrollDelta);
 }
 
 void DlgCAMSimulator::resetSimulation()
-{
-}
+{}
 
 void DlgCAMSimulator::addGcodeCommand(const char* cmd)
 {
     mMillSimulator->AddGcodeLine(cmd);
 }
 
-void DlgCAMSimulator::addTool(const std::vector<float> toolProfilePoints,
+void DlgCAMSimulator::addTool(const std::vector<float>& toolProfilePoints,
                               int toolNumber,
                               float diameter,
                               float resolution)
@@ -143,7 +164,7 @@ void DlgCAMSimulator::resizeEvent(QResizeEvent* event)
         mMillSimulator->UpdateWindowScale(newWidth, newHeight);
     }
     const qreal retinaScale = devicePixelRatio();
-    glViewport(0, 0, newWidth * retinaScale, newHeight * retinaScale);
+    glViewport(0, 0, (int)(newWidth * retinaScale), (int)(newHeight * retinaScale));
 }
 
 void DlgCAMSimulator::GetMeshData(const Part::TopoShape& tshape,
@@ -210,7 +231,6 @@ void DlgCAMSimulator::initialize()
 
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-    glEnable(GL_MULTISAMPLE);
 }
 
 void DlgCAMSimulator::checkInitialization()
@@ -291,7 +311,10 @@ DlgCAMSimulator* DlgCAMSimulator::GetInstance()
         QSurfaceFormat format;
         format.setVersion(4, 1);                         // Request OpenGL 4.1 - for MacOS
         format.setProfile(QSurfaceFormat::CoreProfile);  // Use the core profile = for MacOS
-        format.setSamples(16);
+        int samples = Gui::View3DInventorViewer::getNumSamples();
+        if (samples > 1) {
+            format.setSamples(samples);
+        }
         format.setSwapInterval(2);
         format.setDepthBufferSize(24);
         format.setStencilBufferSize(8);

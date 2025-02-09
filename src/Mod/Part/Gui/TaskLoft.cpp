@@ -40,7 +40,7 @@
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Document.h>
-#include <Gui/Selection.h>
+#include <Gui/Selection/Selection.h>
 #include <Gui/ViewProvider.h>
 
 #include <Mod/Part/App/PartFeature.h>
@@ -137,10 +137,11 @@ void LoftWidget::findShapes()
             }
         }
 
-        if (shape.ShapeType() == TopAbs_FACE ||
+        if (!shape.Infinite() && 
+            (shape.ShapeType() == TopAbs_FACE ||
             shape.ShapeType() == TopAbs_WIRE ||
             shape.ShapeType() == TopAbs_EDGE ||
-            shape.ShapeType() == TopAbs_VERTEX) {
+            shape.ShapeType() == TopAbs_VERTEX)) {
             QString label = QString::fromUtf8(obj->Label.getValue());
             QString name = QString::fromLatin1(obj->getNameInDocument());
             QTreeWidgetItem* child = new QTreeWidgetItem();

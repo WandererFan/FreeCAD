@@ -40,7 +40,6 @@
 # include <QToolTip>
 #endif
 
-#include <Base/Tools.h>
 #include <Base/Exception.h>
 #include <Base/Interpreter.h>
 #include <App/ExpressionParser.h>
@@ -51,11 +50,11 @@
 #include "Application.h"
 #include "BitmapFactory.h"
 #include "Command.h"
-#include "DlgExpressionInput.h"
+#include "Dialogs/DlgExpressionInput.h"
 #include "PrefWidgets.h"
 #include "QuantitySpinBox_p.h"
 #include "Tools.h"
-#include "ui_DlgTreeWidget.h"
+#include "Dialogs/ui_DlgTreeWidget.h"
 
 using namespace Gui;
 using namespace App;
@@ -1356,9 +1355,10 @@ void PropertyListEditor::highlightCurrentLine()
     if (!isReadOnly()) {
         QTextEdit::ExtraSelection selection;
 
-        QColor lineColor = QColor(Qt::yellow).lighter(160);
+        QPalette palette = style()->standardPalette();
+        selection.format.setBackground(palette.highlight().color());
+        selection.format.setForeground(palette.highlightedText().color());
 
-        selection.format.setBackground(lineColor);
         selection.format.setProperty(QTextFormat::FullWidthSelection, true);
         selection.cursor = textCursor();
         selection.cursor.clearSelection();
@@ -1603,7 +1603,7 @@ void ExpLineEdit::onChange() {
 
     if (getExpression()) {
         std::unique_ptr<Expression> result(getExpression()->eval());
-        if(result->isDerivedFrom(App::StringExpression::getClassTypeId()))
+        if(result->isDerivedFrom<App::StringExpression>())
             setText(QString::fromUtf8(static_cast<App::StringExpression*>(
                             result.get())->getText().c_str()));
         else
@@ -1614,7 +1614,7 @@ void ExpLineEdit::onChange() {
         QPalette p(palette());
         p.setColor(QPalette::Text, Qt::lightGray);
         setPalette(p);
-        iconLabel->setExpressionText(Base::Tools::fromStdString(getExpression()->toString()));
+        iconLabel->setExpressionText(QString::fromStdString(getExpression()->toString()));
     }
     else {
         setReadOnly(false);
@@ -1633,7 +1633,7 @@ void ExpLineEdit::resizeEvent(QResizeEvent * event)
     int frameWidth = style()->pixelMetric(QStyle::PM_SpinBoxFrameWidth);
 
     QSize sz = iconLabel->sizeHint();
-    iconLabel->move(rect().right() - frameWidth - sz.width(), 0);
+    iconLabel->move(rect().right() - frameWidth - sz.width(), rect().center().y() - sz.height() / 2);
 
     try {
         if (isBound() && getExpression()) {
@@ -1644,7 +1644,7 @@ void ExpLineEdit::resizeEvent(QResizeEvent * event)
             QPalette p(palette());
             p.setColor(QPalette::Text, Qt::lightGray);
             setPalette(p);
-            iconLabel->setExpressionText(Base::Tools::fromStdString(getExpression()->toString()));
+            iconLabel->setExpressionText(QString::fromStdString(getExpression()->toString()));
         }
         else {
             setReadOnly(false);

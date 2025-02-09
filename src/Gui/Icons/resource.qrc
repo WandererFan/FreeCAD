@@ -1,7 +1,33 @@
 <RCC>
     <qresource prefix="/icons">
         <file>freecadsplash.png</file>
-        <file>freecadsplash2x.png</file>
+        <file>freecadsplash0.png</file>
+        <file>freecadsplash1.png</file>
+        <file>freecadsplash2.png</file>
+        <file>freecadsplash3.png</file>
+        <file>freecadsplash4.png</file>
+        <file>freecadsplash5.png</file>
+        <file>freecadsplash6.png</file>
+        <file>freecadsplash7.png</file>
+        <file>freecadsplash8.png</file>
+        <file>freecadsplash9.png</file>
+        <file>freecadsplash10.png</file>
+        <file>freecadsplash11.png</file>
+        <file>freecadsplash12.png</file>
+        <file>freecadsplash_2x.png</file>
+        <file>freecadsplash0_2x.png</file>
+        <file>freecadsplash1_2x.png</file>
+        <file>freecadsplash2_2x.png</file>
+        <file>freecadsplash3_2x.png</file>
+        <file>freecadsplash4_2x.png</file>
+        <file>freecadsplash5_2x.png</file>
+        <file>freecadsplash6_2x.png</file>
+        <file>freecadsplash7_2x.png</file>
+        <file>freecadsplash8_2x.png</file>
+        <file>freecadsplash9_2x.png</file>
+        <file>freecadsplash10_2x.png</file>
+        <file>freecadsplash11_2x.png</file>
+        <file>freecadsplash12_2x.png</file>
         <file>freecadabout.png</file>
         <file>background.png</file>
         <file>mouse_pointer.svg</file>
@@ -24,6 +50,9 @@
         <file>button_valid.svg</file>
         <file>button_invalid.svg</file>
         <file>media-playback-start.svg</file>
+        <file>media-playback-start-back.svg</file>
+        <file>media-playback-step.svg</file>
+        <file>media-playback-step-back.svg</file>
         <file>media-record.svg</file>
         <file>media-playback-stop.svg</file>
         <file>preferences-display.svg</file>
@@ -109,6 +138,7 @@
         <file>internet-web-browser.svg</file>
         <file>InTray.svg</file>
         <file>InTray_missed_notifications.svg</file>
+        <file>safe-mode-restart.svg</file>
         <file>view-select.svg</file>
         <file>view-unselectable.svg</file>
         <file>view-refresh.svg</file>
@@ -234,6 +264,7 @@
         <file>Group.svg</file>
         <file>Geofeaturegroup.svg</file>
         <file>Geoassembly.svg</file>
+        <file>Std_Point.svg</file>
         <file>Std_Axis.svg</file>
         <file>Std_Plane.svg</file>
         <file>Link.svg</file>
@@ -244,10 +275,6 @@
         <file>LinkArrayOverlay.svg</file>
         <file>LinkSubOverlay.svg</file>
         <file>LinkSubElement.svg</file>
-        <file>LinkOverlay.xpm</file>
-        <file>LinkArrayOverlay.xpm</file>
-        <file>LinkSubOverlay.xpm</file>
-        <file>LinkSubElement.xpm</file>
         <file>LinkSub.svg</file>
         <file>LinkReplace.svg</file>
         <file>LinkImport.svg</file>
@@ -366,6 +393,7 @@
         <file>accessories-text-editor.svg</file>
         <file>accessories-calculator.svg</file>
         <file>internet-web-browser.svg</file>
+        <file>safe-mode-restart.svg</file>
         <file>view-select.svg</file>
         <file>view-unselectable.svg</file>
         <file>view-refresh.svg</file>

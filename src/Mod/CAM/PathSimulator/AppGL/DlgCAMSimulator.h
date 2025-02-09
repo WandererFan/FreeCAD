@@ -23,6 +23,10 @@
 #ifndef PATHSIMULATOR_CAMSimulatorGui_H
 #define PATHSIMULATOR_CAMSimulatorGui_H
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4251)
+#endif
+
 #include <Mod/Part/App/TopoShape.h>
 #include <QWindow>
 #include <QOpenGLExtraFunctions>
@@ -37,7 +41,7 @@ namespace MillSim
 // use short declaration as using 'include' causes a header loop
 class MillSimulation;
 struct Vertex;
-}
+}  // namespace MillSim
 
 namespace CAMSimulator
 {
@@ -69,13 +73,13 @@ public:
     void SetStockShape(const Part::TopoShape& tshape, float resolution);
     void SetBaseShape(const Part::TopoShape& tshape, float resolution);
 
-    public:  // slots:
+public:  // slots:
     void renderLater();
     void renderNow();
     void startSimulation(const Part::TopoShape& stock, float quality);
     void resetSimulation();
     void addGcodeCommand(const char* cmd);
-    void addTool(const std::vector<float> toolProfilePoints,
+    void addTool(const std::vector<float>& toolProfilePoints,
                  int toolNumber,
                  float diameter,
                  float resolution);

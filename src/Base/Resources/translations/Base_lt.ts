@@ -4,59 +4,59 @@
   <context>
     <name>UnitsApi</name>
     <message>
-      <location filename="../../UnitsApi.cpp" line="69"/>
+      <location filename="../../UnitsApi.cpp" line="58"/>
       <source>Standard (mm, kg, s, °)</source>
-      <translation type="unfinished">Standard (mm, kg, s, °)</translation>
+      <translation>Įprastinė (mm, kg, s, °)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="71"/>
+      <location filename="../../UnitsApi.cpp" line="60"/>
       <source>MKS (m, kg, s, °)</source>
-      <translation type="unfinished">MKS (m, kg, s, °)</translation>
+      <translation>MKS (m, kg, s, °)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="73"/>
+      <location filename="../../UnitsApi.cpp" line="62"/>
       <source>US customary (in, lb)</source>
       <translation>JAV įprastinis (coliai/svarai)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="75"/>
+      <location filename="../../UnitsApi.cpp" line="64"/>
       <source>Imperial decimal (in, lb)</source>
       <translation>Angliškoji dešimtainė (coliai/svarai)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="77"/>
+      <location filename="../../UnitsApi.cpp" line="66"/>
       <source>Building Euro (cm, m², m³)</source>
       <translation>Europinė (cm/m²/m³)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="79"/>
+      <location filename="../../UnitsApi.cpp" line="68"/>
       <source>Building US (ft-in, sqft, cft)</source>
       <translation>JAV (pėdos-coliai/kv. pėdos/kub. pėdos)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="81"/>
+      <location filename="../../UnitsApi.cpp" line="70"/>
       <source>Metric small parts &amp; CNC (mm, mm/min)</source>
-      <translation type="unfinished">Metric small parts &amp; CNC (mm, mm/min)</translation>
+      <translation>Metrinė, skirta smulkioms detalėms ir (CNC) staklėms (mm, mm/min)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="83"/>
+      <location filename="../../UnitsApi.cpp" line="72"/>
       <source>Imperial for Civil Eng (ft, ft/s)</source>
-      <translation type="unfinished">Imperial for Civil Eng (ft, ft/s)</translation>
+      <translation>Imperinė civilinės inžinerijos (pėdos, pėdos sekundei)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="85"/>
+      <location filename="../../UnitsApi.cpp" line="74"/>
       <source>FEM (mm, N, s)</source>
-      <translation type="unfinished">FEM (mm, N, s)</translation>
+      <translation>BEM (mm, N, s)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="87"/>
+      <location filename="../../UnitsApi.cpp" line="76"/>
       <source>Meter decimal (m, m², m³)</source>
-      <translation type="unfinished">Meter decimal (m, m², m³)</translation>
+      <translation>Metrinė dešimtainė (m, m², m³)</translation>
     </message>
     <message>
-      <location filename="../../UnitsApi.cpp" line="89"/>
+      <location filename="../../UnitsApi.cpp" line="78"/>
       <source>Unknown schema</source>
-      <translation type="unfinished">Unknown schema</translation>
+      <translation>Nežinoma schema</translation>
     </message>
   </context>
 </TS>

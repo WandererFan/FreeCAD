@@ -257,25 +257,6 @@ void PropertyPartShape::beforeSave() const
         _Shape.beforeSave();
     }
 }
-#ifndef FC_USE_TNP_FIX
-void PropertyPartShape::Save (Base::Writer &writer) const
-{
-    if(!writer.isForceXML()) {
-        //See SaveDocFile(), RestoreDocFile()
-        if (writer.getMode("BinaryBrep")) {
-            writer.Stream() << writer.ind() << "<Part file=\""
-                            << writer.addFile("PartShape.bin", this)
-                            << "\"/>" << std::endl;
-        }
-        else {
-            writer.Stream() << writer.ind() << "<Part file=\""
-                            << writer.addFile("PartShape.brp", this)
-                            << "\"/>" << std::endl;
-        }
-    }
-}
-
-#else
 void PropertyPartShape::Save (Base::Writer &writer) const
 {
     //See SaveDocFile(), RestoreDocFile()
@@ -328,7 +309,6 @@ void PropertyPartShape::Save (Base::Writer &writer) const
         _Shape.Save(writer);
     }
 }
-#endif
 
 std::string PropertyPartShape::getElementMapVersion(bool restored) const {
     if(restored)
@@ -336,19 +316,6 @@ std::string PropertyPartShape::getElementMapVersion(bool restored) const {
     return PropertyComplexGeoData::getElementMapVersion(false);
 }
 
-#ifndef FC_USE_TNP_FIX
-void PropertyPartShape::Restore(Base::XMLReader &reader)
-{
-    reader.readElement("Part");
-    std::string file (reader.getAttribute("file") );
-
-    if (!file.empty()) {
-        // initiate a file read
-        reader.addFile(file.c_str(),this);
-    }
-}
-
-#else
 void PropertyPartShape::Restore(Base::XMLReader &reader)
 {
     reader.readElement("Part");
@@ -422,11 +389,12 @@ void PropertyPartShape::Restore(Base::XMLReader &reader)
             }
         }
     } else if(owner && !owner->getDocument()->testStatus(App::Document::PartialDoc)) {
+        // Toponaming 09/2024:  Original code has an infrastructure for document parameters we aren't bringing in:
         // if(App::DocumentParams::getWarnRecomputeOnRestore()) {
-        if( true ) {
-            FC_WARN("Pending recompute for generating element map: " << owner->getFullName());
-            owner->getDocument()->addRecomputeObject(owner);
-        }
+        // However, this warning appeared on all files without element maps, and is now superseded by a user dialog
+        // after loading that is triggered by any call to addRecomputeObject()
+        // FC_WARN("Pending recompute for generating element map: " << owner->getFullName());
+        owner->getDocument()->addRecomputeObject(owner);
     }
 
     if (!shape.isNull() || !_Shape.isNull()) {
@@ -450,7 +418,6 @@ void PropertyPartShape::afterRestore()
     }
     PropertyComplexGeoData::afterRestore();
 }
-#endif
 
 // The following function is copied from OCCT BRepTools.cxx and modified
 // to disable saving of triangulation
@@ -509,7 +476,7 @@ void PropertyPartShape::saveToFile(Base::Writer &writer) const
         // We only print an error message but continue writing the next files to the
         // stream...
         App::PropertyContainer* father = this->getContainer();
-        if (father && father->isDerivedFrom(App::DocumentObject::getClassTypeId())) {
+        if (father && father->isDerivedFrom<App::DocumentObject>()) {
             App::DocumentObject* obj = static_cast<App::DocumentObject*>(father);
             Base::Console().Error("Shape of '%s' cannot be written to BRep file '%s'\n",
                 obj->Label.getValue(),fi.filePath().c_str());
@@ -561,7 +528,7 @@ void PropertyPartShape::loadFromFile(Base::Reader &reader)
             // We only print an error message but continue reading the next files from the
             // stream...
             App::PropertyContainer* father = this->getContainer();
-            if (father && father->isDerivedFrom(App::DocumentObject::getClassTypeId())) {
+            if (father && father->isDerivedFrom<App::DocumentObject>()) {
                 App::DocumentObject* obj = static_cast<App::DocumentObject*>(father);
                 Base::Console().Error("BRep file '%s' with shape of '%s' seems to be empty\n",
                     fi.filePath().c_str(),obj->Label.getValue());

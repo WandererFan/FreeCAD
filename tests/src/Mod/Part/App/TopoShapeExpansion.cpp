@@ -1444,7 +1444,7 @@ TEST_F(TopoShapeExpansionTest, makeElementBooleanCut)
                                      "Edge2",
                                      "Edge2;:M;CUT;:H2:7,E",
                                      "Edge3",
-                                     "Edge3;:H2,E",
+                                     "Edge3;:M;CUT;:H2:7,E",
                                      "Edge4",
                                      "Edge4;:M;CUT;:H2:7,E",
                                      "Edge6;:G(Edge12;K-1;:H2:4,E);CUT;:H1:1b,V",
@@ -1467,9 +1467,9 @@ TEST_F(TopoShapeExpansionTest, makeElementBooleanCut)
                                      "Vertex1",
                                      "Vertex2",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;CUT;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
+                                     "Vertex4;:M;CUT;:H2:7,V",
                                      "Vertex7",
                                      "Vertex8",
                                  }));
@@ -1550,13 +1550,13 @@ TEST_F(TopoShapeExpansionTest, makeElementBooleanFuse)
                                      "Vertex2",
                                      "Vertex2;:H2,V",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;FUS;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
-                                     "Vertex5",
+                                     "Vertex4;:M;FUS;:H2:7,V",
                                      "Vertex5;:H2,V",
-                                     "Vertex6",
+                                     "Vertex5;:M;FUS;:H1:7,V",
                                      "Vertex6;:H2,V",
+                                     "Vertex6;:M;FUS;:H1:7,V",
                                      "Vertex7",
                                      "Vertex7;:H2,V",
                                      "Vertex8",
@@ -1676,11 +1676,21 @@ TEST_F(TopoShapeExpansionTest, makeElementRuledSurfaceEdges)
     EXPECT_FLOAT_EQ(getArea(topoShape.getShape()), 20);
     // Assert that we're creating a correct element map
     EXPECT_TRUE(topoShape.getMappedChildElements().empty());
-    // TODO: Revisit these when resetElementMap() is fully worked through.  Suspect that last loop
-    // of makeElementRuledSurface is dependent on this to create elementMaps.
-    //    EXPECT_EQ(elements.size(), 24);
-    //    EXPECT_EQ(elements.count(IndexedName("Edge", 1)), 1);
-    //    EXPECT_EQ(elements[IndexedName("Edge", 1)], MappedName("Vertex1;:G;PSH;:H2:7,E"));
+    EXPECT_EQ(elements.size(), 9);
+    EXPECT_EQ(elements.count(IndexedName("Edge", 1)), 1);
+    EXPECT_TRUE(allElementsMatch(
+        topoShape,
+        {
+            "Edge1",
+            "Edge1;:L(Edge1;D1|Vertex1;:L(Vertex1;D1);RSF|Vertex2;:L(Vertex2;D1);RSF);RSF",
+            "Edge1;D1",
+            "Vertex1",
+            "Vertex1;:L(Vertex1;D1);RSF",
+            "Vertex1;D1",
+            "Vertex2",
+            "Vertex2;:L(Vertex2;D1);RSF",
+            "Vertex2;D1",
+        }));
 }
 
 TEST_F(TopoShapeExpansionTest, makeElementRuledSurfaceWires)
@@ -1690,18 +1700,44 @@ TEST_F(TopoShapeExpansionTest, makeElementRuledSurfaceWires)
     TopoShape cube1TS {cube1, 1L};
     std::vector<TopoShape> subWires = cube1TS.getSubTopoShapes(TopAbs_WIRE);
     // Act
-    cube1TS.makeElementRuledSurface({subWires[0], subWires[1]}, 0);  // TODO: orientation as enum?
-    auto elements = elementMap(cube1TS);
+    auto surface = cube1TS.makeElementRuledSurface({subWires[0], subWires[1]},
+                                                   0);  // TODO: orientation as enum?
+    auto elements = elementMap(surface);
     // Assert
-    EXPECT_EQ(cube1TS.countSubElements("Wire"), 4);
-    EXPECT_NEAR(getArea(cube1TS.getShape()), 2.023056, 1e-6);
+    EXPECT_EQ(surface.countSubElements("Wire"), 4);
+    EXPECT_NEAR(getArea(surface.getShape()), 4, 1e-7);
     // Assert that we're creating a correct element map
-    EXPECT_TRUE(cube1TS.getMappedChildElements().empty());
-    // TODO: Revisit these when resetElementMap() is fully worked through.  Suspect that last loop
-    // of makeElementRuledSurface is dependent on this to create elementMaps.
-    //    EXPECT_EQ(elements.size(), 24);
-    //    EXPECT_EQ(elements.count(IndexedName("Edge", 1)), 1);
-    //    EXPECT_EQ(elements[IndexedName("Edge", 1)], MappedName("Vertex1;:G;PSH;:H2:7,E"));
+    EXPECT_TRUE(surface.getMappedChildElements().empty());
+    EXPECT_EQ(elements.size(), 24);
+    EXPECT_EQ(elements.count(IndexedName("Edge", 1)), 1);
+    EXPECT_TRUE(elementsMatch(  // Depending on OCCT versions can get 24 or 28 entries here.
+        surface,
+        {
+            "Edge1",
+            "Edge1;:L(Edge1;D1|Vertex1;:L(Vertex1;D1);RSF|Vertex2;:L(Vertex2;D1);RSF);RSF",
+            "Edge1;D1",
+            "Edge2",
+            "Edge2;:L(Edge2;D1|Vertex1;:L(Vertex1;D1);RSF|Vertex3;:L(Vertex3;D1);RSF);RSF",
+            "Edge2;D1",
+            "Edge3",
+            "Edge3;:L(Edge3;D1|Vertex3;:L(Vertex3;D1);RSF|Vertex4;:L(Vertex4;D1);RSF);RSF",
+            "Edge3;D1",
+            "Edge4",
+            "Edge4;:L(Edge4;D1|Vertex2;:L(Vertex2;D1);RSF|Vertex4;:L(Vertex4;D1);RSF);RSF",
+            "Edge4;D1",
+            "Vertex1",
+            "Vertex1;:L(Vertex1;D1);RSF",
+            "Vertex1;D1",
+            "Vertex2",
+            "Vertex2;:L(Vertex2;D1);RSF",
+            "Vertex2;D1",
+            "Vertex3",
+            "Vertex3;:L(Vertex3;D1);RSF",
+            "Vertex3;D1",
+            "Vertex4",
+            "Vertex4;:L(Vertex4;D1);RSF",
+            "Vertex4;D1",
+        }));
 }
 
 TEST_F(TopoShapeExpansionTest, makeElementLoft)
@@ -1985,13 +2021,13 @@ TEST_F(TopoShapeExpansionTest, makeElementFuse)
                                      "Vertex2",
                                      "Vertex2;:H2,V",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;FUS;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
-                                     "Vertex5",
+                                     "Vertex4;:M;FUS;:H2:7,V",
                                      "Vertex5;:H2,V",
-                                     "Vertex6",
+                                     "Vertex5;:M;FUS;:H1:7,V",
                                      "Vertex6;:H2,V",
+                                     "Vertex6;:M;FUS;:H1:7,V",
                                      "Vertex7",
                                      "Vertex7;:H2,V",
                                      "Vertex8",
@@ -2029,7 +2065,7 @@ TEST_F(TopoShapeExpansionTest, makeElementCut)
                                      "Edge2",
                                      "Edge2;:M;CUT;:H2:7,E",
                                      "Edge3",
-                                     "Edge3;:H2,E",
+                                     "Edge3;:M;CUT;:H2:7,E",
                                      "Edge4",
                                      "Edge4;:M;CUT;:H2:7,E",
                                      "Edge6;:G(Edge12;K-1;:H2:4,E);CUT;:H1:1b,V",
@@ -2052,9 +2088,9 @@ TEST_F(TopoShapeExpansionTest, makeElementCut)
                                      "Vertex1",
                                      "Vertex2",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;CUT;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
+                                     "Vertex4;:M;CUT;:H2:7,V",
                                      "Vertex7",
                                      "Vertex8",
                                  }));
@@ -2510,13 +2546,13 @@ TEST_F(TopoShapeExpansionTest, makeElementTransformWithMap)
                                      "Vertex2",
                                      "Vertex2;:H2,V",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;FUS;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
-                                     "Vertex5",
+                                     "Vertex4;:M;FUS;:H2:7,V",
                                      "Vertex5;:H2,V",
-                                     "Vertex6",
+                                     "Vertex5;:M;FUS;:H1:7,V",
                                      "Vertex6;:H2,V",
+                                     "Vertex6;:M;FUS;:H1:7,V",
                                      "Vertex7",
                                      "Vertex7;:H2,V",
                                      "Vertex8",
@@ -2619,13 +2655,13 @@ TEST_F(TopoShapeExpansionTest, makeElementGTransformWithMap)
                                      "Vertex2",
                                      "Vertex2;:H2,V",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;FUS;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
-                                     "Vertex5",
+                                     "Vertex4;:M;FUS;:H2:7,V",
                                      "Vertex5;:H2,V",
-                                     "Vertex6",
+                                     "Vertex5;:M;FUS;:H1:7,V",
                                      "Vertex6;:H2,V",
+                                     "Vertex6;:M;FUS;:H1:7,V",
                                      "Vertex7",
                                      "Vertex7;:H2,V",
                                      "Vertex8",
@@ -3015,7 +3051,7 @@ TEST_F(TopoShapeExpansionTest, traceElement)
                                      "Edge2",
                                      "Edge2;:M;CUT;:H2:7,E",
                                      "Edge3",
-                                     "Edge3;:H2,E",
+                                     "Edge3;:M;CUT;:H2:7,E",
                                      "Edge4",
                                      "Edge4;:M;CUT;:H2:7,E",
                                      "Edge6;:G(Edge12;K-1;:H2:4,E);CUT;:H1:1b,V",
@@ -3038,9 +3074,9 @@ TEST_F(TopoShapeExpansionTest, traceElement)
                                      "Vertex1",
                                      "Vertex2",
                                      "Vertex3",
-                                     "Vertex3;:H2,V",
+                                     "Vertex3;:M;CUT;:H2:7,V",
                                      "Vertex4",
-                                     "Vertex4;:H2,V",
+                                     "Vertex4;:M;CUT;:H2:7,V",
                                      "Vertex7",
                                      "Vertex8",
                                  }));

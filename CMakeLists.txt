@@ -21,15 +21,16 @@ option(FREECAD_USE_CCACHE "Auto detect and use ccache during compilation" ON)
 if(FREECAD_USE_CCACHE)
     find_program(CCACHE_PROGRAM ccache)  #This check should occur before project()
     if(CCACHE_PROGRAM)
-        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+        message(STATUS "Using ccache found at: " ${CCACHE_PROGRAM})
+        set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
     endif()
 endif()
 
 project(FreeCAD)
 
-set(PACKAGE_VERSION_NAME "Vulcan")
-set(PACKAGE_VERSION_MAJOR "0")
-set(PACKAGE_VERSION_MINOR "22")
+set(PACKAGE_VERSION_MAJOR "1")
+set(PACKAGE_VERSION_MINOR "1")
 set(PACKAGE_VERSION_PATCH "0") # number of patch release (e.g. "4" for the 0.18.4 release)
 set(PACKAGE_VERSION_SUFFIX "dev") # either "dev" for development snapshot or "" (empty string)
 set(PACKAGE_BUILD_VERSION "0") # used when the same FreeCAD version will be re-released (for example using an updated LibPack)
@@ -68,7 +69,6 @@ if(NOT FREECAD_LIBPACK_USE OR FREECAD_LIBPACK_CHECKFILE_CLBUNDLER OR FREECAD_LIB
         # OPENGL_gl_LIBRARY empty that results into linker errors
         SetupOpenGL()
     endif(BUILD_GUI)
-    SetupBoost()
     SetupSalomeSMESH()
     if (BUILD_FEM_NETGEN)
         find_package(NETGEN)
@@ -88,6 +88,9 @@ if(NOT FREECAD_LIBPACK_USE OR FREECAD_LIBPACK_CHECKFILE_CLBUNDLER OR FREECAD_LIB
         SetupShibokenAndPyside()
         SetupMatplotlib()
     endif(BUILD_GUI)
+
+    # SetupCoin3D can overwrite find_package(Boost) output so keep this after.
+    SetupBoost()
 endif()
 
 if(BUILD_VR)

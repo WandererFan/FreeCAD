@@ -141,7 +141,7 @@ endif(FREECAD_USE_PCH)
 
 SET(MatGuiIcon_SVG
     Resources/icons/list.svg
-    Resources/icons/Materials_Edit.svg
+    Resources/icons/Material_Edit.svg
     Resources/icons/MaterialWorkbench.svg
     Resources/icons/multiline.svg
     Resources/icons/preferences-material.svg
@@ -169,9 +169,9 @@ SET_PYTHON_PREFIX_SUFFIX(MatGui)
 
 fc_copy_sources(MatGui "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Material" ${MatGuiIcon_SVG})
 fc_copy_sources(MatGui "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Material" ${MatGuiImages})
-fc_copy_sources(MatGui "${CMAKE_BINARY_DIR}/Mod/Material" ${Material_Ui_Files})
+fc_copy_sources(MatGui "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Mod/Material" ${Material_Ui_Files})
 
 INSTALL(TARGETS MatGui DESTINATION ${CMAKE_INSTALL_LIBDIR})
 INSTALL(FILES ${MatGuiIcon_SVG} DESTINATION "${CMAKE_INSTALL_DATADIR}/Mod/Material/Resources/icons")
 INSTALL(FILES ${MatGuiImages} DESTINATION "${CMAKE_INSTALL_DATADIR}/Mod/Material/Resources/images")
-INSTALL(FILES ${Material_Ui_Files} DESTINATION "${CMAKE_BINARY_DIR}/Mod/Material/Resources/ui")
+INSTALL(FILES ${Material_Ui_Files} DESTINATION "Mod/Material/Resources/ui")

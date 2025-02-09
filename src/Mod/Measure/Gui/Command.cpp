@@ -57,18 +57,19 @@ void StdCmdMeasure::activated(int iMsg)
     Q_UNUSED(iMsg);
 
     Gui::TaskMeasure* task = new Gui::TaskMeasure();
+    task->setDocumentName(this->getDocument()->getName());
     Gui::Control().showDialog(task);
 }
 
 bool StdCmdMeasure::isActive()
 {
     App::Document* doc = App::GetApplication().getActiveDocument();
-    if (!doc || doc->countObjectsOfType(App::GeoFeature::getClassTypeId()) == 0) {
+    if (!doc || doc->countObjectsOfType<App::GeoFeature>() == 0) {
         return false;
     }
 
     Gui::MDIView* view = Gui::getMainWindow()->activeWindow();
-    if (view && view->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
+    if (view && view->isDerivedFrom<Gui::View3DInventor>()) {
         Gui::View3DInventorViewer* viewer = dynamic_cast<Gui::View3DInventor*>(view)->getViewer();
         return !viewer->isEditing();
     }

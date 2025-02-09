@@ -165,6 +165,7 @@ SET(FemMesh_SRCS
     femmesh/gmshtools.py
     femmesh/meshsetsgetter.py
     femmesh/meshtools.py
+    femmesh/netgentools.py
 )
 
 SET(FemObjects_SRCS
@@ -194,6 +195,7 @@ SET(FemObjects_SRCS
     femobjects/mesh_boundarylayer.py
     femobjects/mesh_gmsh.py
     femobjects/mesh_group.py
+    femobjects/mesh_netgen.py
     femobjects/mesh_region.py
     femobjects/mesh_result.py
     femobjects/result_mechanical.py
@@ -570,6 +572,8 @@ SET(FemGuiObjects_SRCS
 
 SET(FemGuiTaskPanels_SRCS
     femtaskpanels/__init__.py
+    femtaskpanels/base_femtaskpanel.py
+    femtaskpanels/base_femmeshtaskpanel.py
     femtaskpanels/task_constraint_bodyheatsource.py
     femtaskpanels/task_constraint_centrif.py
     femtaskpanels/task_constraint_currentdensity.py
@@ -590,6 +594,7 @@ SET(FemGuiTaskPanels_SRCS
     femtaskpanels/task_mesh_gmsh.py
     femtaskpanels/task_mesh_group.py
     femtaskpanels/task_mesh_region.py
+    femtaskpanels/task_mesh_netgen.py
     femtaskpanels/task_result_mechanical.py
     femtaskpanels/task_solver_ccxtools.py
 )
@@ -601,6 +606,7 @@ SET(FemGuiTests_SRCS
 
 SET(FemGuiUtils_SRCS
     femguiutils/__init__.py
+    femguiutils/disambiguate_solid_selection.py
     femguiutils/migrate_gui.py
     femguiutils/selection_widgets.py
 )
@@ -634,10 +640,16 @@ SET(FemGuiViewProvider_SRCS
     femviewprovider/view_mesh_boundarylayer.py
     femviewprovider/view_mesh_gmsh.py
     femviewprovider/view_mesh_group.py
+    femviewprovider/view_mesh_netgen.py
     femviewprovider/view_mesh_region.py
     femviewprovider/view_mesh_result.py
     femviewprovider/view_result_mechanical.py
     femviewprovider/view_solver_ccxtools.py
+)
+
+SET(FemGuiPreferencePages_SRCS
+    fempreferencepages/__init__.py
+    fempreferencepages/dlg_settings_netgen.py
 )
 
 SET(FemAllGuiScripts
@@ -647,6 +659,7 @@ SET(FemAllGuiScripts
     ${FemGuiTests_SRCS}
     ${FemGuiUtils_SRCS}
     ${FemGuiViewProvider_SRCS}
+    ${FemGuiPreferencePages_SRCS}
 )
 
 if(BUILD_GUI)
@@ -663,4 +676,5 @@ if(BUILD_GUI)
     INSTALL(FILES ${FemGuiTests_SRCS} DESTINATION Mod/Fem/femtest/gui/)
     INSTALL(FILES ${FemGuiUtils_SRCS} DESTINATION Mod/Fem/femguiutils/)
     INSTALL(FILES ${FemGuiViewProvider_SRCS} DESTINATION Mod/Fem/femviewprovider/)
+    INSTALL(FILES ${FemGuiPreferencePages_SRCS} DESTINATION Mod/Fem/fempreferencepages/)
 endif(BUILD_GUI)

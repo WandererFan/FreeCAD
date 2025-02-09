@@ -37,9 +37,9 @@
 #include <sstream>
 #include <vector>
 
-#define VIEWITEM_SIMULATION   1
-#define VIEWITEM_BASE_SHAPE   2
-#define VIEWITEM_MAX          4
+#define VIEWITEM_SIMULATION 1
+#define VIEWITEM_BASE_SHAPE 2
+#define VIEWITEM_MAX 4
 
 namespace MillSim
 {
@@ -74,12 +74,12 @@ public:
     void SetArbitraryStock(std::vector<Vertex>& verts, std::vector<GLushort>& indices);
     void SetBaseObject(std::vector<Vertex>& verts, std::vector<GLushort>& indices);
     void MouseDrag(int buttons, int dx, int dy);
-    void MouseMove(int px, int py);
+    void MouseMove(int px, int py, int modifiers);
     void MouseScroll(float dy);
     void MouseHover(int px, int py);
     void MousePress(int button, bool isPressed, int px, int py);
+    void Zoom(float factor);
     void UpdateWindowScale(int width, int height);
-
 
 
 protected:
@@ -115,8 +115,8 @@ protected:
     SolidObject mBaseShape;
 
     vec3 bgndColor = {0.1f, 0.2f, 0.3f};
-    vec3 stockColor = {0.7f, 0.75f, 0.9f};
-    vec3 cutColor = {0.85f, 0.95f, 0.85f};
+    vec3 stockColor = {0.5f, 0.55f, 0.9f};
+    vec3 cutColor = {0.5f, 0.84f, 0.73f};
     vec3 toolColor = {0.5f, 0.4f, 0.3f};
     vec3 baseShapeColor = {0.7f, 0.6f, 0.5f};
 
@@ -133,11 +133,11 @@ protected:
 
     int mLastMouseX = 0, mLastMouseY = 0;
     int mMouseButtonState = 0;
+    int mLastModifiers = 0;
 
     bool mIsInStock = false;
     bool mSimPlaying = false;
     bool mSingleStep = false;
-
 };
 }  // namespace MillSim
 #endif

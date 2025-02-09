@@ -37,7 +37,7 @@
 #include "StartupProcess.h"
 #include "Application.h"
 #include "AutoSaver.h"
-#include "DlgCheckableMessageBox.h"
+#include "Dialogs/DlgCheckableMessageBox.h"
 #include "FileDialog.h"
 #include "GuiApplication.h"
 #include "MainWindow.h"
@@ -178,13 +178,8 @@ void StartupProcess::setThemePaths()
         QIcon::setThemeSearchPaths(searchPaths);
     }
 
-    // KDE file dialog needs icons from the desktop theme
-    QIcon::setFallbackThemeName(QIcon::themeName());
-
     std::string name = hTheme->GetASCII("Name");
-    if (name.empty()) {
-        QIcon::setThemeName(QLatin1String("FreeCAD-default"));
-    } else {
+    if (!name.empty()) {
         QIcon::setThemeName(QString::fromLatin1(name.c_str()));
     }
 }
@@ -304,7 +299,7 @@ void StartupPostProcess::setCursorFlashing()
 
 void StartupPostProcess::setQtStyle()
 {
-    ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
+    ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("MainWindow");
     auto qtStyle = hGrp->GetASCII("QtStyle");
     QApplication::setStyle(QString::fromStdString(qtStyle));
 }
@@ -413,24 +408,10 @@ void StartupPostProcess::setImportImageFormats()
     App::GetApplication().addImportType(filter.c_str(), "FreeCADGui");
 }
 
-bool StartupPostProcess::hiddenMainWindow() const
-{
-    const std::map<std::string,std::string>& cfg = App::Application::Config();
-    bool hidden = false;
-    auto it = cfg.find("StartHidden");
-    if (it != cfg.end()) {
-        hidden = true;
-    }
-
-    return hidden;
-}
-
 void StartupPostProcess::showMainWindow()
 {
-    bool hidden = hiddenMainWindow();
-
     // show splasher while initializing the GUI
-    if (!hidden && !loadFromPythonModule) {
+    if (!Application::hiddenMainWindow() && !loadFromPythonModule) {
         mainWindow->startSplasher();
     }
 
@@ -493,7 +474,7 @@ void StartupPostProcess::activateWorkbench()
     guiApp.activateWorkbench(start.c_str());
 
     // show the main window
-    if (!hiddenMainWindow()) {
+    if (!Application::hiddenMainWindow()) {
         Base::Console().Log("Init: Showing main window\n");
         mainWindow->loadWindowSettings();
     }

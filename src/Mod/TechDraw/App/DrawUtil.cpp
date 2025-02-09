@@ -61,7 +61,6 @@
 #include <Base/FileInfo.h>
 #include <Base/Parameter.h>
 #include <Base/Stream.h>
-#include <Base/Tools.h>
 #include <Base/UnitsApi.h>
 #include <Base/Vector3D.h>
 
@@ -270,6 +269,37 @@ double DrawUtil::incidenceAngleAtVertex(TopoDS_Edge e, TopoDS_Vertex v, double t
 
     return incidenceAngle;
 }
+
+
+//! true if actualAngle(degrees) is within allowableError [0,360] of
+//! targetAngle (degrees)
+bool DrawUtil::isWithinRange(double actualAngleIn, double targetAngleIn, double allowableError)
+{
+    constexpr double DegreesPerRevolution{360};
+    constexpr double DegreesPerHalfRevolution{180};
+    // map both angles from [0, 360] to [-180, 180].  This solves the problem of
+    // comparing angles near 0, such as 5deg & 355deg where the desired answer is
+    // 10, not 350;
+    double actualAngleDeg = actualAngleIn;
+    if (actualAngleDeg < DegreesPerRevolution &&
+        actualAngleDeg > DegreesPerHalfRevolution) {
+        actualAngleDeg = actualAngleDeg - DegreesPerRevolution;
+    }
+
+    double targetAngleDeg = targetAngleIn;
+    if (targetAngleDeg < DegreesPerRevolution &&
+        targetAngleDeg > DegreesPerHalfRevolution) {
+        targetAngleDeg = targetAngleDeg - DegreesPerRevolution;
+    }
+
+    double actualError = fabs(targetAngleDeg - actualAngleDeg);
+    if (actualError <= allowableError) {
+        return true;
+    }
+
+    return false;
+}
+
 
 bool DrawUtil::isFirstVert(TopoDS_Edge e, TopoDS_Vertex v, double tolerance)
 {
@@ -1830,8 +1860,7 @@ std::string DrawUtil::translateArbitrary(std::string context, std::string baseNa
         suffix = uniqueName.substr(baseName.length(), uniqueName.length() - baseName.length());
     }
     QString qTranslated = qApp->translate(context.c_str(), baseName.c_str());
-    std::string ssTranslated = Base::Tools::toStdString(qTranslated);
-    return ssTranslated + suffix;
+    return qTranslated.toStdString() + suffix;
 }
 
 // true if owner->element is a cosmetic vertex
@@ -1867,6 +1896,18 @@ bool DrawUtil::isCenterLine(App::DocumentObject* owner, std::string element)
     }
     return false;
 }
+
+//! convert a filespec (string) containing '\' to only use '/'.
+//! prevents situation where '\' is interpreted as an escape of the next character in Python
+//! commands.
+std::string DrawUtil::cleanFilespecBackslash(const std::string& filespec)
+{
+    std::string forwardSlash{"/"};
+    boost::regex rxBackslash("\\\\");    //this rx really means match to a single '\'
+    std::string noBackslash = boost::regex_replace(filespec, rxBackslash, forwardSlash);
+    return noBackslash;
+}
+
 
 //============================
 // various debugging routines.

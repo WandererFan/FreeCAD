@@ -26,9 +26,7 @@
 # include <Standard_Failure.hxx>
 #endif
 
-#include <App/Application.h>
 #include <App/FeaturePythonPyImp.h>
-#include <Base/Parameter.h>
 #include <Mod/Part/App/modelRefine.h>
 
 #include "FeatureAddSub.h"
@@ -39,6 +37,7 @@ using namespace PartDesign;
 
 namespace PartDesign {
 
+extern bool getPDRefineModelParameter();
 
 PROPERTY_SOURCE(PartDesign::FeatureAddSub, PartDesign::Feature)
 
@@ -46,10 +45,7 @@ FeatureAddSub::FeatureAddSub()
 {
     ADD_PROPERTY(AddSubShape,(TopoDS_Shape()));
     ADD_PROPERTY_TYPE(Refine,(0),"Part Design",(App::PropertyType)(App::Prop_None),"Refine shape (clean up redundant edges) after adding/subtracting");
-    //init Refine property
-    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
-        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/PartDesign");
-    this->Refine.setValue(hGrp->GetBool("RefineModel", true));
+    this->Refine.setValue(getPDRefineModelParameter());
 }
 
 FeatureAddSub::Type FeatureAddSub::getAddSubType()
@@ -64,34 +60,44 @@ short FeatureAddSub::mustExecute() const
     return PartDesign::Feature::mustExecute();
 }
 
-#ifndef FC_USE_TNP_FIX
-// TODO: Toponaming April 2024 Deprecated in favor of TopoShape method.  Remove when possible.
-TopoDS_Shape FeatureAddSub::refineShapeIfActive(const TopoDS_Shape& oldShape) const
+
+bool FeatureAddSub::onlyHasToRefine() const
 {
-    if (this->Refine.getValue()) {
-        try {
-            Part::BRepBuilderAPI_RefineModel mkRefine(oldShape);
-            TopoDS_Shape resShape = mkRefine.Shape();
-            if (!TopoShape(resShape).isClosed()) {
-                return oldShape;
-            }
-            return resShape;
-        }
-        catch (Standard_Failure&) {
-            return oldShape;
+    if( ! Refine.isTouched()){
+        return false;
+    }
+    if (rawShape.isNull()){
+        return false;
+    }
+    std::vector<App::Property*> propList;
+    getPropertyList(propList);
+    for (auto prop : propList){
+        if (prop != &Refine
+            /*&& prop != &SuppressedShape*/
+            && prop->isTouched()){
+            return false;
         }
     }
-
-    return oldShape;
+    return true;
 }
-#endif
 
-TopoShape FeatureAddSub::refineShapeIfActive(const TopoShape& oldShape) const
+
+
+TopoShape FeatureAddSub::refineShapeIfActive(const TopoShape& oldShape, const RefineErrorPolicy onError) const
 {
     if (this->Refine.getValue()) {
         TopoShape shape(oldShape);
         //        this->fixShape(shape);        // Todo:  Not clear that this is required
-        return shape.makeElementRefine();
+        try{
+            return shape.makeElementRefine();
+        }
+        catch (Standard_Failure& err) {
+            if(onError == RefineErrorPolicy::Warn){
+                Base::Console().Warning((std::string("Refine failed: ") + err.GetMessageString()).c_str());
+            } else {
+                throw;
+            }
+        }
     }
     return oldShape;
 }

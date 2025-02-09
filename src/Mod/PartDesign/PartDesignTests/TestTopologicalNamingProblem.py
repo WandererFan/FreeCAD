@@ -580,28 +580,111 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         #  See if we can turn those off, or try them on the other types?
 
     def testPartDesignElementMapRevolution(self):
+        # App.KeepTestDoc = True    # Uncomment this if you want to keep the test document to examine
+        self.Doc.UseHasher = False
         # Arrange
-        body = self.Doc.addObject("PartDesign::Body", "Body")
-        sketch = self.Doc.addObject("Sketcher::SketchObject", "Sketch")
-        TestSketcherApp.CreateRectangleSketch(sketch, (1, 1), (2, 2))  # (pt), (w,l)
-        if body.Shape.ElementMapVersion == "":  # Should be '4' as of Mar 2023.
-            return
-        # Act
-        revolution = self.Doc.addObject("PartDesign::Revolution", "Revolution")
-        revolution.ReferenceAxis = (self.Doc.getObject("Sketch"), ["V_Axis"])
-        revolution.Profile = sketch
+        body = self.Doc.addObject('PartDesign::Body', 'Body')
+        sketch = self.Doc.addObject('Sketcher::SketchObject', 'Sketch')
+        TestSketcherApp.CreateRectangleSketch(sketch, (0, 1), (3, 2))  # (pt), (w,l)
         body.addObject(sketch)
-        body.addObject(revolution)
         self.Doc.recompute()
-        # Assert
+        pad = self.Doc.addObject('PartDesign::Pad', 'Pad')
+        pad.Profile = sketch
+        pad.Length = 3
+        body.addObject(pad)
+        self.Doc.recompute()
+
+        sketch2 = self.Doc.addObject('Sketcher::SketchObject', 'Sketch001')
+        TestSketcherApp.CreateRectangleSketch(sketch2, (2, -3), (1, 2))  # (pt), (w,l)
+        sketch2.AttachmentSupport = (pad, ["Face5"])
+        sketch2.MapMode = 'FlatFace'
+        body.addObject(sketch2)
+        self.Doc.recompute()
+        revolution = self.Doc.addObject('PartDesign::Revolution', 'Revolution')
+        revolution.ReferenceAxis = (sketch2, ['V_Axis'])
+        revolution.Reversed = 1
+        revolution.Profile = sketch2
+        revolution.Angle=180
+        revolution.Refine = True
+        body.addObject(revolution)
+        volume = (math.pi * 3 * 3 - math.pi * 2 * 2) * 2  / 2
+        padVolume =  3 * 3 * 2 # 50.26548245743668
+        # Act
+        self.Doc.recompute()
+        # Assert the Shape is correct
         self.assertEqual(len(body.Shape.childShapes()), 1)
-        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 14)
-        self.assertEqual(revolution.Shape.ElementMapSize, 14)
-        self.assertEqual(
-            self.countFacesEdgesVertexes(revolution.Shape.ElementReverseMap), (4, 6, 4)
-        )
-        volume = (math.pi * 3 * 3 - math.pi * 1 * 1) * 2  # 50.26548245743668
-        self.assertAlmostEqual(revolution.Shape.Volume, volume)
+        self.assertAlmostEqual(pad.Shape.Volume, padVolume)
+        self.assertAlmostEqual(revolution.Shape.Volume, volume + padVolume)
+        # Assert the element map is correct
+        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 46)
+        self.assertEqual(revolution.Shape.ElementMapSize, 46)
+        self.assertEqual(self.countFacesEdgesVertexes(revolution.Shape.ElementReverseMap),
+                         (9, 21, 14))
+        self.assertEqual( revolution.Shape.ElementReverseMap["Vertex9"][1].count(";"), 3)
+        self.assertEqual( revolution.Shape.ElementReverseMap["Face9"].count(";"), 14)
+        # Arrange for an UpToFace mode test
+        revolution.Type = 3
+        revolution.UpToFace = (pad, ("Face4"))
+        revolution.Reversed = 1
+        revolution.Midplane = 0
+        volume = (math.pi * 3 * 3 - math.pi * 2 * 2) * 2  / 4 * 3
+        # Act
+        self.Doc.recompute()
+        # Assert UpToFace shape is correct
+        self.assertAlmostEqual(revolution.Shape.Volume, volume + padVolume)
+        # Assert UpToFace element map is correct
+        self.assertEqual(self.countFacesEdgesVertexes(revolution.Shape.ElementReverseMap),
+                         (8, 18, 12))
+        # Assertions modified/added while reviewing PR#17119 by CalligaroV
+        # Previously the condition counted the number of ";" (element map operations prefix)
+        # If the number of operations changes then the number of ";" will change accordingly
+        #
+        # However, it is more useful to count the number of times an element name is
+        # present in the MappedName of an element (a MappedName is defined also using the
+        # element names - "Vertex*", "Edge*", "Face*" - used by an OCCT operation to generate
+        # output elements)
+        self.assertEqual( revolution.Shape.ElementReverseMap["Face8"].count("Face8"), 3)
+        self.assertEqual( revolution.Shape.ElementReverseMap["Face8"].count("Face10"), 3)
+
+    def testPartDesignBinderRevolution(self):
+        doc = self.Doc
+        body = doc.addObject('PartDesign::Body', 'Body')
+        sketch = body.newObject('Sketcher::SketchObject', 'Sketch')
+        sketch.AttachmentSupport = (doc.getObject('XY_Plane'), [''])
+        sketch.MapMode = 'FlatFace'
+        doc.recompute()
+
+        geoList = []
+        geoList.append(Part.LineSegment(App.Vector(-44.107212, 34.404858, 0.000000), App.Vector(-44.107212, 9.881049, 0.000000)))
+        geoList.append(Part.LineSegment(App.Vector(-44.107212, 9.881049, 0.0000000), App.Vector(-10.297691, 9.881049, 0.000000)))
+        geoList.append(Part.LineSegment(App.Vector(-10.297691, 9.881049, 0.0000000), App.Vector(-10.297691, 34.404858, 0.00000)))
+        geoList.append(Part.LineSegment(App.Vector(-10.297691, 34.404858, 0.000000), App.Vector(-44.107212, 34.404858, 0.00000)))
+        sketch.addGeometry(geoList, False)
+        del geoList
+
+        constraintList = []
+        constraintList.append(Sketcher.Constraint('Coincident', 0, 2, 1, 1))
+        constraintList.append(Sketcher.Constraint('Coincident', 1, 2, 2, 1))
+        constraintList.append(Sketcher.Constraint('Coincident', 2, 2, 3, 1))
+        constraintList.append(Sketcher.Constraint('Coincident', 3, 2, 0, 1))
+        constraintList.append(Sketcher.Constraint('Vertical', 0))
+        constraintList.append(Sketcher.Constraint('Vertical', 2))
+        constraintList.append(Sketcher.Constraint('Horizontal', 1))
+        constraintList.append(Sketcher.Constraint('Horizontal', 3))
+        sketch.addConstraint(constraintList)
+        del constraintList
+
+        doc.recompute()
+        binder = body.newObject('PartDesign::ShapeBinder','ShapeBinder')
+        binder.Support = [sketch, (''),]
+        binder.Visibility = False
+        doc.recompute()
+        revolve = body.newObject('PartDesign::Revolution','Revolution')
+        revolve.Profile = (doc.getObject('ShapeBinder'), ['',])
+        revolve.ReferenceAxis = (doc.getObject('Y_Axis'), [''])
+        revolve.Angle = 360.0
+        doc.recompute()
+        self.assertTrue(revolve.isValid())
 
     def testPartDesignElementMapLoft(self):
         # Arrange
@@ -733,10 +816,10 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         self.Doc.recompute()
         # Assert
         self.assertEqual(len(body.Shape.childShapes()), 1)
-        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 55)
+        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 51)
         self.assertEqual(body.Shape.ElementMapSize, 51)
         self.assertEqual(sketch.Shape.ElementMapSize, 12)
-        self.assertEqual(pocket.Shape.ElementMapSize, 55)
+        self.assertEqual(pocket.Shape.ElementMapSize, 51)
         self.assertNotEqual(
             pocket.Shape.ElementReverseMap["Vertex1"], "Vertex1"
         )  # NewName, not OldName
@@ -880,6 +963,7 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         helix = self.Doc.addObject("PartDesign::SubtractiveHelix", "SubHelix")
         helix.Profile = sketch
         helix.ReferenceAxis = (self.Doc.getObject("Sketch"), ["V_Axis"])
+        helix.Reversed = True
         body.addObject(sketch)
         body.addObject(helix)
         self.Doc.recompute()
@@ -1821,7 +1905,7 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         edges = [name for name in reverseMap.keys() if name.startswith("Edge")]
         vertexes = [name for name in reverseMap.keys() if name.startswith("Vertex")]
         self.assertEqual(len(body.Shape.childShapes()), 1)
-        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 64)
+        self.assertEqual(body.Shape.childShapes()[0].ElementMapSize, 62)
         self.assertEqual(len(reverseMap), 62)
         self.assertEqual(len(faces), 12)
         self.assertEqual(len(edges), 30)
@@ -2065,10 +2149,10 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         doc.recompute()
         doc.Pad.Visibility = False
         doc.Sketch001.Visibility = False
-        doc.Sketch.movePoint(3, 0, App.Vector(-5, 0, 0), 1)
-        doc.Sketch.movePoint(0, 0, App.Vector(0.000000, -5, 0), 1)
-        doc.Sketch.movePoint(1, 0, App.Vector(-5, 0.000000, 0), 1)
-        doc.Sketch.movePoint(2, 0, App.Vector(-0, -5, 0), 1)
+        doc.Sketch.moveGeometry(3, 0, App.Vector(-5, 0, 0), 1)
+        doc.Sketch.moveGeometry(0, 0, App.Vector(0.000000, -5, 0), 1)
+        doc.Sketch.moveGeometry(1, 0, App.Vector(-5, 0.000000, 0), 1)
+        doc.Sketch.moveGeometry(2, 0, App.Vector(-0, -5, 0), 1)
         doc.recompute()
         # If Sketch001 is still at the right start point, we are good.
         self.assertTrue(doc.Sketch001.AttachmentOffset.Matrix == App.Matrix())
@@ -2185,6 +2269,124 @@ class TestTopologicalNamingProblem(unittest.TestCase):
         self.assertTrue(doc.Sketch001.AttachmentOffset.Matrix == App.Matrix())
         matrix1 = App.Matrix()
         matrix1.A34 = 10  # Z offset by 10
+        self.assertTrue(doc.Sketch001.Placement.Matrix == matrix1)
+
+    def testPD_TNPSketchPadSketchSplit(self):
+        """Prove that a sketch attached to a padded sketch shape does not have a problem when the initial sketch has geometry split"""
+        doc = App.ActiveDocument
+        App.activeDocument().addObject("PartDesign::Body", "Body")
+        doc.Body.newObject("Sketcher::SketchObject", "Sketch")
+        doc.Sketch.AttachmentSupport = (doc.XY_Plane, [""])
+        doc.Sketch.MapMode = "FlatFace"
+        geoList = []
+        geoList.append(Part.LineSegment(App.Vector(0, 0, 0), App.Vector(40, 0, 0)))
+        geoList.append(Part.LineSegment(App.Vector(40, 0, 0), App.Vector(40, 20, 0)))
+        geoList.append(Part.LineSegment(App.Vector(40, 20, 0), App.Vector(0, 20, 0)))
+        geoList.append(Part.LineSegment(App.Vector(0, 20, 0), App.Vector(0, 0, 0)))
+        doc.Sketch.addGeometry(geoList, False)
+        constraintList = []
+        constraintList.append(Sketcher.Constraint("Coincident", 0, 2, 1, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 1, 2, 2, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 2, 2, 3, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 3, 2, 0, 1))
+        # constraintList.append(Sketcher.Constraint("Horizontal", 0))
+        constraintList.append(Sketcher.Constraint("Horizontal", 2))
+        constraintList.append(Sketcher.Constraint("Vertical", 1))
+        constraintList.append(Sketcher.Constraint("Vertical", 3))
+        constraintList.append(Sketcher.Constraint("DistanceX", 0, 40))
+        constraintList.append(Sketcher.Constraint("DistanceY", 1, 20))
+        constraintList.append(Sketcher.Constraint("DistanceX", 0, 1, 0))
+        constraintList.append(Sketcher.Constraint("DistanceY", 0, 1, 0))
+        doc.Sketch.addConstraint(constraintList)
+        doc.recompute()
+        doc.Body.newObject("PartDesign::Pad", "Pad")
+        doc.Pad.Profile = (
+            doc.Sketch,
+            [
+                "",
+            ],
+        )
+        doc.Pad.Length = 10
+        doc.Pad.ReferenceAxis = (doc.Sketch, ["N_Axis"])
+        doc.Sketch.Visibility = False
+        doc.Pad.Length = 10.000000
+        doc.Pad.TaperAngle = 0.000000
+        doc.Pad.UseCustomVector = 0
+        doc.Pad.Direction = (0, 0, 1)
+        doc.Pad.ReferenceAxis = (doc.Sketch, ["N_Axis"])
+        doc.Pad.AlongSketchNormal = 1
+        doc.Pad.Type = 0
+        doc.Pad.UpToFace = None
+        doc.Pad.Reversed = 0
+        doc.Pad.Midplane = 0
+        doc.Pad.Offset = 0
+        doc.Pad.Refine = True
+        doc.recompute()
+        doc.Sketch.Visibility = False
+        doc.Body.newObject("Sketcher::SketchObject", "Sketch001")
+        doc.Sketch001.AttachmentSupport = (
+            doc.Pad,
+            [
+                "Face6",
+            ],
+        )
+        doc.Sketch001.MapMode = "FlatFace"
+        geoList = []
+        geoList.append(Part.LineSegment(App.Vector(5, 5, 0), App.Vector(5, 10, 0)))
+        geoList.append(Part.LineSegment(App.Vector(5, 10, 0), App.Vector(25, 10, 0)))
+        geoList.append(Part.LineSegment(App.Vector(25, 10, 0), App.Vector(25, 5, 0)))
+        geoList.append(Part.LineSegment(App.Vector(25, 5, 0), App.Vector(5, 5, 0)))
+        doc.Sketch001.addGeometry(geoList, False)
+        del geoList
+        constraintList = []
+        constraintList.append(Sketcher.Constraint("Coincident", 0, 2, 1, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 1, 2, 2, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 2, 2, 3, 1))
+        constraintList.append(Sketcher.Constraint("Coincident", 3, 2, 0, 1))
+        constraintList.append(Sketcher.Constraint("Vertical", 0))
+        constraintList.append(Sketcher.Constraint("Vertical", 2))
+        constraintList.append(Sketcher.Constraint("Horizontal", 1))
+        constraintList.append(Sketcher.Constraint("Horizontal", 3))
+        doc.Sketch001.addConstraint(constraintList)
+        doc.recompute()
+        doc.Body.newObject("PartDesign::Pad", "Pad001")
+        doc.Pad001.Profile = (
+            doc.Sketch001,
+            [
+                "",
+            ],
+        )
+        doc.Pad001.Length = 10
+        doc.Pad001.ReferenceAxis = (doc.Sketch001, ["N_Axis"])
+        doc.Sketch001.Visibility = False
+        doc.Pad001.Length = 10.000000
+        doc.Pad001.TaperAngle = 0.000000
+        doc.Pad001.UseCustomVector = 0
+        doc.Pad001.Direction = (0, 0, 1)
+        doc.Pad001.ReferenceAxis = (doc.Sketch001, ["N_Axis"])
+        doc.Pad001.AlongSketchNormal = 1
+        doc.Pad001.Type = 0
+        doc.Pad001.UpToFace = None
+        doc.Pad001.Reversed = 0
+        doc.Pad001.Midplane = 0
+        doc.Pad001.Offset = 0
+        doc.recompute()
+        doc.Pad.Visibility = False
+        doc.Sketch001.Visibility = False
+
+        self.assertAlmostEqual(doc.Pad.Shape.Volume,8000)
+
+        doc.Sketch.split(0, App.Vector(10,0,0)) # Geo 0 moves to Geo 3, create Geo4
+        doc.Sketch.split(4, App.Vector(30,0,0)) # Create Geo5
+        doc.Sketch.moveGeometry(4, 1, App.Vector(10,2,0), False)
+        doc.Sketch.moveGeometry(4, 2, App.Vector(30, 2, 0), False)
+        doc.recompute()
+        self.assertAlmostEqual(doc.Pad.Shape.Volume,7400)   # Prove the points moved
+        self.assertTrue(doc.Sketch001.isValid())    # Check for a TNP fail.
+        # If Sketch001 is still at the right start point, we are good.
+        self.assertTrue(doc.Sketch001.AttachmentOffset.Matrix == App.Matrix())
+        matrix1 = App.Matrix()
+        matrix1.A34 = 10  # Z offset by 10.
         self.assertTrue(doc.Sketch001.Placement.Matrix == matrix1)
 
     def testPD_TNPSketchPadSketchConstructionChange(self):
@@ -2544,13 +2746,12 @@ class TestTopologicalNamingProblem(unittest.TestCase):
 
         self.PadSketch.trim(2, App.Vector(7.337847, -25.000000, 0))
         self.PadSketch.addConstraint(Sketcher.Constraint("Equal", 3, 1))
-        self.PadSketch.addConstraint(Sketcher.Constraint("Horizontal", 5))
-        self.PadSketch.addConstraint(Sketcher.Constraint("Radius", 4, 73.031111))
-        self.PadSketch.setDatum(18, App.Units.Quantity("70.000000 mm"))
-        self.PadSketch.addConstraint(
+        radConstr = self.PadSketch.addConstraint(Sketcher.Constraint("Radius", 4, 73.031111))
+        self.PadSketch.setDatum(radConstr, App.Units.Quantity("70.000000 mm"))
+        distYConstr = self.PadSketch.addConstraint(
             Sketcher.Constraint("DistanceY", 4, 3, -1, 1, 88.867210)
         )
-        self.PadSketch.setDatum(19, App.Units.Quantity("80.000000 mm"))
+        self.PadSketch.setDatum(distYConstr, App.Units.Quantity("80.000000 mm"))
 
         self.Doc.recompute()
         self.assertTrue(self.Sketch001.isValid())

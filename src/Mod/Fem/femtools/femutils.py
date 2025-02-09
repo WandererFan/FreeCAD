@@ -22,7 +22,7 @@
 # *   USA                                                                   *
 # *                                                                         *
 # ***************************************************************************
-""" Collection of functions for the Fem module.
+"""Collection of functions for the Fem module.
 
 This module contains function for extracting relevant parts of geometry and
 a few unrelated function useful at various places in the Fem module.
@@ -180,13 +180,6 @@ def get_beside_base(obj):
             )
         )
         FreeCAD.Console.PrintError(f"{error_message}\n")
-        if FreeCAD.GuiUp:
-            QtGui.QMessageBox.critical(
-                FreeCADGui.getMainWindow(),
-                "Can't start Solver or Mesh creation besides FC file.",
-                error_message,
-            )
-
         # from .errors import MustSaveError
         # raise MustSaveError()
         return new_path
@@ -205,10 +198,6 @@ def get_custom_base(solver):
             " For the moment the tmp dir {} is used.".format(path, new_path)
         )
         FreeCAD.Console.PrintError(f"{error_message}\n")
-        if FreeCAD.GuiUp:
-            QtGui.QMessageBox.critical(
-                FreeCADGui.getMainWindow(), "Can't start Solver or Mesh creation.", error_message
-            )
         # from .errors import DirectoryDoesNotExistError
         # raise DirectoryDoesNotExistError("Invalid path")
         return new_path
@@ -379,6 +368,8 @@ def startProgramInfo(code):
             info.wShowWindow = SW_DEFAULT
         info.dwFlags = subprocess.STARTF_USESHOWWINDOW
         return info
+    else:
+        return None
 
 
 def expandParentObject():

@@ -24,15 +24,15 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <QAction>
-# include <QListWidget>
-# include <QMessageBox>
+#include <QAction>
+#include <QListWidget>
+#include <QMessageBox>
 #endif
 
 #include <Base/Interpreter.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
-#include <Gui/Selection.h>
+#include <Gui/Selection/Selection.h>
 #include <Gui/ViewProvider.h>
 #include <Mod/PartDesign/App/FeatureFillet.h>
 
@@ -45,7 +45,7 @@ using namespace Gui;
 
 /* TRANSLATOR PartDesignGui::TaskFilletParameters */
 
-TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp *DressUpView, QWidget *parent)
+TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp* DressUpView, QWidget* parent)
     : TaskDressUpParameters(DressUpView, true, true, parent)
     , ui(new Ui_TaskFilletParameters)
 {
@@ -54,7 +54,7 @@ TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp *DressUpView, QWi
     ui->setupUi(proxy);
     this->groupLayout()->addWidget(proxy);
 
-    PartDesign::Fillet* pcFillet = static_cast<PartDesign::Fillet*>(DressUpView->getObject());
+    PartDesign::Fillet* pcFillet = DressUpView->getObject<PartDesign::Fillet>();
     bool useAllEdges = pcFillet->UseAllEdges.getValue();
     ui->checkBoxUseAllEdges->setChecked(useAllEdges);
     ui->buttonRefSel->setEnabled(!useAllEdges);
@@ -68,12 +68,13 @@ TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp *DressUpView, QWi
     ui->filletRadius->bind(pcFillet->Radius);
     QMetaObject::invokeMethod(ui->filletRadius, "setFocus", Qt::QueuedConnection);
     std::vector<std::string> strings = pcFillet->Base.getSubValues();
-    for (const auto & string : strings) {
+    for (const auto& string : strings) {
         ui->listWidgetReferences->addItem(QString::fromStdString(string));
     }
 
     QMetaObject::connectSlotsByName(this);
 
+    // clang-format off
     connect(ui->filletRadius, qOverload<double>(&Gui::QuantitySpinBox::valueChanged),
         this, &TaskFilletParameters::onLengthChanged);
     connect(ui->buttonRefSel, &QToolButton::toggled,
@@ -94,11 +95,14 @@ TaskFilletParameters::TaskFilletParameters(ViewProviderDressUp *DressUpView, QWi
         this, &TaskFilletParameters::setSelection);
     connect(ui->listWidgetReferences, &QListWidget::itemDoubleClicked,
         this, &TaskFilletParameters::doubleClicked);
+    // clang-format on
 
-    if (strings.empty())
+    if (strings.empty()) {
         setSelectionMode(refSel);
-    else
+    }
+    else {
         hideOnError();
+    }
 }
 
 void TaskFilletParameters::onSelectionChanged(const Gui::SelectionChanges& msg)
@@ -167,17 +171,12 @@ TaskFilletParameters::~TaskFilletParameters()
         Gui::Selection().rmvSelectionGate();
     }
     catch (const Py::Exception&) {
-        Base::PyException e; // extract the Python error text
+        Base::PyException e;  // extract the Python error text
         e.ReportException();
     }
 }
 
-bool TaskFilletParameters::event(QEvent *e)
-{
-    return TaskDressUpParameters::KeyEvent(e);
-}
-
-void TaskFilletParameters::changeEvent(QEvent *e)
+void TaskFilletParameters::changeEvent(QEvent* e)
 {
     TaskBox::changeEvent(e);
     if (e->type() == QEvent::LanguageChange) {
@@ -201,10 +200,10 @@ void TaskFilletParameters::apply()
 // TaskDialog
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TaskDlgFilletParameters::TaskDlgFilletParameters(ViewProviderFillet *DressUpView)
+TaskDlgFilletParameters::TaskDlgFilletParameters(ViewProviderFillet* DressUpView)
     : TaskDlgDressUpParameters(DressUpView)
 {
-    parameter  = new TaskFilletParameters(DressUpView);
+    parameter = new TaskFilletParameters(DressUpView);
 
     Content.push_back(parameter);
 }

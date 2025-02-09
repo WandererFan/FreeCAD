@@ -42,8 +42,9 @@
 #include "DrawUtil.h"
 #include "DrawViewClip.h"
 #include "DrawViewCollection.h"
+#include "DrawProjGroup.h"
+#include "DrawProjGroupItem.h"
 #include "Preferences.h"
-
 
 using namespace TechDraw;
 using DU = DrawUtil;
@@ -64,7 +65,7 @@ using DU = DrawUtil;
     QT_TRANSLATE_NOOP("DrawViewAnnotation", "Annotation");
     QT_TRANSLATE_NOOP("DrawViewImage", "Image");
     QT_TRANSLATE_NOOP("DrawViewSymbol", "Symbol");
-    QT_TRANSLATE_NOOP("DrawViewArch", "Arch");
+    QT_TRANSLATE_NOOP("DrawViewArch", "BIM");
     QT_TRANSLATE_NOOP("DrawViewDraft", "Draft");
     QT_TRANSLATE_NOOP("DrawLeaderLine", "LeaderLine");
     QT_TRANSLATE_NOOP("DrawViewBalloon", "Balloon");
@@ -572,7 +573,7 @@ void DrawView::handleChangedPropertyType(Base::XMLReader &reader, const char * T
             }
         }
     }
-    else if (prop->isDerivedFrom(App::PropertyLinkList::getClassTypeId())
+    else if (prop->isDerivedFrom<App::PropertyLinkList>()
         && strcmp(prop->getName(), "Source") == 0) {
         App::PropertyLinkGlobal glink;
         App::PropertyLink link;
@@ -652,6 +653,22 @@ void DrawView::setScaleAttribute()
     }
 }
 
+//! Due to changes made for the "intelligent" view creation tool, testing for a view being an
+//! instance of DrawProjGroupItem is no longer reliable, as views not in a group are sometimes
+//! created as DrawProjGroupItem without belonging to a group.  We now need to test for the
+//! existence of the parent DrawProjGroup
+bool DrawView::isProjGroupItem(DrawViewPart* item)
+{
+    auto dpgi = dynamic_cast<DrawProjGroupItem*>(item);
+    if (!dpgi) {
+        return false;
+    }
+    auto group = dpgi->getPGroup();
+    if (!group) {
+        return false;
+    }
+    return true;
+}
 int DrawView::prefScaleType()
 {
     return Preferences::getPreferenceGroup("General")->GetInt("DefaultScaleType", 0);
