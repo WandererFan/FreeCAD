@@ -152,14 +152,14 @@ public:
 
     void handleRubberBandSelection();
 
+    static bool itemClearsSelection(int itemTypeIn);
+    static Qt::KeyboardModifiers cleanModifierList(Qt::KeyboardModifiers mods);
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent* keyEvent) override;
     void keyReleaseEvent(QKeyEvent* keyEvent) override;
     
-    static bool itemClearsSelection(int itemTypeIn);
-    static Qt::KeyboardModifiers cleanModifierList(Qt::KeyboardModifiers mods);
 
     QColor getBackgroundColor();
     bool orphanExists(const char* viewName, const std::vector<App::DocumentObject*>& list);
