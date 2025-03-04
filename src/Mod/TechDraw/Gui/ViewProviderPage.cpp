@@ -347,15 +347,8 @@ void ViewProviderPage::removeMDIView()
         QList<QWidget*> wList = Gui::getMainWindow()->windows();
         if (wList.contains(m_mdiView)) {
             Gui::getMainWindow()->removeWindow(m_mdiView);
-            m_mdiView = nullptr;     //m_mdiView will eventually be deleted and
-            m_graphicsView = nullptr;//will take m_graphicsView with it
-
-            // Gui::MDIView* aw =
-            //     Gui::getMainWindow()
-            //         ->activeWindow();//WF: this bit should be in the remove window logic, not here.
-            // if (aw) {
-            //     aw->showMaximized();
-            // }
+            m_mdiView = nullptr;     // m_mdiView will eventually be deleted as child of and
+            m_graphicsView = nullptr;// main window and will take m_graphicsView with it
         }
     }
 }
