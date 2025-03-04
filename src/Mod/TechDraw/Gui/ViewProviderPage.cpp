@@ -106,7 +106,7 @@ ViewProviderPage::ViewProviderPage()
 
 ViewProviderPage::~ViewProviderPage()
 {
-    removeMDIView();//if the MDIViewPage is still in MainWindow, remove it.
+    removeMDIView();        //if the MDIViewPage is still in MainWindow, remove it.
     m_graphicsScene->deleteLater();
 }
 
@@ -278,7 +278,7 @@ void ViewProviderPage::show()
 void ViewProviderPage::hide()
 {
     if (getMDIView()) {
-        getMDIView()->hide();  // this doesn't remove the mdiViewPage from the mainWindow
+        //getMDIView()->hide();  // this doesn't remove the mdiViewPage from the mainWindow
         removeMDIView();
     }
     ViewProviderDocumentObject::hide();
@@ -349,12 +349,13 @@ void ViewProviderPage::removeMDIView()
             Gui::getMainWindow()->removeWindow(m_mdiView);
             m_mdiView = nullptr;     //m_mdiView will eventually be deleted and
             m_graphicsView = nullptr;//will take m_graphicsView with it
-            Gui::MDIView* aw =
-                Gui::getMainWindow()
-                    ->activeWindow();//WF: this bit should be in the remove window logic, not here.
-            if (aw) {
-                aw->showMaximized();
-            }
+
+            // Gui::MDIView* aw =
+            //     Gui::getMainWindow()
+            //         ->activeWindow();//WF: this bit should be in the remove window logic, not here.
+            // if (aw) {
+            //     aw->showMaximized();
+            // }
         }
     }
 }
