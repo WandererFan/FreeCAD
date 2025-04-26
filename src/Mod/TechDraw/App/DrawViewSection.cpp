@@ -268,7 +268,7 @@ DrawViewSection::~DrawViewSection()
 short DrawViewSection::mustExecute() const
 {
     if (isRestoring()) {
-        return TechDraw::DrawView::mustExecute();
+        return TechDraw::DrawView::mustExecute();   //NOLINT
     }
 
     if (Scale.isTouched() || Direction.isTouched() || BaseView.isTouched()
@@ -276,7 +276,7 @@ short DrawViewSection::mustExecute() const
         return 1;
     }
 
-    return TechDraw::DrawView::mustExecute();
+    return TechDraw::DrawView::mustExecute();   //NOLINT
 }
 
 void DrawViewSection::onChanged(const App::Property* prop)
@@ -293,40 +293,47 @@ void DrawViewSection::onChanged(const App::Property* prop)
         return;
     }
 
-    if (prop == &SectionNormal) {
+    if (prop == &SectionNormal ||
+        prop == &XDirection) {
         Direction.setValue(SectionNormal.getValue());
         return;
     }
-    else if (prop == &SectionSymbol) {
+
+    if (prop == &SectionSymbol) {
         if (getBaseDVP()) {
             getBaseDVP()->requestPaint();
         }
         return;
     }
-    else if (prop == &CutSurfaceDisplay) {
+
+    if (prop == &CutSurfaceDisplay) {
         if (CutSurfaceDisplay.isValue("PatHatch")) {
             makeLineSets();
         }
         requestPaint();
         return;
     }
-    else if (prop == &FileHatchPattern) {
+
+    if (prop == &FileHatchPattern) {
         replaceSvgIncluded(FileHatchPattern.getValue());
         requestPaint();
         return;
     }
-    else if (prop == &FileGeomPattern) {
+
+    if (prop == &FileGeomPattern) {
         replacePatIncluded(FileGeomPattern.getValue());
         makeLineSets();
         requestPaint();
         return;
     }
-    else if (prop == &NameGeomPattern) {
+
+    if (prop == &NameGeomPattern) {
         makeLineSets();
         requestPaint();
         return;
     }
-    else if (prop == &BaseView) {
+
+    if (prop == &BaseView) {
         // if the BaseView is a Section, then the option of using UsePreviousCut is
         // valid.
         if (BaseView.getValue() && BaseView.getValue()->isDerivedFrom<TechDraw::DrawViewSection>()) {
@@ -335,11 +342,13 @@ void DrawViewSection::onChanged(const App::Property* prop)
         else {
             UsePreviousCut.setStatus(App::Property::ReadOnly, true);
         }
-    } else if (prop == &SectionLineStretch) {
+    }
+
+    if (prop == &SectionLineStretch) {
         BaseView.getValue()->touch();
     }
 
-    DrawView::onChanged(prop);
+    DrawView::onChanged(prop);      //NOLINT
 }
 
 TopoDS_Shape DrawViewSection::getShapeToCut()
@@ -368,9 +377,11 @@ TopoDS_Shape DrawViewSection::getShapeToCut()
     }
     else if (base->isDerivedFrom<TechDraw::DrawViewPart>()) {
         dvp = static_cast<TechDraw::DrawViewPart*>(base);
-        shapeToCut = dvp->getSourceShape();
+        constexpr bool fuseBefore{true};
+        constexpr bool allow2d{false};
+        shapeToCut = dvp->getSourceShape(!fuseBefore, allow2d);
         if (FuseBeforeCut.getValue()) {
-            shapeToCut = dvp->getSourceShape(true);
+            shapeToCut = dvp->getSourceShape(fuseBefore);
         }
     }
     else {
@@ -993,23 +1004,23 @@ ChangePointVector DrawViewSection::getChangePointsFromSectionLine()
 // this should really be in BoundBox.h
 //! check if point is in box or on boundary of box
 //! compare to isInBox which doesn't allow on boundary
-bool DrawViewSection::isReallyInBox(const Base::Vector3d v, const Base::BoundBox3d bb) const
+bool DrawViewSection::isReallyInBox(const Base::Vector3d vec, const Base::BoundBox3d bb) const
 {
-    if (v.x <= bb.MinX || v.x >= bb.MaxX) {
+    if (vec.x <= bb.MinX || vec.x >= bb.MaxX) {
         return false;
     }
-    if (v.y <= bb.MinY || v.y >= bb.MaxY) {
+    if (vec.y <= bb.MinY || vec.y >= bb.MaxY) {
         return false;
     }
-    if (v.z <= bb.MinZ || v.z >= bb.MaxZ) {
+    if (vec.z <= bb.MinZ || vec.z >= bb.MaxZ) {
         return false;
     }
     return true;
 }
 
-bool DrawViewSection::isReallyInBox(const gp_Pnt p, const Bnd_Box& bb) const
+bool DrawViewSection::isReallyInBox(const gp_Pnt& point, const Bnd_Box& bb) const
 {
-    return !bb.IsOut(p);
+    return !bb.IsOut(point);
 }
 
 Base::Vector3d DrawViewSection::getXDirection() const
@@ -1038,7 +1049,7 @@ Base::Vector3d DrawViewSection::getXDirection() const
     return XDirection.getValue();
 }
 
-void DrawViewSection::setCSFromBase(const std::string sectionName)
+void DrawViewSection::setCSFromBase(const std::string& sectionName)
 {
     //    Base::Console().Message("DVS::setCSFromBase(%s)\n",
     //    sectionName.c_str());
@@ -1052,7 +1063,7 @@ void DrawViewSection::setCSFromBase(const std::string sectionName)
 }
 
 // set the section CS based on an XY vector in BaseViews CS
-void DrawViewSection::setCSFromBase(const Base::Vector3d localUnit)
+void DrawViewSection::setCSFromBase(const Base::Vector3d& localUnit)
 {
     //    Base::Console().Message("DVS::setCSFromBase(%s)\n",
     //    DrawUtil::formatVector(localUnit).c_str());
@@ -1070,7 +1081,7 @@ void DrawViewSection::setCSFromBase(const Base::Vector3d localUnit)
 }
 
 // reset the section CS based on an XY vector in current section CS
-void DrawViewSection::setCSFromLocalUnit(const Base::Vector3d localUnit)
+void DrawViewSection::setCSFromLocalUnit(const Base::Vector3d& localUnit)
 {
     //    Base::Console().Message("DVS::setCSFromLocalUnit(%s)\n",
     //    DrawUtil::formatVector(localUnit).c_str());
@@ -1084,7 +1095,7 @@ void DrawViewSection::setCSFromLocalUnit(const Base::Vector3d localUnit)
     XDirection.setValue(Base::convertTo<Base::Vector3d>(newCS.XDirection()));
 }
 
-gp_Ax2 DrawViewSection::getCSFromBase(const std::string sectionName) const
+gp_Ax2 DrawViewSection::getCSFromBase(const std::string& sectionName) const
 {
     //    Base::Console().Message("DVS::getCSFromBase(%s)\n",
     //    sectionName.c_str());
@@ -1258,6 +1269,33 @@ void DrawViewSection::handleChangedPropertyType(Base::XMLReader &reader, const c
         }
         return;
     }
+}
+
+// checks that SectionNormal and XDirection are perpendicular and that Direction is the same as
+// SectionNormal
+bool DrawViewSection::checkSectionCS() const
+{
+    auto vNormal = SectionNormal.getValue();
+    vNormal.Normalize();
+    auto vXDirection = XDirection.getValue();
+    vXDirection.Normalize();
+    auto vDirection = Direction.getValue();
+
+    if (vNormal.Length() == 0 ||
+        vXDirection.Length() == 0 ||
+        vDirection.Length() == 0) {
+        return false;
+    }
+
+    if (!vNormal.IsEqual(vDirection, EWTOLERANCE)) {
+        return false;
+    }
+
+    auto orthoDot = std::fabs(vNormal.Dot(vXDirection));
+    if (orthoDot > EWTOLERANCE) {
+        return false;
+    }
+    return true;
 }
 
 // hatch file routines
