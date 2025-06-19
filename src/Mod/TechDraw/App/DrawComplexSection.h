@@ -144,6 +144,9 @@ private:
 
     std::vector<Base::Vector3d> getPointsForClosingProfile(const TopoDS_Wire& profileWire,
                                                            double dMax);
+    TopoDS_Wire closeProfile(const TopoDS_Wire& profileWire,
+                             Base::Vector3d referenceAxis,
+                             double dMax) const;
 
     static std::vector<TopoDS_Edge> getUniqueEdges(const TopoDS_Wire& wireIn);
     static TopoDS_Shape removeEmptyShapes(const TopoDS_Shape& roughTool);
@@ -152,7 +155,6 @@ private:
                                       const TopoDS_Face& faceToSearch);
     static bool normalLess(const std::pair<int, Base::Vector3d>& n1,
                            const std::pair<int, Base::Vector3d>& n2);
-    static TopoDS_Wire closeProfile(const TopoDS_Wire& profileWire, Base::Vector3d referenceAxis, double dMax);
     static TopoDS_Shape profileToSolid(const TopoDS_Wire& closedProfileWire, Base::Vector3d referenceAxis, double dMax);
 
     TopoDS_Shape m_toolFaceShape;

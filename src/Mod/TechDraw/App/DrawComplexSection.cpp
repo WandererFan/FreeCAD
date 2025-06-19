@@ -1427,6 +1427,9 @@ std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDi
         Base::Console().warning("Section normal is parallel to profile vector. Results may be incorrect.\n");
     }
     auto profilePlanWire = closeProfile(profileWire, sectionNormal, m_shapeSize);
+    if (debugSection()) {
+        BRepTools::Write(profilePlanWire, "DCSClosedProfile.brep");//debug
+    }
 
     auto profileSolid = profileToSolid(profilePlanWire, referenceAxis, m_shapeSize);
     if (debugSection()) {
@@ -1506,15 +1509,22 @@ bool DrawComplexSection::faceContainsEndpoints(const TopoDS_Edge& edgeToMatch, c
 //! forms a closed wire by connecting the end points of the profile wire with an arc.
 TopoDS_Wire DrawComplexSection::closeProfile(const TopoDS_Wire& profileWire,
                                              Base::Vector3d sectionNormal,
-                                             double dMax)
+                                             double dMax) const
 {
-    auto pvEnds = getWireEnds(profileWire);
-    auto firstPWPoint = pvEnds.first;
-    auto lastPWPoint = pvEnds.second;
-    auto midPWPoint = (firstPWPoint + lastPWPoint) / 2;
-    auto SNPoint = sectionNormal * dMax;
-    auto awayDirection = midPWPoint - SNPoint;
+    std::pair<Base::Vector3d, Base::Vector3d> pvEnds = getWireEnds(profileWire);
+    Base::Vector3d firstPWPoint = pvEnds.first;
+    Base::Vector3d lastPWPoint = pvEnds.second;
+
+    // if the profile is not on the projection plane, then away direction will be
+    // tilted and make the face later will fail.  We need to add in the offset from
+    // profile to projection plane.
+    Base::Vector3d midPWPoint = (firstPWPoint + lastPWPoint) / 2;
+    Base::Vector3d  midPointProj = projectPoint(midPWPoint);
+    Base::Vector3d offset = midPWPoint - midPointProj;
+    Base::Vector3d SNPoint = sectionNormal * dMax + offset;
+    Base::Vector3d awayDirection = midPWPoint - SNPoint;
     awayDirection.Normalize();
+
     auto radius = (midPWPoint - lastPWPoint).Length();
     auto pointOnArc = midPWPoint + awayDirection * radius;
 
