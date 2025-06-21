@@ -665,6 +665,7 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionLineEnds()
 // the arrows on the section line are line of sight - from eye to preserved material.  In a simple section,
 // this is opposite to the section normal.  In the complex section, we need a perpendicular direction most
 // opposite to the SectionNormal.
+// the arrows must be perpendicular to the profile segment
 std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionArrowDirs()
 {
     std::pair<Base::Vector3d, Base::Vector3d> result;
@@ -681,10 +682,12 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionArrowDirs()
 
     auto uSectionNormal = SectionNormal.getValue();
     uSectionNormal.Normalize();
-    auto segmentViewDirections = getSegmentViewDirections(profileWire, uSectionNormal, referenceAxis);
+    std::vector<std::pair<int, Base::Vector3d>> segmentViewDirections = getSegmentViewDirections(profileWire, uSectionNormal, referenceAxis);
     if (segmentViewDirections.empty()) {
         throw Base::RuntimeError("A complex section failed to create profile segment view directions");
     }
+
+
     Base::Vector3d firstArrowDir = segmentViewDirections.front().second;
     Base::Vector3d lastArrowDir = segmentViewDirections.back().second;
 
@@ -906,7 +909,8 @@ bool DrawComplexSection::isBaseValid() const
 
 //if the profile is not nicely positioned within the vertical span of the shape, we might not overlap
 //the shape after extrusion.  As long as the profile is within the extent of the shape in the
-//extrude direction we should be ok. the extrude direction has to be perpendicular to the profile and SectionNormal
+//extrude direction we should be ok. the extrude direction should be as close perpendicular to the
+// profile and SectionNormal
 bool DrawComplexSection::validateProfilePosition(const TopoDS_Wire& profileWire, const gp_Ax2& sectionCS) const
 {
     auto wireEnds = getWireEnds(profileWire);

@@ -827,16 +827,19 @@ void QGIViewPart::drawComplexSectionLine(TechDraw::DrawViewSection* viewSection,
     else {
         sectionLine->clearChangePoints();
     }
-    if (dcs->ProjectionStrategy.isValue("Offset")) {
-        Base::Vector3d arrowDirOffset = viewSection->SectionNormal.getValue();
-        arrowDirOffset =
-            -viewPart->projectPoint(arrowDirOffset);//arrows are opposite section normal
-        sectionLine->setDirection(arrowDirOffset.x, -arrowDirOffset.y);//invert y for Qt
-    }
-    else {
+    // if (dcs->ProjectionStrategy.isValue("Offset")) {
+    //     Base::Vector3d arrowDirOffset = viewSection->SectionNormal.getValue();
+    //     arrowDirOffset =
+    //         -viewPart->projectPoint(arrowDirOffset);    //arrows are opposite section normal
+    //     sectionLine->setDirection(arrowDirOffset.x, -arrowDirOffset.y);//invert y for Qt
+    // }
+    // else {
         std::pair<Base::Vector3d, Base::Vector3d> dirsAligned = dcs->sectionArrowDirs();
-        sectionLine->setArrowDirections(dirsAligned.first, dirsAligned.second);
-    }
+        sectionLine->setArrowDirections(DU::invertY(dirsAligned.first), DU::invertY(dirsAligned.second));
+    // }
+    Base::Console().message("QGIVP::drawComplexSectionLine - first arrow dir: %s  second: %s \n",
+                            DU::formatVector(dirsAligned.first).c_str(),
+                            DU::formatVector(dirsAligned.second).c_str());
 
     //set the general parameters
     sectionLine->setPos(0.0, 0.0);
