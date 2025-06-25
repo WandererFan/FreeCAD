@@ -35,6 +35,14 @@
 namespace TechDraw
 {
 
+//! the same algorithm is used for getting the section arrow directions and the directions for closing
+//! the cutting solid, except in the first case we are looking at the result and in the second we are
+//! looking away.
+enum class SectionArrowDirection {
+    LineOfSight,
+    SectionNormal
+};
+
 class TechDrawExport AlignedSizeResponse
 {
 public:
@@ -90,7 +98,7 @@ public:
     TopoDS_Compound alignedToolIntersections(const TopoDS_Shape& cutShape);
 
     BaseGeomPtrVector makeSectionLineGeometry();
-    std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirs();
+    std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirs(SectionArrowDirection arrowDir);
     TopoDS_Wire makeSectionLineWire();
 
     ChangePointVector getChangePointsFromSectionLine() override;
@@ -147,6 +155,7 @@ private:
     TopoDS_Wire closeProfile(const TopoDS_Wire& profileWire,
                              Base::Vector3d referenceAxis,
                              double dMax) const;
+    TopoDS_Edge mapEdge(const TopoDS_Edge& inEdge);
 
     static std::vector<TopoDS_Edge> getUniqueEdges(const TopoDS_Wire& wireIn);
     static TopoDS_Shape removeEmptyShapes(const TopoDS_Shape& roughTool);

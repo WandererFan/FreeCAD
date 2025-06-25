@@ -666,41 +666,82 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionLineEnds()
 // this is opposite to the section normal.  In the complex section, we need a perpendicular direction most
 // opposite to the SectionNormal.
 // the arrows must be perpendicular to the profile segment
-std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionArrowDirs()
+std::pair<Base::Vector3d, Base::Vector3d>
+            DrawComplexSection::sectionArrowDirs(SectionArrowDirection arrowDir)
 {
-    std::pair<Base::Vector3d, Base::Vector3d> result;
+    // std::pair<Base::Vector3d, Base::Vector3d> result;
     App::DocumentObject* toolObj = CuttingToolWireObject.getValue();
     TopoDS_Wire profileWire = makeProfileWire(toolObj);
     if (profileWire.IsNull()) {
-        return result;
+        throw Base::RuntimeError("Complex section profile wire is null");
     }
 
-    auto lineOfSight = SectionNormal.getValue() * -1;
-    lineOfSight.Normalize();
-
+    Base::Vector3d viewDirection = SectionNormal.getValue();
     auto referenceAxis = getReferenceAxis();
+    // if (arrowDir == SectionArrowDirection::LineOfSight) {
+    //     viewDirection *= -1;
+    //     referenceAxis *= -1;
+    // }
 
-    auto uSectionNormal = SectionNormal.getValue();
-    uSectionNormal.Normalize();
-    std::vector<std::pair<int, Base::Vector3d>> segmentViewDirections = getSegmentViewDirections(profileWire, uSectionNormal, referenceAxis);
+    std::vector<std::pair<int, Base::Vector3d>> segmentViewDirections =
+                                getSegmentViewDirections(profileWire, viewDirection, referenceAxis);
     if (segmentViewDirections.empty()) {
         throw Base::RuntimeError("A complex section failed to create profile segment view directions");
     }
 
-
     Base::Vector3d firstArrowDir = segmentViewDirections.front().second;
     Base::Vector3d lastArrowDir = segmentViewDirections.back().second;
+    DrawViewPart* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
+    gp_Ax2 baseCS = baseDvp->getProjectionCS();
+    gp_Dir baseY = baseCS.YDirection();     // up.  becomes +Y when projected
+    Base::Console().message("DCS::sectionArrowDirs - baseY: %s\n",
+                            DU::formatVector(baseY).c_str());
+
+    // projectedWire is inverted.
+    // auto projectedWire = TopoDS::Wire(
+    //         GeometryObject::projectSimpleShape(profileWire, baseDvp->getProjectionCS()));
+    // gp_Vec projectedVector = makeProfileVector(profileWire);
+    //auto projectedEnds = getWireEnds(projectedWire);
+
+    Base::Console().message("DCS::sectionArrowDirs - viewDirs - first: %s  last: %s\n",
+                            DU::formatVector(firstArrowDir).c_str(),
+                            DU::formatVector(lastArrowDir).c_str());
+
+    //! are we drawing on the back of the chalk board?
+    //! this is brute force and i don't trust it!
+    if (arrowDir == SectionArrowDirection::LineOfSight) {
+        Base::Vector3d baseDir = baseDvp->Direction.getValue();
+        if (baseDir.z < 0) {
+            firstArrowDir.y *= -1;
+            lastArrowDir.y *= -1;
+        }
+
+        if (baseDir.x < 0) {
+            firstArrowDir.y *= -1;
+            lastArrowDir.y *= -1;
+        }
+
+        if (baseDir.y < 0) {
+            firstArrowDir.x *= -1;
+            lastArrowDir.x *= -1;
+        }
+    }
+
+    Base::Console().message("DCS::sectionArrowDirs ends\n");
 
     return { firstArrowDir, lastArrowDir };
 }
 
 
 //! find an axis for measuring rotation vs the line of sight
+//!
 Base::Vector3d DrawComplexSection::getReferenceAxis()
 {
-    auto csDir = getBaseDVP()->getProjectionCS().Direction();
-    auto rawDirection = Base::convertTo<Base::Vector3d>(csDir);
+    Base::Vector3d rawDirection = getBaseDVP()->Direction.getValue();
+    // auto csDir = getBaseDVP()->getProjectionCS().Direction();
+    // auto rawDirection = Base::convertTo<Base::Vector3d>(csDir);
     rawDirection.Normalize();
+
     return DU::closestBasisOriented(rawDirection);
 }
 
@@ -1185,7 +1226,8 @@ std::vector<Base::Vector3d>
     auto lastPoint = ends.second;
     auto midPoint = (firstPoint + lastPoint) / 2;       // midpoint of profile vector
 
-    auto arrows = sectionArrowDirs();
+    // this will be backwards (LoS vs SectionNormal)
+    auto arrows = sectionArrowDirs(SectionArrowDirection::SectionNormal);
     auto pseudoSectionNormal = ((arrows.first + arrows.second) / 2) * -1;
     pseudoSectionNormal.Normalize();
     auto extraPoint = midPoint + pseudoSectionNormal * dMax * 2;
@@ -1563,6 +1605,24 @@ TopoDS_Shape DrawComplexSection::profileToSolid(const TopoDS_Wire& closedProfile
     auto profileSolid = mkPrism.Shape();
 
      return profileSolid;
+}
+
+
+//! transform an edge to the base view's projection coordinate system
+TopoDS_Edge DrawComplexSection::mapEdge(const TopoDS_Edge& inEdge)
+{
+    App::DocumentObject* baseObj = BaseView.getValue();
+    auto* baseDvp = freecad_cast<DrawViewPart*>(baseObj);
+
+    BRepBuilderAPI_Copy BuilderEdgeCopy(inEdge);
+    TopoDS_Edge edgeCopy = TopoDS::Edge(BuilderEdgeCopy.Shape());
+
+    gp_Ax3 stdCS;                                 //OXYZ
+    gp_Trsf xMapEdge;
+    xMapEdge.SetTransformation(stdCS, baseDvp->getProjectionCS());
+    BRepBuilderAPI_Transform mkMappedEdge(edgeCopy, xMapEdge);
+    TopoDS_Edge mappedEdge = TopoDS::Edge(mkMappedEdge.Shape());
+    return mappedEdge;
 }
 
 
