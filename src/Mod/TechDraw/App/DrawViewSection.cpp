@@ -1230,6 +1230,7 @@ void DrawViewSection::setupObject()
 
 void DrawViewSection::handleChangedPropertyType(Base::XMLReader &reader, const char * TypeName, App::Property * prop)
 {
+
     if (prop == &SectionOrigin) {
         // SectionOrigin was PropertyVector but is now PropertyPosition
         App::PropertyVector tmp;
@@ -1250,6 +1251,7 @@ void DrawViewSection::handleChangedPropertyType(Base::XMLReader &reader, const c
             tmp.Restore(reader);
             auto tmpValue = tmp.getValue();
             SectionNormal.setValue(tmpValue);
+            Direction.setValue(tmpValue);
         }
         return;
     }

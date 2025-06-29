@@ -99,6 +99,7 @@ public:
 
     BaseGeomPtrVector makeSectionLineGeometry();
     std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirs(SectionArrowDirection arrowDir);
+    std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirsMapped(SectionArrowDirection arrowDir);
     TopoDS_Wire makeSectionLineWire();
 
     ChangePointVector getChangePointsFromSectionLine() override;
@@ -156,6 +157,7 @@ private:
                              Base::Vector3d referenceAxis,
                              double dMax) const;
     TopoDS_Edge mapEdge(const TopoDS_Edge& inEdge);
+    TopoDS_Edge mapEdge(const Base::Vector3d& inVector);
 
     static std::vector<TopoDS_Edge> getUniqueEdges(const TopoDS_Wire& wireIn);
     static TopoDS_Shape removeEmptyShapes(const TopoDS_Shape& roughTool);

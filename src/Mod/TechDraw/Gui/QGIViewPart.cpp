@@ -845,15 +845,23 @@ void QGIViewPart::drawComplexSectionLine(TechDraw::DrawViewSection* viewSection,
     // }
     // else {
         std::pair<Base::Vector3d, Base::Vector3d> dirsDCS =
-                    dcs->sectionArrowDirs(SectionArrowDirection::LineOfSight);
+                    dcs->sectionArrowDirsMapped(SectionArrowDirection::SectionNormal);
         // sectionLine->setArrowDirections(DU::invertY(dirsAligned.first), DU::invertY(dirsAligned.second));
-        Base::Vector3d firstArrowDir = dirsDCS.first * -1;  // SectionNormal to ViewDirection
-        Base::Vector3d lastArrowDir = dirsDCS.second * -1;  // SectionNormal to ViewDirection
+        // Base::Vector3d firstArrowDir = dirsDCS.first * -1;  // SectionNormal to ViewDirection
+        // Base::Vector3d lastArrowDir = dirsDCS.second * -1;  // SectionNormal to ViewDirection
+        // project isn't the right operation here as it will just drop the z.
+        // need to transform from OXYZ to section cs.
+        constexpr bool invertY{true};
+        Base::Vector3d firstArrowDir = dcs->projectPoint(dirsDCS.first, !invertY);
+        Base::Vector3d lastArrowDir = dcs->projectPoint(dirsDCS.second, !invertY);
         sectionLine->setArrowDirections(dirsDCS.first, dirsDCS.second);
     // }
-    Base::Console().message("QGIVP::drawComplexSectionLine - from DCS - first arrow dir: %s  second: %s \n",
+    Base::Console().message("QGIVP::drawComplexSectionLine - from DCS - dirsDCS first: %s  second: %s \n",
                             DU::formatVector(dirsDCS.first).c_str(),
                             DU::formatVector(dirsDCS.second).c_str());
+    Base::Console().message("QGIVP::drawComplexSectionLine - projected dirs first: %s  second: %s \n",
+                            DU::formatVector(firstArrowDir).c_str(),
+                            DU::formatVector(lastArrowDir).c_str());
 
     //set the general parameters
     sectionLine->setPos(0.0, 0.0);

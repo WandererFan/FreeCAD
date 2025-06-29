@@ -732,6 +732,20 @@ std::pair<Base::Vector3d, Base::Vector3d>
     return { firstArrowDir, lastArrowDir };
 }
 
+std::pair<Base::Vector3d, Base::Vector3d>
+            DrawComplexSection::sectionArrowDirsMapped(SectionArrowDirection arrowDir)
+{
+    std::pair<Base::Vector3d, Base::Vector3d> arrowDirsRaw = sectionArrowDirs(arrowDir);
+    TopoDS_Edge firstMapped = mapEdge(arrowDirsRaw.first);
+    TopoDS_Edge lastMapped = mapEdge(arrowDirsRaw.second);
+    std::pair<Base::Vector3d, Base::Vector3d> arrowEnds = getSegmentEnds(firstMapped);
+    Base::Vector3d firstDir = arrowEnds.second - arrowEnds.first;
+    arrowEnds = getSegmentEnds(lastMapped);
+    Base::Vector3d lastDir = arrowEnds.second - arrowEnds.first;
+
+    return { firstDir, lastDir };
+}
+
 
 //! find an axis for measuring rotation vs the line of sight
 //!
@@ -1623,6 +1637,17 @@ TopoDS_Edge DrawComplexSection::mapEdge(const TopoDS_Edge& inEdge)
     BRepBuilderAPI_Transform mkMappedEdge(edgeCopy, xMapEdge);
     TopoDS_Edge mappedEdge = TopoDS::Edge(mkMappedEdge.Shape());
     return mappedEdge;
+}
+
+TopoDS_Edge DrawComplexSection::mapEdge(const Base::Vector3d& inVector)
+{
+    if (inVector.Length() == 0) {
+        throw Base::RuntimeError("Complex section received a request to map a null edge");
+    }
+    gp_Pnt origin(0,0,0);
+    gp_Pnt endPoint{Base::convertTo<gp_Pnt>(inVector)};
+    TopoDS_Edge edgeToMap = BRepBuilderAPI_MakeEdge(origin, endPoint);
+    return mapEdge(edgeToMap);
 }
 
 
