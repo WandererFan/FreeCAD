@@ -179,9 +179,12 @@ private:
     static bool getPlaneParameters(const TopoDS_Shape& inShape,
                                    Base::Vector3d& planeAxis,
                                    Base::Vector3d& planeOrigin);
-    TopoDS_Shape toolFromProfile(TopoDS_Wire profileWire,
+    TopoDS_Shape toolFromProfile(const TopoDS_Wire& profileWire,
                                  Base::Vector3d sectionNormal,
-                                 double m_shapeSize) const;
+                                 TopoDS_Wire& relocatedProfileWire,
+                                 double dMax) const;
+    static bool pointOnFace(Base::Vector3d point, const TopoDS_Face& face);
+
 
     TopoDS_Shape m_toolFaceShape;
     TopoDS_Shape m_alignResult;
