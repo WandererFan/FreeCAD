@@ -217,11 +217,17 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
         }
     }
 
-    TopoDS_Wire relocatedProfileWire;      // not used here, but needed elsewhere
+    TopoDS_Wire relocatedProfileWire;
     TopoDS_Shape roughTool = toolFromProfile(profileWire, uSectionNormal, relocatedProfileWire, dMax);
+
+    // save the tool face for shading
+    auto extrudeDir = Base::convertTo<gp_Dir>(getReferenceAxis());
+    gp_Vec extrudeVec = 2 * dMax * extrudeDir;
+    m_toolFaceShape = BRepPrimAPI_MakePrism(relocatedProfileWire, extrudeVec).Shape();
     if (debugSection()) {
         BRepTools::Write(roughTool, "DCSRoughTool.brep");   //debug
         //good to here!
+        BRepTools::Write(m_toolFaceShape, "DCSToolFaceShape.brep");   //debug
     }
 
     if (roughTool.ShapeType() == TopAbs_COMPSOLID ||
@@ -478,6 +484,7 @@ DrawComplexSection::findSectionPlaneIntersections(const TopoDS_Shape& shapeToInt
 //Intersect cutShape with each segment of the cutting tool
 TopoDS_Compound DrawComplexSection::singleToolIntersections(const TopoDS_Shape& cutShape)
 {
+    
     App::DocumentObject* toolObj = CuttingToolWireObject.getValue();
     if (!isLinearProfile(toolObj)) {
         //TODO: special handling here
@@ -489,8 +496,8 @@ TopoDS_Compound DrawComplexSection::singleToolIntersections(const TopoDS_Shape& 
     builder.MakeCompound(result);
 
     if (debugSection()) {
-        BRepTools::Write(cutShape, "DCSOffsetCutShape.brep");              //debug
-        BRepTools::Write(m_toolFaceShape, "DCSOffsetCuttingToolFace.brep");//debug
+        BRepTools::Write(cutShape, "DCSOffsetCutShapeIn.brep");              //debug
+//        BRepTools::Write(m_toolFaceShape, "DCSOffsetCuttingToolFace.brep");//debug
     }
 
     if (m_toolFaceShape.IsNull()) {
