@@ -31,6 +31,7 @@
 #include <gp_Vec.hxx>
 
 #include "DrawViewSection.h"
+#include "GeometryObject.h"
 
 namespace TechDraw
 {
@@ -105,10 +106,14 @@ public:
     ChangePointVector getChangePointsFromSectionLine() override;
 
     bool validateProfilePosition(const TopoDS_Wire& profileWire, const gp_Ax2& sectionCS) const;
+    bool validateSketchNormal(App::DocumentObject* sketchObject);
+
     bool showSegment(gp_Dir segmentNormal) const;
     gp_Vec projectVector(const gp_Vec& vec) const;
 
     TopoDS_Wire makeProfileWire() const;
+
+
     static TopoDS_Wire makeProfileWire(App::DocumentObject* toolObj);
     static TopoDS_Wire makeNoseToTailWire(const TopoDS_Wire& inWire);
     static gp_Vec makeProfileVector(const TopoDS_Wire& profileWire);
@@ -120,13 +125,14 @@ public:
     static gp_Vec projectVector(const gp_Vec& vec, gp_Ax2 sectionCS);
     static std::pair<Base::Vector3d, Base::Vector3d> getSegmentEnds(const TopoDS_Edge& segment);
     static std::pair<Base::Vector3d, Base::Vector3d> getWireEnds(const TopoDS_Wire& wire);
+    static std::pair<Base::Vector3d, Base::Vector3d> sketchNormalAndX(App::DocumentObject* sketchObj);
 
 public Q_SLOTS:
     void onSectionCutFinished() override;
 
 private:
     bool validateOffsetProfile(TopoDS_Wire profile, Base::Vector3d direction, double angleThresholdDeg) const;
-    Base::Vector3d getReferenceAxis();
+    Base::Vector3d getReferenceAxis() const;
 
     // methods refactored out of makeAlignedPieces
     bool getReversers(const gp_Vec& gProfileVector, double& horizReverser, double& verticalReverser);
@@ -149,7 +155,7 @@ private:
     std::vector<std::pair<int, Base::Vector3d> >
                     getSegmentViewDirections(const TopoDS_Wire& profileWire,
                                            Base::Vector3d sectionNormal,
-                                           Base::Vector3d referenceAxis) const;
+                                           Base::Vector3d extrudeDir) const;
 
     std::vector<Base::Vector3d> getPointsForClosingProfile(const TopoDS_Wire& profileWire,
                                                            double dMax);
@@ -167,6 +173,15 @@ private:
     static bool normalLess(const std::pair<int, Base::Vector3d>& n1,
                            const std::pair<int, Base::Vector3d>& n2);
     static TopoDS_Shape profileToSolid(const TopoDS_Wire& closedProfileWire, Base::Vector3d referenceAxis, double dMax);
+
+    TopoDS_Wire makeFlatWire(TopoDS_Shape flatProfileShape, bool flipY=true) const;
+    static TopoDS_Shape unprojectShape(const TopoDS_Shape& inShape, const gp_Ax2& fromCS);
+    static bool getPlaneParameters(const TopoDS_Shape& inShape,
+                                   Base::Vector3d& planeAxis,
+                                   Base::Vector3d& planeOrigin);
+    TopoDS_Shape toolFromProfile(TopoDS_Wire profileWire,
+                                 Base::Vector3d sectionNormal,
+                                 double m_shapeSize) const;
 
     TopoDS_Shape m_toolFaceShape;
     TopoDS_Shape m_alignResult;

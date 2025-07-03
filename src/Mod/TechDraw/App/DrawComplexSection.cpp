@@ -99,6 +99,9 @@
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
+
+#include <BRepLib_FindSurface.hxx>
+#include <GeomAdaptor_Surface.hxx>
 #endif
 
 #include <cmath>
@@ -123,6 +126,7 @@
 #include "DrawUtil.h"
 #include "GeometryObject.h"
 #include "ShapeUtils.h"
+#include "EdgeWalker.h"
 
 using namespace TechDraw;
 using namespace std;
@@ -156,6 +160,7 @@ DrawComplexSection::DrawComplexSection() :
 
 TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
 {
+    Base::Console().message("DCS::makeCuttingTool()\n");
     TopoDS_Wire profileWire = makeProfileWire();
     if (profileWire.IsNull()) {
         throw Base::RuntimeError("Can not make wire from cutting tool (1)");
@@ -166,23 +171,23 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
         BRepTools::Write(profileWire, "DCSProfileWire.brep");//debug
     }
 
-    gp_Ax2 sectionCS = getSectionCS();  // should validate this some where
+    // gp_Ax2 sectionCS = getSectionCS();  // should validate this some where
 
     auto uSectionNormal = SectionNormal.getValue();
     uSectionNormal.Normalize();
-    auto gWireToFaceDirection = Base::convertTo<gp_Vec>(getReferenceAxis());
-    bool isPositionOK = validateProfilePosition(profileWire, sectionCS);
-    if (!isPositionOK) {
-        //profile is not in a good position.  Result might not be right.
-        Base::Console().warning("DCS::makeCuttingTool - %s - profile is outside shape box\n",
-                                getNameInDocument());
-    }
+    // auto gWireToFaceDirection = Base::convertTo<gp_Vec>(getReferenceAxis());
+    // bool isPositionOK = validateProfilePosition(profileWire, sectionCS);
+    // if (!isPositionOK) {
+    //     //profile is not in a good position.  Result might not be right.
+    //     Base::Console().warning("DCS::makeCuttingTool - %s - profile is outside shape box\n",
+    //                             getNameInDocument());
+    // }
 
-    //move the profile wire to one side of the shape
-    gp_Trsf mov;
-    mov.SetTranslation(gp_Vec(gWireToFaceDirection) * (-dMax));
-    TopLoc_Location loc(mov);
-    profileWire.Move(loc);
+    // //move the profile wire to one side of the shape
+    // gp_Trsf mov;
+    // mov.SetTranslation(gp_Vec(gWireToFaceDirection) * (-dMax));
+    // TopLoc_Location loc(mov);
+    // profileWire.Move(loc);
 
     if (BRep_Tool::IsClosed(profileWire)) {
         // TopoDS_Shape makePrismForClosedProfile(profileWire)
@@ -194,6 +199,8 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
         }
         gp_Dir gpNormal = getFaceNormal(toolFace);
         auto extrudeDir = 2 * dMax * gpNormal;
+        // prism needs to be moved along the extrude direction so it covers the whole shape. longer
+        // prism too?
         return BRepPrimAPI_MakePrism(toolFace, extrudeDir).Shape();
     }
 
@@ -206,38 +213,67 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
         validateOffsetProfile(profileWire, SectionNormal.getValue(), AngleThresholdDeg);
     }
 
-    m_toolFaceShape = extrudeWireToFace(profileWire, gWireToFaceDirection, 2 * dMax);
+    // TODO: this check should be in TaskComplexSection also.  here it prevents a hard occ crash
+    //       if the sketch can't be made into an appropriate face/prism.
+    if (CuttingToolWireObject.getValue()->isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"))) {
+        if (!validateSketchNormal(CuttingToolWireObject.getValue())) {
+            throw Base::RuntimeError("Complex section cutting object not aligned with section normal");
+        }
+    }
+
+    // m_toolFaceShape = extrudeWireToFace(profileWire, gWireToFaceDirection, 4 * dMax);
+    // if (debugSection()) {
+    //     BRepTools::Write(m_toolFaceShape, "DCSToolFaceShape.brep");//debug
+    // }
+
+    // // should this use the circular arc closing method as in closeProfile()??
+    // auto points = getPointsForClosingProfile(profileWire, dMax);
+
+    // BRepBuilderAPI_MakeWire mkWire(profileWire);
+
+    // for(size_t iFrom = 0; iFrom < points.size() - 1 ; iFrom++) {
+    //     size_t jTo = iFrom + 1;
+    //     BRepBuilderAPI_MakeEdge mkEdge(Base::convertTo<gp_Pnt>(points.at(iFrom)),
+    //                                    Base::convertTo<gp_Pnt>(points.at(jTo)));
+    //     mkWire.Add(mkEdge.Edge());
+    // }
+
+    // if (debugSection()) {
+    //     BRepTools::Write(mkWire.Wire(), "DCSToolClosedWire.brep");   //debug
+    // }
+
+    // // need to project the wire onto the base view to avoid non-planar wire due to low bit issues
+    // auto* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
+    // TopoDS_Shape flatShape = GeometryObject::projectSimpleShape(mkWire.Wire(), baseDvp->getProjectionCS(), false);
+    // TopoDS_Wire flatWire = makeFlatWire(flatShape, true);
+    // // TopoDS_Wire flatWire = TopoDS::Wire(flatShape);
+
+    // if (debugSection()) {
+    //     BRepTools::Write(mkWire.Wire(), "DCSToolClosedFlatWire.brep");   //debug
+    // }
+
+    // // BRepBuilderAPI_MakeFace mkFace(mkWire.Wire());
+    // BRepBuilderAPI_MakeFace mkFace(flatWire);
+    // if (debugSection()) {
+    //     BRepTools::Write(mkFace.Face(), "DCSToolPlan.brep");   //debug
+    // }
+    // auto padVector = gWireToFaceDirection * dMax * 2;
+    // // TopoDS_Shape roughTool = BRepPrimAPI_MakePrism(mkFace.Face(), padVector).Shape();
+    TopoDS_Shape roughTool = toolFromProfile(profileWire, uSectionNormal, dMax);
     if (debugSection()) {
-        BRepTools::Write(m_toolFaceShape, "DCSToolFaceShape.brep");//debug
+         BRepTools::Write(roughTool, "DCSRoughTool.brep");   //debug
     }
-
-    // should this use the circular arc closing method as in closeProfile()??
-    auto points = getPointsForClosingProfile(profileWire, dMax);
-
-    BRepBuilderAPI_MakeWire mkWire(profileWire);
-
-    for(size_t iFrom = 0; iFrom < points.size() - 1 ; iFrom++) {
-        size_t jTo = iFrom + 1;
-        BRepBuilderAPI_MakeEdge mkEdge(Base::convertTo<gp_Pnt>(points.at(iFrom)),
-                                       Base::convertTo<gp_Pnt>(points.at(jTo)));
-        mkWire.Add(mkEdge.Edge());
-    }
-
-    BRepBuilderAPI_MakeFace mkFace(mkWire.Wire());
-    if (debugSection()) {
-        BRepTools::Write(mkFace.Face(), "DCSToolPlan.brep");   //debug
-    }
-    auto padVector = gWireToFaceDirection * dMax * 2;
-    TopoDS_Shape roughTool = BRepPrimAPI_MakePrism(mkFace.Face(), padVector).Shape();
 
     if (roughTool.ShapeType() == TopAbs_COMPSOLID ||
         roughTool.ShapeType() == TopAbs_COMPOUND) {
         //Composite Solids do not cut well if they contain "solids" with no volume. This
         //happens if the profile has segments parallel to the extrude direction.
         //We need to disassemble it and only keep the real solids.
+        Base::Console().message("DCS::makeCuttingTool - exits (2)\n");
         return removeEmptyShapes(roughTool);
     }
 
+    Base::Console().message("DCS::makeCuttingTool - exits (1)\n");
     return roughTool;
 }
 
@@ -669,6 +705,8 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionLineEnds()
 std::pair<Base::Vector3d, Base::Vector3d>
             DrawComplexSection::sectionArrowDirs(SectionArrowDirection arrowDir)
 {
+    Base::Console().message("DCS::sectionArrowDirs()\n");
+
     // std::pair<Base::Vector3d, Base::Vector3d> result;
     App::DocumentObject* toolObj = CuttingToolWireObject.getValue();
     TopoDS_Wire profileWire = makeProfileWire(toolObj);
@@ -678,6 +716,7 @@ std::pair<Base::Vector3d, Base::Vector3d>
 
     Base::Vector3d viewDirection = SectionNormal.getValue();
     auto referenceAxis = getReferenceAxis();
+    DrawViewPart* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
     // if (arrowDir == SectionArrowDirection::LineOfSight) {
     //     viewDirection *= -1;
     //     referenceAxis *= -1;
@@ -691,11 +730,6 @@ std::pair<Base::Vector3d, Base::Vector3d>
 
     Base::Vector3d firstArrowDir = segmentViewDirections.front().second;
     Base::Vector3d lastArrowDir = segmentViewDirections.back().second;
-    DrawViewPart* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
-    gp_Ax2 baseCS = baseDvp->getProjectionCS();
-    gp_Dir baseY = baseCS.YDirection();     // up.  becomes +Y when projected
-    Base::Console().message("DCS::sectionArrowDirs - baseY: %s\n",
-                            DU::formatVector(baseY).c_str());
 
     // projectedWire is inverted.
     // auto projectedWire = TopoDS::Wire(
@@ -707,6 +741,7 @@ std::pair<Base::Vector3d, Base::Vector3d>
                             DU::formatVector(firstArrowDir).c_str(),
                             DU::formatVector(lastArrowDir).c_str());
 
+    //
     //! are we drawing on the back of the chalk board?
     //! this is brute force and i don't trust it!
     if (arrowDir == SectionArrowDirection::LineOfSight) {
@@ -749,12 +784,15 @@ std::pair<Base::Vector3d, Base::Vector3d>
 
 //! find an axis for measuring rotation vs the line of sight
 //!
-Base::Vector3d DrawComplexSection::getReferenceAxis()
+Base::Vector3d DrawComplexSection::getReferenceAxis() const
 {
     Base::Vector3d rawDirection = getBaseDVP()->Direction.getValue();
     // auto csDir = getBaseDVP()->getProjectionCS().Direction();
     // auto rawDirection = Base::convertTo<Base::Vector3d>(csDir);
     rawDirection.Normalize();
+    Base::Console().message("DCS::getReferenceAxis - rawDirection: %s  basis: %s\n",
+                            DU::formatVector(rawDirection).c_str(),
+                            DU::formatVector(DU::closestBasisOriented(rawDirection)).c_str());
 
     return DU::closestBasisOriented(rawDirection);
 }
@@ -1033,6 +1071,7 @@ bool DrawComplexSection::canBuild(gp_Ax2 sectionCS, App::DocumentObject* profile
         return true;
     }
 
+    // profile should be ortho to section normal, but this is a weak test
     gp_Vec gProfileVec = makeProfileVector(makeProfileWire(profileObject));
     double dot = fabs(gProfileVec.Dot(sectionCS.Direction()));
     return !DU::fpCompare(dot, 1.0, EWTOLERANCE);
@@ -1235,20 +1274,28 @@ bool DrawComplexSection::isTrulyEmpty(const TopoDS_Shape& inShape)
 std::vector<Base::Vector3d>
             DrawComplexSection::getPointsForClosingProfile(const TopoDS_Wire& profileWire, double dMax)
 {
-    auto ends = getWireEnds(profileWire);
-    auto firstPoint = ends.first;
-    auto lastPoint = ends.second;
-    auto midPoint = (firstPoint + lastPoint) / 2;       // midpoint of profile vector
+    std::pair<Base::Vector3d, Base::Vector3d> ends = getWireEnds(profileWire);
+    Base::Vector3d firstPoint = ends.first;
+    Base::Vector3d lastPoint = ends.second;
+    Base::Vector3d midPoint = (firstPoint + lastPoint) / 2;       // midpoint of profile vector
+    Base::Vector3d firstExtendDir = midPoint - firstPoint;
+    firstExtendDir.Normalize();
+    Base::Vector3d lastExtendDir = lastPoint - midPoint;
+    lastExtendDir.Normalize();
+    Base::Console().message("DCS::getPointsForClosingProfile - firstExt: %s  lastExt: %s\n",
+                            DU::formatVector(firstExtendDir).c_str(),
+                            DU::formatVector(lastExtendDir).c_str());
 
     // this will be backwards (LoS vs SectionNormal)
-    auto arrows = sectionArrowDirs(SectionArrowDirection::SectionNormal);
-    auto pseudoSectionNormal = ((arrows.first + arrows.second) / 2) * -1;
+    // section line arrows are 2d!!?
+    std::pair<Base::Vector3d, Base::Vector3d> arrows = sectionArrowDirs(SectionArrowDirection::SectionNormal);
+    Base::Vector3d pseudoSectionNormal = ((arrows.first + arrows.second) / 2) * -1;
     pseudoSectionNormal.Normalize();
-    auto extraPoint = midPoint + pseudoSectionNormal * dMax * 2;
+    Base::Vector3d extraPoint = midPoint + pseudoSectionNormal * dMax * 2;
 
     std::vector<Base::Vector3d> points;
-    auto pointFromLast = lastPoint + (arrows.second * -1) * dMax;
-    auto pointToFirst = firstPoint + (arrows.first * -1) * dMax;
+    Base::Vector3d pointFromLast = lastPoint + (arrows.second * -1) * dMax;
+    Base::Vector3d pointToFirst = firstPoint + (arrows.first * -1) * dMax;
     points.emplace_back(lastPoint);
     points.emplace_back(pointFromLast);
     points.emplace_back(extraPoint);
@@ -1465,16 +1512,19 @@ std::vector<TopoDS_Edge> DrawComplexSection::getUniqueEdges(const TopoDS_Wire& w
 
 //! Find the correct view directions for the profile segments by making a face from the profile and
 //! extruding it into a solid, then examining the faces of the solid.
-std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDirections(const TopoDS_Wire& profileWire,
-                                           Base::Vector3d sectionNormal,
-                                           Base::Vector3d referenceAxis)  const
+std::vector<std::pair<int, Base::Vector3d>>
+DrawComplexSection::getSegmentViewDirections(const TopoDS_Wire& profileWire,
+                                             Base::Vector3d sectionNormal,
+                                             Base::Vector3d extrudeDir) const
 {
+    Base::Console().message("DCS::getSegmentViewDirections()\n");
     auto edgesAll = getUniqueEdges(profileWire);
     if (edgesAll.empty()) {
         // this is bad!
         throw Base::RuntimeError("Complex section: profile wire has no edges.");
     }
 
+    // self-protection code should be elsewhere
     if (!checkSectionCS()) {
         // results will likely be incorrect
         // this message will show for every recompute of the complex section.
@@ -1486,12 +1536,21 @@ std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDi
     if (DU::fpCompare(std::fabs(parallelDot), 1, EWTOLERANCE)) {
         Base::Console().warning("Section normal is parallel to profile vector. Results may be incorrect.\n");
     }
-    auto profilePlanWire = closeProfile(profileWire, sectionNormal, m_shapeSize);
-    if (debugSection()) {
-        BRepTools::Write(profilePlanWire, "DCSClosedProfile.brep");//debug
-    }
 
-    auto profileSolid = profileToSolid(profilePlanWire, referenceAxis, m_shapeSize);
+    //
+
+    // TopoDS_Wire profilePlanWire = closeProfile(profileWire, sectionNormal, m_shapeSize);
+    // TopoDS_Wire cleanProfilePlanWire = EdgeWalker::makeCleanWire(DU::shapeToVector(profilePlanWire));
+    // if (debugSection()) {
+    //     // can't make Part::Face from this wire!?
+    //     BRepTools::Write(cleanProfilePlanWire, "DCSClosedProfile.brep");//debug
+    // }
+
+    // auto profileSolid = profileToSolid(cleanProfilePlanWire, extrudeDir, m_shapeSize);
+
+    auto profileSolid = toolFromProfile(profileWire, sectionNormal, m_shapeSize);
+
+    // auto profileSolid = profileToSolid(profilePlanWire, referenceAxis, m_shapeSize);
     if (debugSection()) {
         BRepTools::Write(profileSolid, "DCSProfileSolid.brep");//debug
     }
@@ -1499,6 +1558,7 @@ std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDi
     std::vector<Base::Vector3d> profileNormals;
     std::vector<std::pair<int, Base::Vector3d>> normalKV;
     TopExp_Explorer expFaces(profileSolid, TopAbs_FACE);
+    // are all these shenanigans necessary?
     // no guarantee of order from TopExp_Explorer??  Need to match faces to the profile segment that
     // generated it?
     for (int iFace = 0; expFaces.More(); expFaces.Next(), iFace++) {
@@ -1513,13 +1573,16 @@ std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDi
             // https://opencascade.blogspot.com/2009/02/continued.html
             normal *= -1;
         }
-        auto topOrBottomDot = std::fabs(normal.Dot(referenceAxis));
+
+        // skip top and bottom faces of the prism
+        auto topOrBottomDot = std::fabs(normal.Dot(extrudeDir));
         if (DU::fpCompare(topOrBottomDot, 1, EWTOLERANCE)) {
             continue;
         }
         BRepAdaptor_Surface adaptSurface(face);
         auto surfaceType = adaptSurface.GetType();
         if (surfaceType != GeomAbs_SurfaceType::GeomAbs_Plane) {
+            // TODO: blocks curved profile segments
             continue;
         }
         // this is an interesting face, get the normal and edge
@@ -1536,6 +1599,8 @@ std::vector<std::pair<int, Base::Vector3d>> DrawComplexSection::getSegmentViewDi
          }
     }
     std::sort(normalKV.begin(), normalKV.end(), DrawComplexSection::normalLess);
+    Base::Console().message("DCS::getSegmentViewDirections exits\n");
+
     return normalKV;
 }
 
@@ -1571,35 +1636,76 @@ TopoDS_Wire DrawComplexSection::closeProfile(const TopoDS_Wire& profileWire,
                                              Base::Vector3d sectionNormal,
                                              double dMax) const
 {
+    Base::Console().message("DCS::closeProfile()\n");
+    auto* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
+    // constexpr bool InvertResult{true};
+
+    // TODO: do these conversions gp_Pnt <-> Base::Vector3d <-> QPointF cause our problems with low
+    //       digits?
+
     std::pair<Base::Vector3d, Base::Vector3d> pvEnds = getWireEnds(profileWire);
     Base::Vector3d firstPWPoint = pvEnds.first;
     Base::Vector3d lastPWPoint = pvEnds.second;
 
-    // if the profile is not on the projection plane, then away direction will be
-    // tilted and make the face later will fail.  We need to add in the offset from
-    // profile to projection plane.
+    // if the profile is not on the projection plane and the section normal is on the plane,
+    // then away direction will be tilted and making the face later will fail. Also v.v.
     Base::Vector3d midPWPoint = (firstPWPoint + lastPWPoint) / 2;
-    Base::Vector3d  midPointProj = projectPoint(midPWPoint);
-    Base::Vector3d offset = midPWPoint - midPointProj;
-    Base::Vector3d SNPoint = sectionNormal * dMax + offset;
-    Base::Vector3d awayDirection = midPWPoint - SNPoint;
+    Base::Vector3d SNPoint = SectionNormal.getValue() * dMax;
+    Base::Vector3d awayDirection = SNPoint - midPWPoint;   // from midpoint to snpoint
     awayDirection.Normalize();
 
-    auto radius = (midPWPoint - lastPWPoint).Length();
-    auto pointOnArc = midPWPoint + awayDirection * radius;
+    double radius = (midPWPoint - lastPWPoint).Length();
+    Base::Vector3d pointOnArc = midPWPoint + awayDirection * radius;
 
-    GC_MakeArcOfCircle mkArc(Base::convertTo<gp_Pnt>(lastPWPoint),
-                             Base::convertTo<gp_Pnt>(pointOnArc),
-                             Base::convertTo<gp_Pnt>(firstPWPoint));
-    auto circleArc = mkArc.Value();
-    if (!mkArc.IsDone()) {
-        throw Base::RuntimeError("Complex section failed to create arc");
+    // already done
+    // firstPWPoint = baseDvp->projectPoint(firstPWPoint, !InvertResult);
+    // pointOnArc = baseDvp->projectPoint(pointOnArc, !InvertResult);
+    // lastPWPoint = baseDvp->projectPoint(lastPWPoint, !InvertResult);
+
+    Base::Console().message("DCS::closeProfile - creating arc\n");
+
+    Handle(Geom_TrimmedCurve) circleArc;
+    try {
+        GC_MakeArcOfCircle mkArc(Base::convertTo<gp_Pnt>(lastPWPoint),
+                                 Base::convertTo<gp_Pnt>(pointOnArc),
+                                 Base::convertTo<gp_Pnt>(firstPWPoint));
+        circleArc = mkArc.Value();
+        if (!mkArc.IsDone()) {
+            throw Base::RuntimeError("Complex section failed to create arc");
+        }
     }
-    auto circleEdge = BRepBuilderAPI_MakeEdge(circleArc);
+    catch (...) {
+        throw Base::RuntimeError("Complex section failed to create circular arc to close profile");
+    }
+
+    TopoDS_Edge circleEdge = BRepBuilderAPI_MakeEdge(circleArc);
+
+    Base::Console().message("DCS::closeProfile - adding arc to wire\n");
 
     BRepBuilderAPI_MakeWire mkWire(profileWire);
     mkWire.Add(circleEdge);
-    return mkWire.Wire();
+
+    Base::Vector3d planeAxis;
+    Base::Vector3d planeOrigin;
+    bool profileIsPlanar = getPlaneParameters(mkWire.Wire(), planeAxis, planeOrigin);
+    Base::Console().message("DCS::closeProfile - profile is planar: %d  Axis: %s  origin: %s\n", profileIsPlanar,
+                            DU::formatVector(planeAxis).c_str(),
+                            DU::formatVector(planeOrigin).c_str());
+
+    // this is a lot of dancing just to allow putting the profile off the plane of the section normal!
+    TopoDS_Shape flatShape = GeometryObject::projectSimpleShape(mkWire.Wire(),
+                                                                baseDvp->getProjectionCS(),
+                                                                false);
+    // profileWire is
+    TopoDS_Shape unprojected = unprojectShape(flatShape, baseDvp->getProjectionCS());
+    TopoDS_Wire flatWire = makeFlatWire(unprojected, false);
+    // TopoDS_Wire flatWire = TopoDS::Wire(flatShape);
+    if (debugSection()) {
+        BRepTools::Write(flatWire, "DCSCloseProfileFlatWire.brep");   //debug
+    }
+
+    Base::Console().message("DCS::closeProfile - exits\n");
+    return flatWire;
 }
 
 
@@ -1608,6 +1714,7 @@ TopoDS_Shape DrawComplexSection::profileToSolid(const TopoDS_Wire& closedProfile
                                                 Base::Vector3d referenceAxis,
                                                 double dMax)
 {
+    Base::Console().message("DCS::profileToSolid(axis: %s)\n", DU::formatVector(referenceAxis).c_str());
     BRepBuilderAPI_MakeFace mkFace(closedProfileWire);
     if (!mkFace.IsDone()) {
         throw Base::RuntimeError("Complex section could not create face from closed profile");
@@ -1648,6 +1755,110 @@ TopoDS_Edge DrawComplexSection::mapEdge(const Base::Vector3d& inVector)
     gp_Pnt endPoint{Base::convertTo<gp_Pnt>(inVector)};
     TopoDS_Edge edgeToMap = BRepBuilderAPI_MakeEdge(origin, endPoint);
     return mapEdge(edgeToMap);
+}
+
+
+//! +/- same code as in Import::SketchExportHelper
+std::pair< Base::Vector3d, Base::Vector3d> DrawComplexSection::sketchNormalAndX(App::DocumentObject* sketchObj)
+{
+    auto sketch = dynamic_cast<Part::Feature*>(sketchObj);
+    if (!sketch ||
+        !sketchObj->isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"))) {
+        // should be a throw? up to the caller to enforce this??
+        return { Base::Vector3d(0,0,0), Base::Vector3d(0,0,0) };
+    }
+
+    auto plm = sketch->Placement.getValue();
+    Base::Rotation rot = plm.getRotation();
+
+    Base::Vector3d stdZ {0.0, 0.0, 1.0};
+    Base::Vector3d sketchNormal;
+    rot.multVec(stdZ, sketchNormal);
+
+    Base::Vector3d stdX {1.0, 0.0, 0.0};
+    Base::Vector3d sketchX;
+    rot.multVec(stdX, sketchX);
+
+    return {sketchNormal, sketchX};
+}
+
+//! true if sketch normal is +/- parallel to base view's projection direction.
+bool DrawComplexSection::validateSketchNormal(App::DocumentObject* sketchObject)
+{
+    if (!sketchObject ||
+        !sketchObject->isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"))) {
+        return false;
+    }
+
+    std::pair<Base::Vector3d, Base::Vector3d> normalX = sketchNormalAndX(sketchObject);
+    auto* baseDvp = freecad_cast<DrawViewPart*>(BaseView.getValue());
+    double dot = std::fabs((normalX.first).Dot(baseDvp->Direction.getValue()));
+    return DU::fpCompare(dot, 1, EWTOLERANCE);
+}
+
+//! find the profile edges in the flattened profile shape (a compound), turn them into a wire and
+//! order them correctly.  Compound may have been inverted in previous steps so optionally reverse that here.
+TopoDS_Wire DrawComplexSection::makeFlatWire(TopoDS_Shape flatProfileShape, bool flipY) const
+{
+    TopoDS_Shape edgeCompound{flatProfileShape};
+    if (!flatProfileShape.IsNull() && flipY) {
+        edgeCompound = ShapeUtils::invertGeometry(edgeCompound);
+    }
+
+    BRepBuilderAPI_MakeWire mkWire;
+    TopExp_Explorer expEdges(edgeCompound, TopAbs_EDGE);
+    for (; expEdges.More(); expEdges.Next()) {
+        TopoDS_Edge edge = TopoDS::Edge(expEdges.Current());
+        mkWire.Add(edge);
+    }
+    TopoDS_Wire wire = mkWire.Wire();
+    wire = makeNoseToTailWire(wire);
+
+    return wire;
+}
+
+//! transform the shape from a coordinate system to OXYZ, in effect unprojecting the (flat) shape
+TopoDS_Shape DrawComplexSection::unprojectShape(const TopoDS_Shape& inShape, const gp_Ax2& fromCS)
+{
+    gp_Ax3 stdCS;                                 //OXYZ
+    gp_Trsf xUnproject;
+    //                         from   to
+    xUnproject.SetTransformation(fromCS, stdCS);
+    BRepBuilderAPI_Transform mkUnproject(inShape, xUnproject);
+    BRepTools::Write(mkUnproject.Shape(), "DCSUnprojected.brep");//debug
+    return mkUnproject.Shape();
+}
+
+bool DrawComplexSection::getPlaneParameters(const TopoDS_Shape& inShape,
+                                            Base::Vector3d& planeAxis,
+                                            Base::Vector3d& planeOrigin)
+{
+    BRepLib_FindSurface planeFinder(inShape, -1, /*OnlyPlane=*/true);
+    if (!planeFinder.Found()) {
+        Base::Console().warning("DCS::getPlaneParameters - Can't find normal direction, because the shape is not on a plane.");
+        return false;
+    }
+
+    GeomAdaptor_Surface surf(planeFinder.Surface());
+    gp_Dir normal = surf.Plane().Axis().Direction();
+    planeAxis = Base::convertTo<Base::Vector3d>(normal);
+    gp_Pnt origin = surf.Plane().Location();
+    planeOrigin = Base::convertTo<Base::Vector3d>(origin);
+    return true;
+}
+
+//! make a cutting tool from the profile and section normal.
+TopoDS_Shape DrawComplexSection::toolFromProfile(TopoDS_Wire profileWire,
+                                                 Base::Vector3d sectionNormal,
+                                                 double m_shapeSize) const
+{
+    TopoDS_Wire profilePlanWire = closeProfile(profileWire, sectionNormal, m_shapeSize);
+    TopoDS_Wire cleanProfilePlanWire = EdgeWalker::makeCleanWire(DU::shapeToVector(profilePlanWire));
+    if (debugSection()) {
+        BRepTools::Write(cleanProfilePlanWire, "cleanProfilePlanWire");     //debug
+    }
+
+    return profileToSolid(cleanProfilePlanWire, getReferenceAxis(), m_shapeSize);
 }
 
 

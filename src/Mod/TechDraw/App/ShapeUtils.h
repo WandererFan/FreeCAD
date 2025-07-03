@@ -103,6 +103,7 @@ public:
     static gp_Ax2 legacyViewAxis1(const Base::Vector3d origin, const Base::Vector3d& direction,
                                       const bool flip = true);
 
+    // where did these methods go! did not move from GeometryObject?
     static TopoDS_Shape projectSimpleShape(const TopoDS_Shape& shape, const gp_Ax2& CS);
     static TopoDS_Shape simpleProjection(const TopoDS_Shape& shape, const gp_Ax2& projCS);
     static TopoDS_Shape projectFace(const TopoDS_Shape& face, const gp_Ax2& CS);

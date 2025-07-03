@@ -300,7 +300,7 @@ void DrawViewSection::onChanged(const App::Property* prop)
     }
 
     if (prop == &SectionNormal ||
-        prop == &XDirection) {
+        prop == &Direction) {
         Direction.setValue(SectionNormal.getValue());
         return;
     }
@@ -1230,6 +1230,7 @@ void DrawViewSection::setupObject()
 
 void DrawViewSection::handleChangedPropertyType(Base::XMLReader &reader, const char * TypeName, App::Property * prop)
 {
+    DrawViewPart::handleChangedPropertyType(reader, TypeName, prop);
 
     if (prop == &SectionOrigin) {
         // SectionOrigin was PropertyVector but is now PropertyPosition
@@ -1255,6 +1256,8 @@ void DrawViewSection::handleChangedPropertyType(Base::XMLReader &reader, const c
         }
         return;
     }
+
+
 }
 
 // checks that SectionNormal and XDirection are perpendicular and that Direction is the same as
@@ -1270,14 +1273,21 @@ bool DrawViewSection::checkSectionCS() const
     if (vNormal.Length() == 0 ||
         vXDirection.Length() == 0 ||
         vDirection.Length() == 0) {
+        Base::Console().message("DVS::checkSectionCS - zero length - Normal: %.3f  XDirection; %.3f  Direction: %.3f\n",
+                                vNormal.Length(), vXDirection.Length(), vDirection.Length());
         return false;
     }
 
     if (!vNormal.IsEqual(vDirection, EWTOLERANCE)) {
+        Base::Console().message("DVS::checkSectionCS - not equal - Normal: %sf Dir: %s\n",
+            DU::formatVector(vNormal).c_str(), DU::formatVector(vDirection).c_str());
         return false;
     }
 
     auto orthoDot = std::fabs(vNormal.Dot(vXDirection));
+    if (orthoDot > EWTOLERANCE) {
+        Base::Console().message("DVS::checkSectionCS - not ortho - dot: %.3f\n", orthoDot);
+    }
     return orthoDot <= EWTOLERANCE;
 }
 
