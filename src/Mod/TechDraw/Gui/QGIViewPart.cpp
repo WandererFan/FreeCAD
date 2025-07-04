@@ -828,40 +828,11 @@ void QGIViewPart::drawComplexSectionLine(TechDraw::DrawViewSection* viewSection,
         sectionLine->clearChangePoints();
     }
 
-    // why does offset need different handling of arrow directions?
-    // offset is supposed to be orthogonal sections at different distances, so theoretically, it
-    // only requires the "global" section normal. BUT.  If the user gets creative with the profile
-    // and includes diagonal segments at the ends, using the global section normal will give us
-    // arrows that are not orthogonal to the segment which is a no-no.  So we need to find orthogonal
-    // directions for both cases.
-    //
-    // if (dcs->ProjectionStrategy.isValue("Offset")) {
-
-
-    //     Base::Vector3d arrowDirOffset = viewSection->SectionNormal.getValue();
-    //     arrowDirOffset =
-    //         -viewPart->projectPoint(arrowDirOffset);    //arrows are opposite section normal
-    //     sectionLine->setDirection(arrowDirOffset.x, -arrowDirOffset.y);//invert y for Qt
-    // }
-    // else {
-        std::pair<Base::Vector3d, Base::Vector3d> dirsDCS =
-                    dcs->sectionArrowDirsMapped(SectionArrowDirection::SectionNormal);
-        // sectionLine->setArrowDirections(DU::invertY(dirsAligned.first), DU::invertY(dirsAligned.second));
-        // Base::Vector3d firstArrowDir = dirsDCS.first * -1;  // SectionNormal to ViewDirection
-        // Base::Vector3d lastArrowDir = dirsDCS.second * -1;  // SectionNormal to ViewDirection
-        // project isn't the right operation here as it will just drop the z.
-        // need to transform from OXYZ to section cs.
-        constexpr bool invertY{true};
-        Base::Vector3d firstArrowDir = dcs->projectPoint(dirsDCS.first, !invertY);
-        Base::Vector3d lastArrowDir = dcs->projectPoint(dirsDCS.second, !invertY);
-        sectionLine->setArrowDirections(dirsDCS.first, dirsDCS.second);
-    // }
-    Base::Console().message("QGIVP::drawComplexSectionLine - from DCS - dirsDCS first: %s  second: %s \n",
-                            DU::formatVector(dirsDCS.first).c_str(),
-                            DU::formatVector(dirsDCS.second).c_str());
-    Base::Console().message("QGIVP::drawComplexSectionLine - projected dirs first: %s  second: %s \n",
-                            DU::formatVector(firstArrowDir).c_str(),
-                            DU::formatVector(lastArrowDir).c_str());
+    std::pair<Base::Vector3d, Base::Vector3d> dirsDCS = dcs->sectionLineArrowDirsMapped();
+    sectionLine->setArrowDirections(dirsDCS.first, dirsDCS.second);
+    // Base::Console().message("QGIVP::drawComplexSectionLine - from DCS - dirsDCS first: %s  second: %s \n",
+    //                         DU::formatVector(dirsDCS.first).c_str(),
+    //                         DU::formatVector(dirsDCS.second).c_str());
 
     //set the general parameters
     sectionLine->setPos(0.0, 0.0);

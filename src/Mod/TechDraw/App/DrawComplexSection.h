@@ -36,14 +36,6 @@
 namespace TechDraw
 {
 
-//! the same algorithm is used for getting the section arrow directions and the directions for closing
-//! the cutting solid, except in the first case we are looking at the result and in the second we are
-//! looking away.
-enum class SectionArrowDirection {
-    LineOfSight,
-    SectionNormal
-};
-
 class TechDrawExport AlignedSizeResponse
 {
 public:
@@ -99,8 +91,8 @@ public:
     TopoDS_Compound alignedToolIntersections(const TopoDS_Shape& cutShape);
 
     BaseGeomPtrVector makeSectionLineGeometry();
-    std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirs(SectionArrowDirection arrowDir);
-    std::pair<Base::Vector3d, Base::Vector3d> sectionArrowDirsMapped(SectionArrowDirection arrowDir);
+    std::pair<Base::Vector3d, Base::Vector3d> sectionLineArrowDirs();
+    std::pair<Base::Vector3d, Base::Vector3d> sectionLineArrowDirsMapped();
     TopoDS_Wire makeSectionLineWire();
 
     ChangePointVector getChangePointsFromSectionLine() override;
@@ -157,13 +149,10 @@ private:
                                            Base::Vector3d sectionNormal,
                                            Base::Vector3d extrudeDir) const;
 
-    std::vector<Base::Vector3d> getPointsForClosingProfile(const TopoDS_Wire& profileWire,
-                                                           double dMax);
     TopoDS_Wire closeProfile(const TopoDS_Wire& profileWire,
-                             Base::Vector3d referenceAxis,
                              double dMax) const;
-    TopoDS_Edge mapEdge(const TopoDS_Edge& inEdge);
-    TopoDS_Edge mapEdge(const Base::Vector3d& inVector);
+    TopoDS_Edge mapEdgeToBase(const TopoDS_Edge& inEdge);
+    TopoDS_Edge mapEdgeToBase(const Base::Vector3d& inVector);
 
     static std::vector<TopoDS_Edge> getUniqueEdges(const TopoDS_Wire& wireIn);
     static TopoDS_Shape removeEmptyShapes(const TopoDS_Shape& roughTool);
@@ -176,11 +165,10 @@ private:
 
     TopoDS_Wire makeFlatWire(TopoDS_Shape flatProfileShape, bool flipY=true) const;
     static TopoDS_Shape unprojectShape(const TopoDS_Shape& inShape, const gp_Ax2& fromCS);
-    static bool getPlaneParameters(const TopoDS_Shape& inShape,
-                                   Base::Vector3d& planeAxis,
-                                   Base::Vector3d& planeOrigin);
+    // static bool getPlaneParameters(const TopoDS_Shape& inShape,
+    //                                Base::Vector3d& planeAxis,
+    //                                Base::Vector3d& planeOrigin);
     TopoDS_Shape toolFromProfile(const TopoDS_Wire& profileWire,
-                                 Base::Vector3d sectionNormal,
                                  TopoDS_Wire& relocatedProfileWire,
                                  double dMax) const;
     static bool pointOnFace(Base::Vector3d point, const TopoDS_Face& face);
