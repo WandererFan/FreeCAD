@@ -1516,8 +1516,8 @@ void DrawViewPart::resetReferenceVerts()
 void DrawViewPart::handleChangedPropertyType(Base::XMLReader &reader, const char * TypeName, App::Property * prop)
 {
     if (prop == &Direction) {
-        // Direction was PropertyVector but is now PropertyDirection
-        App::PropertyVector tmp;
+        // Direction was PropertyVector, then briefly PropertyDirection, now back to PropertyVector
+        App::PropertyDirection tmp;
         if (strcmp(tmp.getTypeId().getName(), TypeName)==0) {
             tmp.setContainer(this);
             tmp.Restore(reader);
@@ -1529,8 +1529,8 @@ void DrawViewPart::handleChangedPropertyType(Base::XMLReader &reader, const char
 
     if (prop == &XDirection) {
         Base::Console().message("DVP::handleChangedPropertyType(xDir)\n");
-        // XDirection was PropertyVector but is now PropertyDirection
-        App::PropertyVector tmp;
+        // XDirection was PropertyVector, then briefly PropertyDirection, now back to PropertyVector
+        App::PropertyDirection tmp;
         Base::Console().message("DVP::handleChangedPropertyType - TypeName: %s  tmp.Type: %s\n",
             TypeName, tmp.getTypeId().getName());
         if (strcmp(tmp.getTypeId().getName(), TypeName)==0) {
