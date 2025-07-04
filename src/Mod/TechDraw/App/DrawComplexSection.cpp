@@ -363,13 +363,14 @@ void DrawComplexSection::makeAlignedPieces(const TopoDS_Shape& rawShape)
 
     // these normals will be pointing into a tool made from the profile. We want the normal pointing into
     // the remaining material shape.
+    // TODO: change name to getSegmentNormals?
     std::vector<std::pair<int, Base::Vector3d>> faceNormals = getSegmentViewDirections(profileWire, uSectionNormal, uRotateAxis);
 
     // debug
-    for (auto& norm : faceNormals) {
-        Base::Console().message("DCS::makeAlignedPieces - i: %d  norm: %s\n", norm.first,
-                               DU::formatVector(norm.second).c_str());
-    }
+    // for (auto& norm : faceNormals) {
+    //     Base::Console().message("DCS::makeAlignedPieces - i: %d  norm: %s\n", norm.first,
+    //                            DU::formatVector(norm.second).c_str());
+    // }
     //
 
     TopExp_Explorer expFaces(m_toolFaceShape, TopAbs_FACE);
@@ -385,10 +386,11 @@ void DrawComplexSection::makeAlignedPieces(const TopoDS_Shape& rawShape)
         }
 
         double pieceVertical{0};
-        auto rotatedPiece = cutAndRotatePiece(rawShape, face, iPiece, faceNormals.at(iPiece).second, uRotateAxis, pieceVertical);
+        TopoDS_Shape rotatedPiece = cutAndRotatePiece(rawShape, face, iPiece, faceNormals.at(iPiece).second,
+                                                    uRotateAxis, pieceVertical);
 
-        auto sizeResponse = getAlignedSize(rotatedPiece, iPiece);
-        auto pieceSize = sizeResponse.pieceSize;
+        AlignedSizeResponse sizeResponse = getAlignedSize(rotatedPiece, iPiece);
+        Base::Vector3d pieceSize = sizeResponse.pieceSize;
         pieceXSizeAll.push_back(pieceSize.x);    // size in ProjectionCS.
         pieceYSizeAll.push_back(pieceSize.y);
         pieceZSizeAll.push_back(pieceSize.z);
@@ -1307,8 +1309,11 @@ TopoDS_Shape DrawComplexSection::cutAndRotatePiece(const TopoDS_Shape& rawShape,
                                                       double& pieceVertical)
 {
     auto segmentNormal = Base::convertTo<gp_Vec>(uOrientedSegmentNormal);
-    auto rotateAxis = Base::convertTo<gp_Vec>(uRotateAxis);
+    auto rotateAxis = Base::convertTo<gp_Vec>(uRotateAxis);  // this is reference axis?
     gp_Vec extrudeDir = segmentNormal * m_shapeSize;
+    Base::Console().message("DCS::cutAndRotatePiece - extrudeDir: %s  dMax: %.3f\n",
+                            DU::formatVector(segmentNormal).c_str(), m_shapeSize);
+
     BRepPrimAPI_MakePrism mkPrism(segmentFace, extrudeDir);
     TopoDS_Shape segmentTool = mkPrism.Shape();
     TopoDS_Shape intersect = shapeShapeIntersect(segmentTool, rawShape);
