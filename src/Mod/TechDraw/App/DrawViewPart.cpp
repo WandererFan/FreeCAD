@@ -1528,11 +1528,8 @@ void DrawViewPart::handleChangedPropertyType(Base::XMLReader &reader, const char
     }
 
     if (prop == &XDirection) {
-        Base::Console().message("DVP::handleChangedPropertyType(xDir)\n");
         // XDirection was PropertyVector, then briefly PropertyDirection, now back to PropertyVector
         App::PropertyDirection tmp;
-        Base::Console().message("DVP::handleChangedPropertyType - TypeName: %s  tmp.Type: %s\n",
-            TypeName, tmp.getTypeId().getName());
         if (strcmp(tmp.getTypeId().getName(), TypeName)==0) {
             tmp.setContainer(this);
             tmp.Restore(reader);
