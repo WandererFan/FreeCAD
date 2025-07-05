@@ -1513,8 +1513,6 @@ TopoDS_Wire DrawComplexSection::closeProfile(const TopoDS_Wire& profileWire,
     Base::Vector3d firstPWPoint = pvEnds.first;
     Base::Vector3d lastPWPoint = pvEnds.second;
 
-    // if the profile is not on the projection plane and the section normal is on the plane,
-    // then away direction will be tilted and making the face later will fail. Also v.v.
     Base::Vector3d midPWPoint = (firstPWPoint + lastPWPoint) / 2;
     Base::Vector3d SNPoint = SectionNormal.getValue() * dMax;
     Base::Vector3d awayDirection = SNPoint - midPWPoint;   // from midpoint to snpoint
@@ -1678,23 +1676,6 @@ TopoDS_Shape DrawComplexSection::unprojectShape(const TopoDS_Shape& inShape, con
     return mkUnproject.Shape();
 }
 
-// bool DrawComplexSection::getPlaneParameters(const TopoDS_Shape& inShape,
-//                                             Base::Vector3d& planeAxis,
-//                                             Base::Vector3d& planeOrigin)
-// {
-//     BRepLib_FindSurface planeFinder(inShape, -1, /*OnlyPlane=*/true);
-//     if (!planeFinder.Found()) {
-//         Base::Console().warning("DCS::getPlaneParameters - plane is not on same plane as section normal vector.\n");
-//         return false;
-//     }
-
-//     GeomAdaptor_Surface surf(planeFinder.Surface());
-//     gp_Dir normal = surf.Plane().Axis().Direction();
-//     planeAxis = Base::convertTo<Base::Vector3d>(normal);
-//     gp_Pnt origin = surf.Plane().Location();
-//     planeOrigin = Base::convertTo<Base::Vector3d>(origin);
-//     return true;
-// }
 
 //! make a cutting tool from the profile and section normal.
 TopoDS_Shape DrawComplexSection::toolFromProfile(const TopoDS_Wire& originalProfileWire,
