@@ -101,6 +101,7 @@ public:
     bool validateSketchNormal(App::DocumentObject* sketchObject);
 
     bool showSegment(gp_Dir segmentNormal) const;
+    bool showSegment(const Base::Vector3d& segmentNormal) const;
     gp_Vec projectVector(const gp_Vec& vec) const;
 
     TopoDS_Wire makeProfileWire() const;

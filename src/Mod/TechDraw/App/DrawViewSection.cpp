@@ -299,8 +299,7 @@ void DrawViewSection::onChanged(const App::Property* prop)
         return;
     }
 
-    if (prop == &SectionNormal ||
-        prop == &Direction) {
+    if (prop == &SectionNormal) {
         Direction.setValue(SectionNormal.getValue());
         return;
     }
@@ -1057,6 +1056,7 @@ void DrawViewSection::setCSFromBase(const std::string& sectionName)
 // set the section CS based on an XY vector in BaseViews CS
 void DrawViewSection::setCSFromBase(const Base::Vector3d& localUnit)
 {
+    Base::Console().message("DVS::setCSFromBase(%s)\n", DU::formatVector(localUnit).c_str());
     gp_Ax2 newSectionCS = getBaseDVP()->localVectorToCS(localUnit);
 
     Base::Vector3d vDir(newSectionCS.Direction().X(),
@@ -1067,7 +1067,8 @@ void DrawViewSection::setCSFromBase(const Base::Vector3d& localUnit)
     Base::Vector3d vXDir(newSectionCS.XDirection().X(),
                          newSectionCS.XDirection().Y(),
                          newSectionCS.XDirection().Z());
-    XDirection.setValue(vXDir);// XDir is for projection
+    XDirection.setValue(vXDir);     // XDir is for projection
+    Base::Console().message("DVS::setCSFromBase - exits\n");
 }
 
 // reset the section CS based on an XY vector in current section CS
