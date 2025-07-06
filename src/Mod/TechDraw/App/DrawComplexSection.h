@@ -119,6 +119,10 @@ public:
     static std::pair<Base::Vector3d, Base::Vector3d> getSegmentEnds(const TopoDS_Edge& segment);
     static std::pair<Base::Vector3d, Base::Vector3d> getWireEnds(const TopoDS_Wire& wire);
     static std::pair<Base::Vector3d, Base::Vector3d> sketchNormalAndX(App::DocumentObject* sketchObj);
+    static int getSegmentIndex(const TopoDS_Face& face, const std::vector<TopoDS_Edge>& edgesAll);
+    static std::pair<int, Base::Vector3d> findNormalForFace(const TopoDS_Face& face,
+                                           const std::vector<std::pair<int, Base::Vector3d>>& normalKV,
+                                           const std::vector<TopoDS_Edge>& segmentEdges);
 
 public Q_SLOTS:
     void onSectionCutFinished() override;
