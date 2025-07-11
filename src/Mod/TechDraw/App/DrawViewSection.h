@@ -136,7 +136,7 @@ public:
     virtual TopoDS_Shape getShapeToCut();
     virtual bool isBaseValid() const;
     virtual TopoDS_Shape prepareShape(const TopoDS_Shape& rawShape, double shapeSize);
-    virtual TopoDS_Shape getShapeToPrepare() const { return m_cutShape; }
+    virtual TopoDS_Shape getShapeToPrepare() const { return m_cutPieces; }
 
     //CS related methods
     void setCSFromBase(const std::string& sectionName);

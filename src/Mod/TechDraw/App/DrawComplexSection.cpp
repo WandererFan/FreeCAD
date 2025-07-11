@@ -199,7 +199,7 @@ TopoDS_Shape DrawComplexSection::makeCuttingTool(double dMax)
     //       if the sketch can't be made into an appropriate face/prism.
     if (CuttingToolWireObject.getValue()->isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"))) {
         if (!validateSketchNormal(CuttingToolWireObject.getValue())) {
-            throw Base::RuntimeError("Complex section cutting object not aligned with section normal");
+            Base::Console().warning("cutting object not aligned with section normal in %s\n", Label.getValue());
         }
     }
 
