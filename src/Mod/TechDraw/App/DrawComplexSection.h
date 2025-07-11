@@ -98,17 +98,22 @@ public:
     ChangePointVector getChangePointsFromSectionLine() override;
 
     bool validateProfilePosition(const TopoDS_Wire& profileWire, const gp_Ax2& sectionCS) const;
-    bool validateSketchNormal(App::DocumentObject* sketchObject);
+    bool validateSketchNormal(App::DocumentObject* sketchObject) const;
+    bool validateProfileAlignment(const TopoDS_Wire& profileWire) const;
 
     bool showSegment(gp_Dir segmentNormal) const;
     bool showSegment(const Base::Vector3d& segmentNormal) const;
     gp_Vec projectVector(const gp_Vec& vec) const;
 
     TopoDS_Wire makeProfileWire() const;
+    TopoDS_Wire closeProfileForCut(const TopoDS_Wire& profileWire,
+                                   double dMax) const;
+
 
 
     static TopoDS_Wire makeProfileWire(App::DocumentObject* toolObj);
-    static TopoDS_Wire makeNoseToTailWire(const TopoDS_Wire& inWire);
+    // static TopoDS_Wire makeNoseToTailWire(const TopoDS_Wire& inWire);
+    static TopoDS_Wire makeNoseToTailWire(const TopoDS_Shape& inShape);
     static gp_Vec makeProfileVector(const TopoDS_Wire& profileWire);
     static bool isProfileObject(App::DocumentObject* obj);
     static bool isMultiSegmentProfile(App::DocumentObject* obj);
@@ -123,6 +128,11 @@ public:
     static std::pair<int, Base::Vector3d> findNormalForFace(const TopoDS_Face& face,
                                            const std::vector<std::pair<int, Base::Vector3d>>& normalKV,
                                            const std::vector<TopoDS_Edge>& segmentEdges);
+
+    TopoDS_Shape makeCuttingToolFromClosedProfile(const TopoDS_Wire& profileWire, double dMax);
+    TopoDS_Shape cuttingToolFromProfile(const TopoDS_Wire& inProfileWire,
+                                        double dMax) const;
+
 
 public Q_SLOTS:
     void onSectionCutFinished() override;
@@ -159,6 +169,9 @@ private:
     TopoDS_Edge mapEdgeToBase(const TopoDS_Edge& inEdge);
     TopoDS_Edge mapEdgeToBase(const Base::Vector3d& inVector);
 
+    TopoDS_Shape profileToSolid(const TopoDS_Wire& closedProfileWire, double dMax) const;
+
+
     static std::vector<TopoDS_Edge> getUniqueEdges(const TopoDS_Wire& wireIn);
     static TopoDS_Shape removeEmptyShapes(const TopoDS_Shape& roughTool);
     static gp_Dir getFaceNormal(TopoDS_Face& face);
@@ -166,15 +179,13 @@ private:
                                       const TopoDS_Face& faceToSearch);
     static bool normalLess(const std::pair<int, Base::Vector3d>& n1,
                            const std::pair<int, Base::Vector3d>& n2);
-    static TopoDS_Shape profileToSolid(const TopoDS_Wire& closedProfileWire, Base::Vector3d referenceAxis, double dMax);
 
-    TopoDS_Wire makeFlatWire(TopoDS_Shape flatProfileShape, bool flipY=true) const;
+    TopoDS_Wire makeFlatWire(const TopoDS_Shape& flatProfileShape, bool flipY = true) const;
     static TopoDS_Shape unprojectShape(const TopoDS_Shape& inShape, const gp_Ax2& fromCS);
     // static bool getPlaneParameters(const TopoDS_Shape& inShape,
     //                                Base::Vector3d& planeAxis,
     //                                Base::Vector3d& planeOrigin);
     TopoDS_Shape toolFromProfile(const TopoDS_Wire& profileWire,
-                                 TopoDS_Wire& relocatedProfileWire,
                                  double dMax) const;
     static bool pointOnFace(Base::Vector3d point, const TopoDS_Face& face);
 

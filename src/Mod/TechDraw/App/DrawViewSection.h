@@ -136,7 +136,7 @@ public:
     virtual TopoDS_Shape getShapeToCut();
     virtual bool isBaseValid() const;
     virtual TopoDS_Shape prepareShape(const TopoDS_Shape& rawShape, double shapeSize);
-    virtual TopoDS_Shape getShapeToPrepare() const { return m_cutPieces; }
+    virtual TopoDS_Shape getShapeToPrepare() const { return m_cutShape; }
 
     //CS related methods
     void setCSFromBase(const std::string& sectionName);
@@ -196,7 +196,7 @@ protected:
     bool trimAfterCut() const;
 
     TopoDS_Shape m_cutShape;        // centered, scaled, rotated result of cut
-    TopoDS_Shape m_cutShapeRaw;     // raw result of cut w/o center/scale/rotate
+    TopoDS_Shape m_cutShapeRaw;     // copy of input to prepare shape
 
     void onDocumentRestored() override;
     void setupObject() override;
