@@ -706,8 +706,8 @@ std::pair<Base::Vector3d, Base::Vector3d> DrawComplexSection::sectionLineArrowDi
         throw Base::RuntimeError("A complex section failed to create profile segment view directions");
     }
 
-    Base::Vector3d firstArrowDir = segmentNormals.front().second;
-    Base::Vector3d lastArrowDir = segmentNormals.back().second;
+    Base::Vector3d firstArrowDir = segmentNormals.front().second * -1;
+    Base::Vector3d lastArrowDir = segmentNormals.back().second * -1;
 
     return { firstArrowDir, lastArrowDir };
 }
