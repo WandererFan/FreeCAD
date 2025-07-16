@@ -107,6 +107,7 @@ public:
     void findMissingViews(const std::vector<App::DocumentObject*>& list,
                           std::vector<App::DocumentObject*>& missing);
     bool hasQView(App::DocumentObject* obj);
+    ViewProviderPage* getViewProviderPage() const { return m_vpPage; }
 
     void addBalloonToParent(QGIViewBalloon* balloon, QGIView* parent);
     void createBalloon(QPointF origin, TechDraw::DrawView* parent);

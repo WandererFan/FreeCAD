@@ -225,7 +225,9 @@ void QGISVGTemplate::updateView(bool update)
 {
     if (update) {
         clearClickHandles();
-        createClickHandles();
+        if (getFrameState()) {
+            createClickHandles();
+        }
     }
     draw();
 }

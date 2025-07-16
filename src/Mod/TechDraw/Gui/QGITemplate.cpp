@@ -26,6 +26,7 @@
 
 #include "QGITemplate.h"
 #include "QGSPage.h"
+#include "ViewProviderPage.h"
 #include "ZVALUE.h"
 
 
@@ -63,6 +64,27 @@ void QGITemplate::updateView(bool update)
 {
     Q_UNUSED(update);
     draw();
+}
+
+
+ViewProviderPage* QGITemplate::getViewProviderPage() const
+{
+    auto* qgsp = dynamic_cast<QGSPage*>(scene());
+    if (!qgsp) {
+        return {};
+    }
+    return qgsp->getViewProviderPage();
+}
+
+
+bool QGITemplate::getFrameState() const
+{
+    ViewProviderPage* vpp = getViewProviderPage();
+    if (!vpp) {
+        // no sure how this would happen
+        return false;
+    }
+    return vpp->getFrameState();
 }
 
 #include <Mod/TechDraw/Gui/moc_QGITemplate.cpp>

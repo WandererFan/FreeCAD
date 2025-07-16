@@ -42,6 +42,7 @@ namespace TechDrawGui
 {
 class TemplateTextField;
 class QGSPage;
+class ViewProviderPage;
 
 class TechDrawGuiExport QGITemplate : public QObject, public QGraphicsItemGroup
 {
@@ -65,6 +66,9 @@ public:
     virtual std::vector<TemplateTextField *> getTextFields() { return textFields; };
 
     virtual void draw() = 0;
+
+    ViewProviderPage* getViewProviderPage() const;
+    bool getFrameState() const;
 
 protected:
     TechDraw::DrawTemplate *pageTemplate;
