@@ -1818,6 +1818,7 @@ void execArea(Gui::Command* cmd)
     std::vector<int> minimumCounts({1});
     std::vector<DimensionGeometry> acceptableDimensionGeometrys({DimensionGeometry::isFace});
 
+    // TODO: apparently, we need a maximumCounts also until we handle compound areas.
     execDim(cmd, "Area", acceptableGeometry, minimumCounts, acceptableDimensionGeometrys);
 }
 
@@ -2227,6 +2228,20 @@ void execDim(Gui::Command* cmd, std::string type, StringVector acceptableGeometr
                 QObject::tr("B-spline curve error"),
                 QObject::tr("Selected edge is a B-spline and a radius/diameter cannot be calculated."));
             return;
+        }
+    }
+
+    if (type == "Area") {
+        if (geometryRefs2d == DimensionGeometry::isFace &&
+            references2d.size() > 1) {
+            QMessageBox::warning(Gui::getMainWindow(),
+                QObject::tr("Incorrect selection"),
+                QObject::tr("Too many faces for 2d area dimension. Using only the first."));
+        } else if (geometryRefs3d == DimensionGeometry::isFace &&
+                   references3d.size() > 1) {
+            QMessageBox::warning(Gui::getMainWindow(),
+                QObject::tr("Incorrect selection"),
+                QObject::tr("Too many faces for 3d area dimension. Using only the first."));
         }
     }
 

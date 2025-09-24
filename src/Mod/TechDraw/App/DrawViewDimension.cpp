@@ -1369,8 +1369,8 @@ areaPoint DrawViewDimension::getAreaParameters(ReferenceVector references)
     App::DocumentObject* refObject = references.front().getObject();
     if (refObject->isDerivedFrom<DrawViewPart>() && !references[0].getSubName().empty()) {
         // this is a 2d object (a DVP + subelements)
-        TechDraw::FacePtr face = getViewPart()->getFace(references[0].getSubName());
-        if (!face) {
+        TechDraw::FacePtr firstFace = getViewPart()->getFace(references[0].getSubName());
+        if (!firstFace) {
             std::stringstream ssMessage;
             ssMessage << getNameInDocument() << " can not find geometry for 2d reference (4)";
             throw Base::RuntimeError(ssMessage.str());
@@ -1378,12 +1378,12 @@ areaPoint DrawViewDimension::getAreaParameters(ReferenceVector references)
         auto dvp = static_cast<DrawViewPart*>(refObject);
 
         auto filteredFaces  = GeometryUtils::findHolesInFace(dvp, references.front().getSubName());
-        auto perforatedFace = GeometryUtils::makePerforatedFace(face, filteredFaces);
+        auto perforatedFace = GeometryUtils::makePerforatedFace(firstFace, filteredFaces);
 
         // these areas are scaled because the source geometry is scaled, but it makes no sense to
         // report a scaled area.
         auto unscale = getViewPart()->getScale() * getViewPart()->getScale();
-        pts.area = face->getArea() / unscale;     // this will be the 2d area as projected onto the page? not really filled area?
+        pts.area = firstFace->getArea() / unscale;     // this will be the 2d area as projected onto the page? not really filled area?
         pts.actualArea = getActualArea(perforatedFace)  / unscale;
         pts.center = getFaceCenter(perforatedFace);
         pts.invertY();      // geometry class is over, back to -Y up/.
@@ -1555,7 +1555,9 @@ RefType DrawViewDimension::getRefTypeSubElements(const std::vector<std::string>&
     if (refEdges == 2 && refVertices == 0 && refFaces == 0) {
         refType = RefType::twoEdge;
     }
-    if (refEdges == 0 && refVertices == 0 && refFaces == 1) {
+    if (refEdges == 0 && refVertices == 0 && refFaces >= 1) {
+        // note that we don't actually calculate area for > 1 face yet.  we just grab the first in
+        // the selection.
         refType = RefType::oneFace;
     }
 
@@ -1881,9 +1883,11 @@ bool DrawViewDimension::validateReferenceForm() const
     }
 
     if (Type.isValue("Area")) {
-        if (references.size() != 1) {
-            return false;
-        }
+        // This causes a fail(?) if more than 1 face was selected. We already know that the selection
+        // is not empty so we don't need any test here.
+        // if (references.size() != 1) {
+        //     return false;
+        // }
         std::string subGeom = DrawUtil::getGeomTypeFromName(references.front().getSubName());
         return (subGeom == "Face");
     }
