@@ -117,15 +117,9 @@ class TaskFillTemplateFields:
 
                 projgrp_view = None
                 for pageObj in obj.Views:
-                    if (
-                        pageObj.isDerivedFrom("TechDraw::DrawViewPart") 
-                        or pageObj.isDerivedFrom("TechDraw::DrawProjGroup")
-                    ):
-                        # should this not be pageObj? this is looking for any DVP or DPG on the page?
-                        # Views[0] could be an annotation or symbol or ??? - WF
-                        projgrp_view = self.page.Views[0]
+                    if (pageObj.TypeId == "TechDraw::DrawProjGroupItem"):
+                        projgrp_view = pageObj
                         break
-
                 self.texts = self.page.Template.EditableTexts
 
                 self.dialog = None
@@ -432,8 +426,6 @@ class TaskFillTemplateFields:
                     QtCore.QMetaObject.connectSlotsByName(self.dialog)
                     self.dialog.show()
                     self.dialog.exec_()
-
-                    App.setActiveTransaction("Fill template fields")
                 else:
                     msgBox = QtGui.QMessageBox()
                     msgTitle = QtCore.QT_TRANSLATE_NOOP(
@@ -532,9 +524,6 @@ class TaskFillTemplateFields:
         self.page.Template.EditableTexts = self.texts
         self.close()
 
-        App.closeActiveTransaction()
-
     def close(self):
         self.dialog.hide()
-        App.closeActiveTransaction(True)
         return True
