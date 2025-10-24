@@ -516,12 +516,15 @@ class TaskFillTemplateFields:
             self.button.setEnabled(False)
 
     def proceed(self):
+        transactionName = QtCore.QT_TRANSLATE_NOOP("Techdraw_FillTemplateFields", "Fill template fields")
+        App.setActiveTransaction(transactionName)
         i = 0
         for cb in self.checkBoxList:
             if cb.isChecked():
                 self.texts[keyLst[i]] = self.lineTextList[i].text()
             i += 1
         self.page.Template.EditableTexts = self.texts
+        App.closeActiveTransaction(False)
         self.close()
 
     def close(self):
