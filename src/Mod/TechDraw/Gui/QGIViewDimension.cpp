@@ -2042,16 +2042,13 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
     double labelAngle = 0.0;
 
     anglePoints anglePoints = dimension->getAnglePoints();
-    if (auto* detail = dynamic_cast<const TechDraw::DrawViewDetail*>(dimension->getViewPart())) {
-        anglePoints.vertex(detail->AnchorPoint.getValue());
-    }
 
     Base::Vector2d angleVertex = fromQtApp(anglePoints.vertex());
-    Base::Vector2d startPoint = fromQtApp(anglePoints.first());
-    Base::Vector2d endPoint = fromQtApp(anglePoints.second());
+    Base::Vector2d firstDimPoint = fromQtApp(anglePoints.first());
+    Base::Vector2d secondDimPoint = fromQtApp(anglePoints.second());
 
-    double endAngle = (endPoint - angleVertex).Angle();
-    double startAngle = (startPoint - angleVertex).Angle();
+    double endAngle = (secondDimPoint - angleVertex).Angle();
+    double startAngle = (firstDimPoint - angleVertex).Angle();
     double arcRadius {};
 
     int standardStyle = viewProvider->StandardAndStyle.getValue();
@@ -2206,14 +2203,14 @@ void QGIViewDimension::drawAngle(TechDraw::DrawViewDimension* dimension,
 
         Base::Vector2d extensionOrigin;
         Base::Vector2d extensionTarget(computeExtensionLinePoints(
-            endPoint, angleVertex + Base::Vector2d::FromPolar(arcRadius, endAngle), endAngle,
+            secondDimPoint, angleVertex + Base::Vector2d::FromPolar(arcRadius, endAngle), endAngle,
             getDefaultExtensionLineOverhang(), gapSize, extensionOrigin));
         anglePath.moveTo(toQtGui(extensionOrigin));
         anglePath.lineTo(toQtGui(extensionTarget));
 
         if (arrowCount > 1) {
             extensionTarget = computeExtensionLinePoints(
-                startPoint, angleVertex + Base::Vector2d::FromPolar(arcRadius, startAngle),
+                firstDimPoint, angleVertex + Base::Vector2d::FromPolar(arcRadius, startAngle),
                 startAngle, getDefaultExtensionLineOverhang(), gapSize, extensionOrigin);
             anglePath.moveTo(toQtGui(extensionOrigin));
             anglePath.lineTo(toQtGui(extensionTarget));
