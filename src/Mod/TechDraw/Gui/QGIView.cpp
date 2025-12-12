@@ -1071,9 +1071,7 @@ void QGIView::makeMark(QPointF pos, QColor color)
 
 void QGIView::updateFrameVisibility()
 {
-    bool shouldShow = shouldShowFrame();
-
-    if (shouldShow) {
+    if (shouldShowFrame()) {
         m_border->show();
         m_label->show();
         if (m_lock && getViewObject()) {

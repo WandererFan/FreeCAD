@@ -66,7 +66,7 @@ bool _checkSelectionHatch(Gui::Command* cmd);
 // TechDraw_ToggleFrame
 //===========================================================================
 
-DEF_STD_CMD_AC(CmdTechDrawToggleFrame)
+DEF_STD_CMD_A(CmdTechDrawToggleFrame)
 
 CmdTechDrawToggleFrame::CmdTechDrawToggleFrame()
   : Command("TechDraw_ToggleFrame")
@@ -80,14 +80,15 @@ CmdTechDrawToggleFrame::CmdTechDrawToggleFrame()
     sPixmap         = "actions/TechDraw_ToggleFrame";
 }
 
-Gui::Action *CmdTechDrawToggleFrame::createAction()
-{
-    Gui::Action *action = Gui::Command::createAction();
-    action->setCheckable(true);
-    action->setChecked(false);
+// This is a toggle.  Each press flips the fame state.
+// Gui::Action *CmdTechDrawToggleFrame::createAction()
+// {
+//     Gui::Action *action = Gui::Command::createAction();
+//     action->setCheckable(true);
+//     action->setChecked(false);
 
-    return action;
-}
+//     return action;
+// }
 
 void CmdTechDrawToggleFrame::activated(int iMsg)
 {
@@ -111,10 +112,10 @@ void CmdTechDrawToggleFrame::activated(int iMsg)
 
     vpp->toggleFrameState();
 
-    Gui::Action *action = this->getAction();
-    if (action) {
-        action->setChecked(vpp->getFrameState());
-    }
+    // Gui::Action *action = this->getAction();
+    // if (action) {
+    //     action->setChecked(vpp->getFrameState());
+    // }
 }
 
 bool CmdTechDrawToggleFrame::isActive()
