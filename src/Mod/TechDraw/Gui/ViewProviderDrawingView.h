@@ -53,7 +53,7 @@ public:
     /// constructor
     ViewProviderDrawingView();
     /// destructor
-    ~ViewProviderDrawingView() override;
+    ~ViewProviderDrawingView() override = default;
 
     App::PropertyBool  KeepLabel;
     App::PropertyInteger StackOrder;
@@ -71,7 +71,7 @@ public:
     void onChanged(const App::Property *prop) override;
     void updateData(const App::Property*) override;
 
-    QGIView* getQView();
+    QGIView* getQView()const;
     MDIViewPage* getMDIViewPage() const;
     Gui::MDIView *getMDIView() const override;
     ViewProviderPage* getViewProviderPage() const;
@@ -88,7 +88,7 @@ public:
     void onGuiRepaint(const TechDraw::DrawView* dv);
     void onProgressMessage(const TechDraw::DrawView* dv,
                          const std::string featureName,
-                         const std::string text);
+                         const std::string text) const;
     using Connection = boost::signals2::scoped_connection;
     Connection connectGuiRepaint;
     Connection connectProgressMessage;
@@ -98,7 +98,8 @@ public:
     virtual void stackTop();
     virtual void stackBottom();
     virtual int getZ() {return StackOrder.getValue();}
-
+    static void stackObjectOnTop(const std::string& viewName);
+    static void stackObjectOnTop(App::DocumentObject* viewObj);
     const char* whoAmI() const;
 
     virtual void fixSceneDependencies();

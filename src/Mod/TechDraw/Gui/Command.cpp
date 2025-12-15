@@ -472,6 +472,10 @@ void CmdTechDrawView::activated(int iMsg)
                               "App.activeDocument().%s.addView(App.activeDocument().%s)",
                               PageName.c_str(),
                               FeatName.c_str());
+                    auto parentView = CommandHelpers::firstViewInSelection(this);
+                    if (!parentView) {
+                        ViewProviderDrawingView::stackObjectOnTop(FeatName);
+                    }
                 }
                 else {
                     std::string FeatName = getUniqueObjectName("Image");
@@ -1578,6 +1582,9 @@ void CmdTechDrawSymbol::activated(int iMsg)
         doCommand(Doc, "App.activeDocument().%s.addView(App.activeDocument().%s)", PageName.c_str(),
                   FeatName.c_str());
 
+        if (!baseView) {
+            ViewProviderDrawingView::stackObjectOnTop(FeatName);
+        }
         updateActive();
         commitCommand();
     }

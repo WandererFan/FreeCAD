@@ -58,7 +58,6 @@ PROPERTY_SOURCE(TechDrawGui::ViewProviderDrawingView, Gui::ViewProviderDocumentO
 ViewProviderDrawingView::ViewProviderDrawingView() :
     m_myName(std::string())
 {
-//    Base::Console().message("VPDV::VPDV\n");
     initExtension(this);
 
     sPixmap = "TechDraw_TreeView";
@@ -71,10 +70,6 @@ ViewProviderDrawingView::ViewProviderDrawingView() :
     // Do not show in property editor   why? wf  WF: because DisplayMode applies only to coin and we
     // don't use coin.
     DisplayMode.setStatus(App::Property::Hidden, true);
-}
-
-ViewProviderDrawingView::~ViewProviderDrawingView()
-{
 }
 
 void ViewProviderDrawingView::attach(App::DocumentObject *pcFeat)
@@ -149,8 +144,9 @@ void ViewProviderDrawingView::show()
 void ViewProviderDrawingView::hide()
 {
     TechDraw::DrawView* obj = getViewObject();
-    if (!obj || obj->isRestoring())
+    if (!obj || obj->isRestoring()) {
         return;
+    }
 
     if (obj->isDerivedFrom<TechDraw::DrawView>()) {
         QGIView* qView = getQView();
@@ -170,7 +166,7 @@ void ViewProviderDrawingView::hide()
         }
     }
 }
-QGIView* ViewProviderDrawingView::getQView()
+QGIView* ViewProviderDrawingView::getQView() const
 {
     TechDraw::DrawView* dv = getViewObject();
     if (!dv) {
@@ -349,7 +345,7 @@ void ViewProviderDrawingView::singleParentPaint(const TechDraw::DrawView* dv)
 //handle status updates from App/DrawView
 void ViewProviderDrawingView::onProgressMessage(const TechDraw::DrawView* dv,
                                               const std::string featureName,
-                                              const std::string text)
+                                                const std::string text) const
 {
     Q_UNUSED(dv)
     showProgressMessage(featureName, text);
@@ -423,6 +419,7 @@ void ViewProviderDrawingView::stackTop()
             }
         }
     }
+
     StackOrder.setValue(maxZ + 1);
     qView->setStack(maxZ + 1);
 }
@@ -577,4 +574,26 @@ bool ViewProviderDrawingView::checkMiniumumDocumentVersion(App::Document* toBeCh
     return std::tie(docMajor, docMinor) >= std::tie(minMajor, minMinor);
 }
 
+
+//! finds a view with name viewName in the active document, and assigns a stack order > max of existing
+//! view stack order.
+void ViewProviderDrawingView::stackObjectOnTop(const std::string& viewName)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    App::DocumentObject* viewObj = doc->getObject(viewName.c_str());
+    if (!viewObj) {
+        return;
+    }
+    stackObjectOnTop(viewObj);
+}
+
+//! assigns a stack order > max of existing view stack order to viewObj.
+void ViewProviderDrawingView::stackObjectOnTop(App::DocumentObject* viewObj)
+{
+    Gui::ViewProvider* gvp = QGIView::getViewProvider(viewObj);
+    auto* vpdv = freecad_cast<ViewProviderDrawingView*>(gvp);
+    if (gvp && vpdv) {
+        vpdv->stackTop();
+    }
+}
 
