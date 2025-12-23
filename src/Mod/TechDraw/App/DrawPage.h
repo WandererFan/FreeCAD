@@ -47,7 +47,7 @@ public:
     App::PropertyLink Template;
     App::PropertyBool KeepUpdated;
 
-    App::PropertyFloatConstraint Scale;
+    App::PropertyPrecision Scale;
     App::PropertyEnumeration ProjectionType;// First or Third angle
 
     App::PropertyInteger NextBalloonIndex;
@@ -59,6 +59,7 @@ public:
     //@}
     void handleChangedPropertyType(Base::XMLReader& reader, const char* TypeName,
                                    App::Property* prop) override;
+    void handleChangedPropertyTypeScale(Base::XMLReader &reader, const char * TypeName);
 
     int addView(App::DocumentObject* docObj, bool setPosition = true);
     int removeView(App::DocumentObject* docObj);

@@ -57,7 +57,7 @@ public:
     App::PropertyDistance X;
     App::PropertyDistance Y;
     App::PropertyBool LockPosition;
-    App::PropertyFloatConstraint Scale;
+    App::PropertyPrecision Scale;
 
     App::PropertyEnumeration ScaleType;
     App::PropertyAngle Rotation;
@@ -73,6 +73,7 @@ public:
     //@}
     void handleChangedPropertyType(
         Base::XMLReader &reader, const char * TypeName, App::Property * prop) override;
+    void handleChangedPropertyTypeScale(Base::XMLReader &reader, const char * TypeName);
 
     bool isInClip();
     DrawViewClip* getClipGroup();

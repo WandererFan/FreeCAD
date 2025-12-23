@@ -23,7 +23,6 @@
 
 # include <cmath>
 # include <limits>
-# include <sstream>
 # include <Standard_Failure.hxx>
 # include <Precision.hxx>
 
@@ -78,7 +77,7 @@ const char* DrawView::ScaleTypeEnums[]= {"Page",
                                          "Automatic",
                                          "Custom",
                                          nullptr};
-const double SCALEINCREMENT(0.1);
+constexpr double SCALEINCREMENT(0.1);
 App::PropertyFloatConstraint::Constraints DrawView::scaleRange = {Precision::Confusion(),
                                                                   std::numeric_limits<double>::max(),
                                                                   (SCALEINCREMENT)}; // increment by 0.1
@@ -582,23 +581,15 @@ std::vector<TechDraw::DrawLeaderLine*> DrawView::getLeaders() const
 void DrawView::handleChangedPropertyType(Base::XMLReader &reader, const char * TypeName, App::Property * prop)
 {
     if (prop == &Scale) {
-        App::PropertyFloat tmp;
-        if (strcmp(tmp.getTypeId().getName(), TypeName)==0) {                   //property in file is Float
-            tmp.setContainer(this);
-            tmp.Restore(reader);
-            double tmpValue = tmp.getValue();
-            if (tmpValue > 0.0) {
-                Scale.setValue(tmpValue);
-            } else {
-                Scale.setValue(1.0);
-            }
-        }
+        handleChangedPropertyTypeScale(reader, TypeName);
+        return;
     }
-    else if (prop->isDerivedFrom<App::PropertyLinkList>()
+
+    if (prop->isDerivedFrom<App::PropertyLinkList>()
         && strcmp(prop->getName(), "Source") == 0) {
         App::PropertyLinkGlobal glink;
         App::PropertyLink link;
-        if (strcmp(glink.getTypeId().getName(), TypeName) == 0) {            //property in file is plg
+        if (strcmp(glink.getTypeId().getName(), TypeName) == 0) {            //Source in file is plg
             glink.setContainer(this);
             glink.Restore(reader);
             if (glink.getValue()) {
@@ -606,7 +597,7 @@ void DrawView::handleChangedPropertyType(Base::XMLReader &reader, const char * T
                 static_cast<App::PropertyLinkList*>(prop)->setValue(glink.getValue());
             }
         }
-        else if (strcmp(link.getTypeId().getName(), TypeName) == 0) {            //property in file is pl
+        else if (strcmp(link.getTypeId().getName(), TypeName) == 0) {            //Source in file is pl
             link.setContainer(this);
             link.Restore(reader);
             if (link.getValue()) {
@@ -649,7 +640,33 @@ void DrawView::handleChangedPropertyType(Base::XMLReader &reader, const char * T
         RotationProperty.Restore(reader);
         Rotation.setValue(RotationProperty.getValue());
     }
+
+    App::DocumentObject::handleChangedPropertyType(reader, TypeName, prop);
 }
+
+void DrawView::handleChangedPropertyTypeScale(Base::XMLReader &reader, const char * TypeName)
+{
+    App::PropertyFloat tmpFloat;
+    if (strcmp(tmpFloat.getTypeId().getName(), TypeName)==0) {
+        tmpFloat.setContainer(this);
+        tmpFloat.Restore(reader);
+        double tmpValue = tmpFloat.getValue();
+        if (tmpValue > 0.0) {
+            Scale.setValue(tmpValue);
+        } else {
+            Scale.setValue(1.0);
+        }
+        return;
+    }
+
+    App::PropertyFloatConstraint tmpConstraint;
+    if (strcmp(tmpConstraint.getTypeId().getName(), TypeName)==0) {
+        tmpConstraint.setContainer(this);
+        tmpConstraint.Restore(reader);
+        Scale.setValue(tmpConstraint.getValue());
+    }
+}
+
 
 bool DrawView::keepUpdated()
 {

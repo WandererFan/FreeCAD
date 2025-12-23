@@ -463,18 +463,33 @@ void DrawPage::handleChangedPropertyType(Base::XMLReader& reader, const char* Ty
                                          App::Property* prop)
 {
     if (prop == &Scale) {
-        App::PropertyFloat tmp;
-        if (strcmp(tmp.getTypeId().getName(), TypeName) == 0) {//property in file is Float
-            tmp.setContainer(this);
-            tmp.Restore(reader);
-            double tmpValue = tmp.getValue();
-            if (tmpValue > 0.0) {
-                Scale.setValue(tmpValue);
-            }
-            else {
-                Scale.setValue(1.0);
-            }
+        handleChangedPropertyTypeScale(reader, TypeName);
+        return;
+    }
+
+    App::DocumentObject::handleChangedPropertyType(reader, TypeName, prop);
+}
+
+void DrawPage::handleChangedPropertyTypeScale(Base::XMLReader &reader, const char * TypeName)
+{
+    App::PropertyFloat tmpFloat;
+    if (strcmp(tmpFloat.getTypeId().getName(), TypeName)==0) {
+        tmpFloat.setContainer(this);
+        tmpFloat.Restore(reader);
+        double tmpValue = tmpFloat.getValue();
+        if (tmpValue > 0.0) {
+            Scale.setValue(tmpValue);
+        } else {
+            Scale.setValue(1.0);
         }
+        return;
+    }
+
+    App::PropertyFloatConstraint tmpConstraint;
+    if (strcmp(tmpConstraint.getTypeId().getName(), TypeName)==0) {
+        tmpConstraint.setContainer(this);
+        tmpConstraint.Restore(reader);
+        Scale.setValue(tmpConstraint.getValue());
     }
 }
 
