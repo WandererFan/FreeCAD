@@ -164,7 +164,11 @@ void PagePrinter::printAll(QPrinter* printer, App::Document* doc)
         double width = A4Heightmm;  // default to A4 Landscape 297 x 210
         double height = A4Widthmm;
         makePageLayout(dPage, pageLayout, width, height);
-        printer->setPageLayout(pageLayout);
+        // We can not change the pageLayout or its attributes (except for orientation) between the
+        // QPainter.begin() (from the constructor) and end() (in the destructor).  This causes
+        // "QPrinter::setPageLayout: Cannot be changed while printer is active" messages and does not
+        // work.
+        printer->setPageOrientation(pageLayout.orientation());
 
         if (!firstTime) {
             printer->newPage();
@@ -179,7 +183,8 @@ void PagePrinter::printAll(QPrinter* printer, App::Document* doc)
     ourDoc->setModified(docModifiedState);
 }
 
-//! print all pages in a document to pdf
+//! Print all pages in a document to pdf.  This method is not used in Windows (?) as "Microsoft Print
+//! to Pdf" goes to printAll instead.
 void PagePrinter::printAllPdf(QPrinter* printer, App::Document* doc)
 {
     QString outputFile = printer->outputFileName();
@@ -244,6 +249,7 @@ void PagePrinter::printAllPdf(QPrinter* printer, App::Document* doc)
         double height{0};
         makePageLayout(dPage, pageLayout, width, height);
         pdfWriter.setPageLayout(pageLayout);
+
         if (!firstTime) {
             pdfWriter.newPage();
         }
