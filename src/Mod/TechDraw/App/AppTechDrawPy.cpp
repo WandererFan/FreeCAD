@@ -195,6 +195,10 @@ public:
         add_varargs_method("nearestFraction", &Module::nearestFraction,
         "nearestFraction(float) - returns the numerator and denominator of the nearest fraction as a tuple."
         );
+        add_varargs_method("fixCommonShapeIssues", &Module::fixCommonShapeIssues,
+        "fixCommonShapeIssues(shape [, tolerance]) - returns a version of the input shape with tolerance, \
+         missing 3d curves (pcurves) and missing tesselation (mesh) fixes applied."
+        );
 
         initialize("This is a module for making drawings"); // register with Python
     }
@@ -1363,6 +1367,24 @@ private:
         PyObject* pyNumAndDen = Py_BuildValue("(ii)", numAndDen.first, numAndDen.second);
         return Py::asObject(pyNumAndDen);
     }
+
+    Py::Object fixCommonShapeIssues(const Py::Tuple& args)
+    {
+        PyObject *pcObjShape(nullptr);
+        double tolerance{0.0001};       // overkill for printing, underkill for geometry?
+
+        if (!PyArg_ParseTuple(args.ptr(), "O!|d",
+                  &(TopoShapePy::Type), &pcObjShape, &tolerance)) {
+            throw Py::TypeError("expected (shape [,tolerance])");
+        }
+
+        TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
+        const TopoShape& nShape =
+        ShapeUtils::fixCommonShapeIssues(pShape->getTopoShapePtr()->getShape());
+
+        return Py::Object(new TopoShapePy(new TopoShape(nShape)));
+    }
+
 
  };
 

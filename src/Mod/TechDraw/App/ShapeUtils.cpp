@@ -45,6 +45,7 @@
 #include <HLRBRep_HLRToShape.hxx>
 #include <HLRBRep_PolyAlgo.hxx>
 #include <HLRBRep_PolyHLRToShape.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
@@ -424,5 +425,22 @@ bool ShapeUtils::edgesAreParallel(TopoDS_Edge edge0, TopoDS_Edge edge1)
     }
     return false;
 
+}
+
+//! Shapes sometimes arrive with a good appearance, but a bad internal geometry that causes problems
+//! for the HLR algos.  This routine applies fixes for bad tolerance values, missing p-curves and
+//! missing tesselation.  It can be slow.
+TopoDS_Shape  ShapeUtils::fixCommonShapeIssues(const TopoDS_Shape& shapeIn, double tolerance)
+{
+    // copy the shape to avoid altering the underlying T-shape
+    BRepBuilderAPI_Copy copier(shapeIn);
+    TopoDS_Shape copyShape = copier.Shape();
+
+    TopAbs_ShapeEnum shapetype = TopAbs_SOLID;
+    ShapeFix_ShapeTolerance fix;
+    fix.SetTolerance(copyShape, tolerance, shapetype);
+    BRepLib::BuildCurves3d(copyShape);
+    BRepMesh_IncrementalMesh(copyShape, tolerance);
+    return copyShape;
 }
 

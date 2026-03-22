@@ -116,6 +116,8 @@ public:
     static TopoDS_Shape toQt(const TopoDS_Shape& inShape);
     static TopoDS_Wire fromQtAsWire(const TopoDS_Shape& inShape);
     static TopoDS_Face fromQtAsFace(const TopoDS_Shape& inShape);
+
+    static TopoDS_Shape fixCommonShapeIssues(const TopoDS_Shape& shapeIn, double tolerance = 0.0001);
 };
 
 }
