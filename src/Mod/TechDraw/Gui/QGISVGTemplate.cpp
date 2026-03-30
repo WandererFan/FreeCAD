@@ -229,6 +229,15 @@ void QGISVGTemplate::draw()
 
 void QGISVGTemplate::drawPageRectangle()
 {
+    if (!scene()) {
+        // not added to the scene yet
+        return;
+    }
+    auto* tdScene = static_cast<QGSPage*>(scene());
+    m_pageRectangle->show();
+    if (tdScene && tdScene->getExportingAny()) {
+        m_pageRectangle->hide();
+    }
     // Draw the white page
     // Default to A3 landscape, though this is currently relevant
     // only for opening corrupt docs, etc.
@@ -245,6 +254,7 @@ void QGISVGTemplate::drawPageRectangle()
     }
     QRectF paperRect(0, -pageHeight, pageWidth, pageHeight);
     QBrush pageBrush(PreferencesGui::pageQColor());
+
     m_pageRectangle->setRect(paperRect);
     m_pageRectangle->setBrush(pageBrush);
 }

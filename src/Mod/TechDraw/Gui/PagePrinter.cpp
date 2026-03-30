@@ -47,7 +47,7 @@
 
 #include <Mod/TechDraw/App/DrawPage.h>
 #include <Mod/TechDraw/App/DrawPagePy.h>
-#include <Mod/TechDraw/App/DrawTemplate.h>
+#include <Mod/TechDraw/App/DrawSVGTemplate.h>
 #include <Mod/TechDraw/App/DrawUtil.h>
 #include <Mod/TechDraw/App/Preferences.h>
 
@@ -256,6 +256,11 @@ void PagePrinter::printAllPdf(QPrinter* printer, App::Document* doc)
         dPage->redrawCommand();
 
         ourScene->setExportingPdf(false);
+        // add template back to page. Not a view, so not covered by redraw command.
+        // Template needs to be drawn with isExporting false to restore the page
+        // background.
+        constexpr bool ForceUpdate{true};
+        ourScene->updateTemplate(ForceUpdate);
     }
 
     ourDoc->setModified(docModifiedState);
