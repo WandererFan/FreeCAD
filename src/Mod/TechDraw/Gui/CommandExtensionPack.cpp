@@ -207,8 +207,11 @@ void execCircleCenterLines(Gui::Command* cmd)
         int GeoId = TechDraw::DrawUtil::getIndexFromName(Name);
         TechDraw::BaseGeomPtr geom = objFeat->getGeomByIndex(GeoId);
         std::string GeoType = TechDraw::DrawUtil::getGeomTypeFromName(Name);
+        Base::Console().message("CEP:execCircleCenterLines - GeoType: %s\n", GeoType.c_str());
         if (GeoType == "Edge") {
+            Base::Console().message("CEP:execCircleCenterLines - have an edge - type: %d\n", (int)geom->getGeomType());
             if (geom->getGeomType() == GeomType::CIRCLE || geom->getGeomType() == GeomType::ARCOFCIRCLE) {
+                Base::Console().message("CEP:execCircleCenterLines - have circle or arc\n");
                 TechDraw::CirclePtr cgen = std::static_pointer_cast<TechDraw::Circle>(geom);
                 // cgen->center is a scaled, rotated and inverted point
                 Base::Vector3d center = CosmeticVertex::makeCanonicalPointInverted(objFeat, cgen->center);
@@ -228,6 +231,7 @@ void execCircleCenterLines(Gui::Command* cmd)
                 _setLineAttributes(vert);
                 // horiz & vert are centerlines, so they should use the default centerline
                 // number and not the number from line attributes
+                Base::Console().message("CEP:execCircleCenterLines - CL style: %d\n", Preferences::CenterLineStyle());
                 horiz->m_format.setLineNumber(Preferences::CenterLineStyle());
                 vert->m_format.setLineNumber(Preferences::CenterLineStyle());
             }
@@ -2258,10 +2262,13 @@ void _setLineAttributes(TechDraw::CosmeticEdge* cosEdge)
 
 void _setLineAttributes(TechDraw::CenterLine* cosEdge)
 {
+    Base::Console().message("CEP::setLineAttributes()\n");
     // set line attributes of a cosmetic edge
     cosEdge->m_format.setStyle(_getActiveLineAttributes().getStyle());
     cosEdge->m_format.setWidth(_getActiveLineAttributes().getWidth());
     cosEdge->m_format.setColor(_getActiveLineAttributes().getColor());
+    Base::Console().message("CEP::setLineAttributes - color: %s\n",
+                            _getActiveLineAttributes().getColor().asHexString());
     cosEdge->m_format.setVisible(_getActiveLineAttributes().getVisible());
     cosEdge->m_format.setLineNumber(_getActiveLineAttributes().getLineNumber());
 }
