@@ -118,7 +118,7 @@ void execHoleCircle(Gui::Command* cmd)
             } else {
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("TechDraw hole circle"),
                                      QObject::tr("Can not make hole circle for %1")
-                                         .arg(GeometryUtils::getGeomTypeName(geom->getGeomType())));
+                                         .arg(QString::fromStdString(GeometryUtils::getGeomTypeName(geom->getGeomType()))));
 
             }
         }
@@ -238,7 +238,7 @@ void execCircleCenterLines(Gui::Command* cmd)
             } else {
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("TechDraw circle centerlines"),
                                      QObject::tr("Can not make centerlines for %1")
-                                        .arg(GeometryUtils::getGeomTypeName(geom->getGeomType())));
+                                        .arg(QString::fromStdString(GeometryUtils::getGeomTypeName(geom->getGeomType()))));
             }
         }
     }
@@ -1671,7 +1671,7 @@ void execExtendShortenLine(Gui::Command* cmd, bool extend)
                 } else {
                     QMessageBox::warning(Gui::getMainWindow(), QObject::tr("TechDraw extend/shorten line"),
                                          QObject::tr("Can not make centerlines for %1")
-                                             .arg(GeometryUtils::getGeomTypeName(baseGeo->getGeomType())));
+                                             .arg(QString::fromStdString(GeometryUtils::getGeomTypeName(baseGeo->getGeomType()))));
 
                 }
             }
@@ -2216,7 +2216,7 @@ void _createThreadCircle(const std::string Name, TechDraw::DrawViewPart* objFeat
     } else {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("TechDraw create thread circle"),
                              QObject::tr("Can not make thread circle for %1")
-                                 .arg(GeometryUtils::getGeomTypeName(geom->getGeomType())));
+                                 .arg(QString::fromStdString(GeometryUtils::getGeomTypeName(geom->getGeomType()))));
     }
 }
 
