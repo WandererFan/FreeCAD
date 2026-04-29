@@ -478,6 +478,8 @@ class TechDrawExport GeometryUtils
         static std::vector<int> findNestedFaceIndices(const std::vector<FacePtr>& holes);
 
         static bool asCubic(const BRepAdaptor_Curve& curveIn, Handle(Geom_BSplineCurve)& splineOut);
+        static void asLinear(const BRepAdaptor_Curve &curveIn, Handle(Geom_BSplineCurve)& splineOut);
+
 };
 
 } //end namespace TechDraw
