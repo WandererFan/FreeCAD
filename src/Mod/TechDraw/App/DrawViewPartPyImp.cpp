@@ -44,6 +44,7 @@
 #include "GeometryObject.h"
 #include "Cosmetic.h"
 #include "DrawUtil.h"
+#include "LineGenerator.h"
 
 // inclusion of the generated files (generated out of DrawViewPartPy.xml)
 #include <Mod/TechDraw/App/CosmeticVertexPy.h>
@@ -842,9 +843,11 @@ PyObject* DrawViewPartPy::formatGeometricEdge(PyObject *args)
         gf->m_format.setColor(color);
         gf->m_format.setWidth(weight);
         gf->m_format.setVisible(visible);
+        gf->m_format.setLineNumber(TechDraw::LineGenerator::fromQtStyle((Qt::PenStyle) style));
     }
     else {
-        TechDraw::LineFormat fmt(style, weight, color, visible);
+        TechDraw::LineFormat fmt(style, weight, color, visible,
+                                TechDraw::LineGenerator::fromQtStyle((Qt::PenStyle) style));
         auto* newGF = new TechDraw::GeomFormat(idx, fmt);
 //                    int idx =
         dvp->addGeomFormat(newGF);
