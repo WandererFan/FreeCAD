@@ -856,6 +856,48 @@ PyObject* DrawViewPartPy::formatGeometricEdge(PyObject *args)
     Py_Return;
 }
 
+//! revision to formatGeometricEdge to use standard compliant line styles instead of Qt::PenStyle.
+PyObject* DrawViewPartPy::formatGeometricEdge_Standard(PyObject *args)
+{
+    int idx{-1};
+    int style{Qt::NoPen};      // Qt style is no longer used except in constructors. see lineNumber.
+    constexpr int StandardContinuousLine{1};
+    int lineNumber{StandardContinuousLine};
+    Base::Color color{LineFormat::getDefEdgeColor()};
+    constexpr double DefaultWeight{0.5};
+    double weight{DefaultWeight};
+    int visible{1};
+
+    LineFormat defaultFormat{LineFormat::getCurrentLineFormat()};
+
+    PyObject* pColor{};
+
+    if (!PyArg_ParseTuple(args, "iidOp", &idx, &lineNumber, &weight, &pColor, &visible)) {
+        return nullptr;
+    }
+
+    color = DrawUtil::pyTupleToColor(pColor);
+    DrawViewPart* dvp = getDrawViewPartPtr();
+    TechDraw::GeomFormat* gf = dvp->getGeomFormatBySelection(idx);
+    if (gf) {
+        Base::Console().message("DVPPI::formatGeometricEdge_Standard - already have a format\n");
+        gf->m_format.setStyle(style);
+        gf->m_format.setColor(color);
+        gf->m_format.setWidth(weight);
+        gf->m_format.setVisible(visible);
+        gf->m_format.setLineNumber(lineNumber);
+    }
+    else {
+        Base::Console().message("DVPPI::formatGeometricEdge_Standard - need a new format\n");
+        TechDraw::LineFormat fmt(style, weight, color, visible, lineNumber);
+        auto* newGF = new TechDraw::GeomFormat(idx, fmt);
+//                    int idx =
+        dvp->addGeomFormat(newGF);
+    }
+
+    Py_Return;
+}
+
 //------------------------------------------------------------------------------
 PyObject* DrawViewPartPy::getEdgeByIndex(PyObject *args)
 {
