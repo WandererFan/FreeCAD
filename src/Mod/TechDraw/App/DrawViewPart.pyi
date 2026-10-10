@@ -203,11 +203,11 @@ class DrawViewPart(DrawView):
         """
         ...
 
-    def formatGeometricEdge_Standard(
-        self, index: int, lineNumber: int, weight: float, color: tuple, visible: int, /
+    def decorateLine(
+        self, edgeName: str, lineNumber: int, weight: float, color: tuple, visible: int, /
     ) -> None:
         """
-        formatGeometricEdge_Standard(index, lineNumber, weight, color, visible). Returns None.
+        decorateLine(edgeName, lineNumber, weight, color, visible). Returns None.
         Applies appearance attributes to geometric edge idx.  Handles standard line numbers (0-15 (ISO) or 1-17 (ASME)).
         """
         ...
